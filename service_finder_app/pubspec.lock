@@ -137,6 +137,30 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.7.0"
+  firebase_storage:
+    dependency: "direct main"
+    description:
+      name: firebase_storage
+      sha256: ceb51aeb981826b6b6c3ec293c84d54c2667c7005b110b356a1e3d6374f81bab
+      url: "https://pub.dev"
+    source: hosted
+    version: "13.4.1"
+  firebase_storage_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_storage_platform_interface
+      sha256: "14ae6a777e1e66e085c26d94f1252d5933dab74004d4400463ac4e23e2e71c4d"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.1"
+  firebase_storage_web:
+    dependency: transitive
+    description:
+      name: firebase_storage_web
+      sha256: "98cc7365f1c931cd2943f2396753b155b0781074f8c2fbf2916d2c4182790449"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.11.7"
   flutter:
     dependency: "direct main"
     description: flutter
@@ -228,10 +252,18 @@ packages:
     dependency: transitive
     description:
       name: meta
-      sha256: "1741988757a65eb6b36abe716829688cf01910bbf91c34354ff7ec1c3de2b349"
+      sha256: "23f08335362185a5ea2ad3a4e597f1375e78bce8a040df5c600c8d3552ef2394"
       url: "https://pub.dev"
     source: hosted
-    version: "1.18.0"
+    version: "1.17.0"
+  mime:
+    dependency: transitive
+    description:
+      name: mime
+      sha256: "41a20518f0cb1256669420fdba0cd90d21561e560ac240f26ef8322e45bb7ed6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   path:
     dependency: transitive
     description:
@@ -297,10 +329,10 @@ packages:
     dependency: transitive
     description:
       name: test_api
-      sha256: "949a932224383300f01be9221c39180316445ecb8e7547f70a41a35bf421fb9e"
+      sha256: "8161c84903fd860b26bfdefb7963b3f0b68fee7adea0f59ef805ecca346f0c7a"
       url: "https://pub.dev"
     source: hosted
-    version: "0.7.11"
+    version: "0.7.10"
   typed_data:
     dependency: transitive
     description:
@@ -334,5 +366,5 @@ packages:
     source: hosted
     version: "1.1.1"
 sdks:
-  dart: ">=3.12.0 <4.0.0"
+  dart: ">=3.11.5 <4.0.0"
   flutter: ">=3.27.0"
