@@ -4,21 +4,17 @@ import 'src/features/auth/login_screen.dart';
 import 'firebase_options.dart';
 
 void main() async {
-  // 1. Establish secure framework channel hooks before running async calls
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // 2. Wrap Firebase initialization inside a safe structural try-catch block
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print("✅ Firebase initialized successfully!");
+    debugPrint("✅ Firebase initialized successfully!");
   } catch (e) {
-    // Prevents application boot thread freezes if parameters mismatch
-    print("⚠️ Firebase initialization bypassed or encountered an error: $e");
+    debugPrint("⚠️ Firebase initialization bypassed or encountered an error: $e");
   }
 
-  // 3. Always execute the app layout loop even if tracking logs error out
   runApp(const MyApp());
 }
 

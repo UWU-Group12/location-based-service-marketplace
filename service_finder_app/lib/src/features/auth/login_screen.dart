@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'data/auth_service.dart';
 import '../home_screen.dart';
+import 'data/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -34,6 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
         const SnackBar(content: Text('✅ Login Successful!')),
       );
     } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),
       );
@@ -58,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Login')),
       body: SafeArea(
-        child: Center( // Center the entire card layout to prevent rendering clips
+        child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Column(
@@ -84,7 +85,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 32),
 
-                // Email/Password Login Button
                 ElevatedButton(
                   onPressed: _isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
@@ -114,7 +114,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 24),
 
-                // Stable Google Sign-In Button (Layout never disappears)
                 OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -137,23 +136,25 @@ class _LoginScreenState extends State<LoginScreen> {
                     try {
                       var userCredential = await _authService.signInWithGoogle();
 
-                      if (!mounted) return;
-
-                      if (userCredential != null) {
+                      // Strict check for build context transitions
+                      if (userCredential != null && context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('✅ Google Login Successful!')),
                         );
 
-                        // 👉 Add this line right here to redirect the user:
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => const HomeScreen()), // Use your actual project Home widget class name here
-                        );
+                        if (context.mounted) {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => const HomeScreen()),
+                          );
+                        }
                       }
                     } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('❌ Error: $e')),
-                      );
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('❌ Error: $e')),
+                        );
+                      }
                     } finally {
                       if (mounted) {
                         setState(() {
