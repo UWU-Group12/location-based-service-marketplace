@@ -1,6 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:service_finder_app/src/features/auth/login_screen.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase using your options file
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Quick connection test print statement
+  print("✅ Firebase Authentication connection initialized successfully!");
+
   runApp(const MyApp());
 }
 
@@ -30,7 +43,7 @@ class MyApp extends StatelessWidget {
         // tested with just a hot reload.
         colorScheme: .fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: LoginScreen(),
     );
   }
 }

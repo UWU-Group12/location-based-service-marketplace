@@ -12,7 +12,20 @@
           "package_name": "com.group12.service_finder_app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1095083603413-m9511mh6ifuq0sn5gl20iqbrmlmvm0nl.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.group12.service_finder_app",
+            "certificate_hash": "0835a8f00124b45cb38275da2f7e0d13e6ee553b"
+          }
+        },
+        {
+          "client_id": "1095083603413-5vq2i0cj6put8fu88a7m4idprr8u8a3v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCuDNk8Zoxa7KupGb4Mcf5n-RcCQBLwG60"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1095083603413-5vq2i0cj6put8fu88a7m4idprr8u8a3v.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1095083603413-km4g10l8i1i4jrrc8e81hti1m6q1alp7.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.group12.serviceFinderApp"
+              }
+            }
+          ]
         }
       }
     }
