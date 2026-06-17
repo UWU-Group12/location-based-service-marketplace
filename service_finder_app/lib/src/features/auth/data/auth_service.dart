@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart'; // 👉 Required for debugPrint
 import '../domain/user_model.dart';
 
 class AuthService {
@@ -31,7 +32,7 @@ class AuthService {
       }
       return credential;
     } catch (e) {
-      print("Registration Error: ${e.toString()}");
+      debugPrint("Registration Error: ${e.toString()}"); // ✅ Changed to debugPrint
       rethrow;
     }
   }
@@ -47,7 +48,7 @@ class AuthService {
         password: password,
       );
     } catch (e) {
-      print("Login Error: ${e.toString()}");
+      debugPrint("Login Error: ${e.toString()}"); // ✅ Changed to debugPrint
       rethrow;
     }
   }
@@ -57,7 +58,7 @@ class AuthService {
     try {
       await _auth.signOut();
     } catch (e) {
-      print("Sign Out Error: ${e.toString()}");
+      debugPrint("Sign Out Error: ${e.toString()}"); // ✅ Changed to debugPrint
     }
   }
 }
