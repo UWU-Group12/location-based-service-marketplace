@@ -1,44 +1,16 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart'; // 👉 Required for debugPrint
-import '../domain/user_model.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Stream to track auth state changes
-  Stream<User?> get userStream => _auth.authStateChanges();
+  Stream<User?> get user => _auth.authStateChanges();
 
-  // Register with Email and Password + Save Role to Firestore
-  Future<UserCredential?> registerWithEmailAndPassword({
-    required String email,
-    required String password,
-    required UserRole role,
-  }) async {
-    try {
-      UserCredential credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      if (credential.user != null) {
-        // Save user role data to Firestore collection
-        await _db.collection('users').doc(credential.user!.uid).set({
-          'email': email,
-          'role': role.name,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-      return credential;
-    } catch (e) {
-      debugPrint("Registration Error: ${e.toString()}"); // ✅ Changed to debugPrint
-      rethrow;
-    }
-  }
-
-  // Login with Email and Password
-  Future<UserCredential?> loginWithEmailAndPassword({
+  // Restored Email/Password Login Method
+  Future<UserCredential> loginWithEmailAndPassword({
     required String email,
     required String password,
   }) async {
@@ -48,17 +20,54 @@ class AuthService {
         password: password,
       );
     } catch (e) {
-      debugPrint("Login Error: ${e.toString()}"); // ✅ Changed to debugPrint
-      rethrow;
+      throw Exception(e.toString());
     }
   }
 
-  // Sign Out
+  // Google Sign-In Method
+  Future<UserCredential?> signInWithGoogle() async {
+    try {
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) return null;
+
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+
+      final AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
+      User? user = userCredential.user;
+
+      if (user != null) {
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+
+        if (!userDoc.exists) {
+          await _firestore.collection('users').doc(user.uid).set({
+            'uid': user.uid,
+            'email': user.email,
+            'displayName': user.displayName,
+            'role': 'customer',
+            'createdAt': FieldValue.serverTimestamp(),
+          });
+        }
+      }
+
+      return userCredential;
+    } catch (e) {
+      print("Error during Google Sign-In: $e");
+      return null;
+    }
+  }
+
+  // Sign Out Method
   Future<void> signOut() async {
     try {
+      await _googleSignIn.signOut();
       await _auth.signOut();
     } catch (e) {
-      debugPrint("Sign Out Error: ${e.toString()}"); // ✅ Changed to debugPrint
+      print("Error during sign-out: $e");
     }
   }
 }
