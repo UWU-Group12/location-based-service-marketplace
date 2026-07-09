@@ -75,15 +75,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
             isLastPage
                 ? TextButton(
-                    onPressed: () async {
-                      await PrefService.setFirstLaunchComplete();
-                      if (mounted) {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
-                        );
-                      }
-                    },
+              onPressed: () async {
+                final navigator = Navigator.of(context);
+
+                await PrefService.setFirstLaunchComplete();
+
+                if (!mounted) return;
+
+                navigator.pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => const RoleSelectionScreen(),
+                  ),
+                );
+              },
                     child: Text('DONE', style: TextStyle(color: Colors.red[900], fontWeight: FontWeight.bold)),
                   )
                 : TextButton(

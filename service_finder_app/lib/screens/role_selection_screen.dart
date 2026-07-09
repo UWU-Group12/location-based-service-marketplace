@@ -119,7 +119,7 @@ class RoleSelectionScreen extends StatelessWidget {
                     description,
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.black.withOpacity(0.6),
+                      color: Colors.black.withValues(alpha: 0.6),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
