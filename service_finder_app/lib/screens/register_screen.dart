@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
+import 'home_screen.dart';
+import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   final String role;
@@ -36,7 +38,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
           },
         );
         if (mounted) {
-           Navigator.of(context).popUntil((route) => route.isFirst);
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const HomeScreen(),
+            ),
+                (route) => false,
+          );
         }
       } catch (e) {
         if (mounted) {
@@ -76,7 +84,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF8B0000), size: 20),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
         ),
       ),
       body: SingleChildScrollView(
@@ -179,7 +191,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       style: TextStyle(color: Colors.black54),
                     ),
                     GestureDetector(
-                      onTap: () => Navigator.of(context).pop(),
+                      onTap: () {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LoginScreen(),
+                          ),
+                              (route) => false,
+                        );
+                      },
                       child: const Text(
                         'Login',
                         style: TextStyle(

@@ -15,7 +15,11 @@ class RoleSelectionScreen extends StatelessWidget {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            }
+          },
         ),
       ),
       body: Padding(
@@ -39,18 +43,18 @@ class RoleSelectionScreen extends StatelessWidget {
                 context: context,
                 role: 'Service Provider',
                 description: 'Offer your professional services',
-                imageUrl: 'https://cdn3d.iconscout.com/3d/premium/thumb/male-worker-5691522-4741058.png',
-                backgroundColor: const Color(0xFFFFEAD0), // Light Orange
+                imageUrl: 'assets/images/provider.png',
+                backgroundColor: const Color(0xC3FFF5F5), // Light Red
               ),
             ),
-            const SizedBox(height: 25),
+            const SizedBox(height: 40),
             Expanded(
               child: _buildRoleCard(
                 context: context,
                 role: 'Client',
                 description: 'Find the best services near you',
-                imageUrl: 'https://cdn3d.iconscout.com/3d/premium/thumb/searching-person-5691524-4741060.png',
-                backgroundColor: const Color(0xFFFDD7EB), // Light Pink
+                imageUrl: 'assets/images/client.png',
+                backgroundColor: const Color(0xC3FFF5F5), // Light Pink
               ),
             ),
             const SizedBox(height: 50),
@@ -88,7 +92,7 @@ class RoleSelectionScreen extends StatelessWidget {
             // Cartoonish Image
             Expanded(
               flex: 4,
-              child: Image.network(
+              child: Image.asset(
                 imageUrl,
                 fit: BoxFit.contain,
                 errorBuilder: (context, error, stackTrace) => const Icon(Icons.person, size: 80, color: Colors.black26),
