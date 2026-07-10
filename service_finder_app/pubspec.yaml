@@ -37,7 +37,9 @@ dependencies:
   firebase_core: ^4.9.0
   firebase_auth: ^6.5.1
   cloud_firestore: ^6.4.1
-  google_sign_in: ^6.2.1
+  shared_preferences: ^2.2.2
+  google_sign_in: ^6.1.6
+  smooth_page_indicator: ^1.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -59,6 +61,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+  assets:
+    - assets/images/client.png
+    - assets/images/provider.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
