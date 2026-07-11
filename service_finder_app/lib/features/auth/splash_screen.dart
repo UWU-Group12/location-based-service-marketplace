@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import '../services/pref_service.dart';
+import '../../services/pref_service.dart';
 import 'role_selection_screen.dart';
 
-class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _SplashScreenState extends State<SplashScreen> {
   final PageController _controller = PageController();
   bool isLastPage = false;
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'register_screen.dart';
+import 'customer_register_screen.dart';
+import 'provider_register_screen.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
@@ -116,9 +117,9 @@ class RoleSelectionScreen extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => RegisterScreen(
-                  role: isProvider ? 'Service Provider' : 'Customer',
-                ),
+                builder: (context) => isProvider
+                    ? const ProviderRegisterScreen()
+                    : const CustomerRegisterScreen(role: 'Customer'),
               ),
             );
           },

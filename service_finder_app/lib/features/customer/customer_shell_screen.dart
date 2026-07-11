@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'customer_home_screen.dart';
-import 'provider_home_screen.dart';
+import '../provider/provider_dashboard_screen.dart';
 
-class HomeScreen extends StatefulWidget {
+class CustomerShellScreen extends StatefulWidget {
   final String? debugRole; // Optional parameter for development bypass
-  const HomeScreen({super.key, this.debugRole});
+  const CustomerShellScreen({super.key, this.debugRole});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  State<CustomerShellScreen> createState() => _CustomerShellScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _CustomerShellScreenState extends State<CustomerShellScreen> {
   int _currentIndex = 0;
   String _userName = 'Nimal'; // Default for preview
   String _initials = 'NP'; // Default for preview
@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const Center(child: Text('Profile Page')),
           ]
         : [
-            ProviderHomeScreen(userName: _userName),
+            ProviderDashboardScreen(userName: _userName),
             const Center(child: Text('Appointments Page')),
             const Center(child: Text('Earning Page')),
             const Center(child: Text('Profile Page')),

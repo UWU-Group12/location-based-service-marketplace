@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
+import '../customer/customer_shell_screen.dart';
 
 class DevBypassScreen extends StatelessWidget {
   const DevBypassScreen({super.key});
@@ -42,7 +42,7 @@ class DevBypassScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const HomeScreen(debugRole: 'Customer'),
+                      builder: (context) => const CustomerShellScreen(debugRole: 'Customer'),
                     ),
                   );
                 },
@@ -57,7 +57,7 @@ class DevBypassScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const HomeScreen(debugRole: 'Service Provider'),
+                      builder: (context) => const CustomerShellScreen(debugRole: 'Service Provider'),
                     ),
                   );
                 },

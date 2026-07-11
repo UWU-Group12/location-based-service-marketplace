@@ -3,9 +3,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'services/pref_service.dart';
-import 'screens/onboarding_screen.dart';
-import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
+import 'features/auth/splash_screen.dart';
+import 'features/auth/login_screen.dart';
+import 'features/customer/customer_shell_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,7 +45,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: Colors.white,
       ),
-      home: isFirstLaunch ? const OnboardingScreen() : const AuthWrapper(),
+      home: isFirstLaunch ? const SplashScreen() : const AuthWrapper(),
     );
   }
 }
@@ -62,7 +62,7 @@ class AuthWrapper extends StatelessWidget {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (snapshot.hasData) {
-          return const HomeScreen();
+          return const CustomerShellScreen();
         }
         return const LoginScreen();
       },
