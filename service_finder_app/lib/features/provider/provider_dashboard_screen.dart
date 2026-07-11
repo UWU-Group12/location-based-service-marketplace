@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-class ProviderHomeScreen extends StatelessWidget {
+class ProviderDashboardScreen extends StatelessWidget {
   final String userName;
-  const ProviderHomeScreen({super.key, required this.userName});
+  const ProviderDashboardScreen({super.key, required this.userName});
 
   @override
   Widget build(BuildContext context) {

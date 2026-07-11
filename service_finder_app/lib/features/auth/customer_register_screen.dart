@@ -1,32 +1,51 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
-import 'role_selection_screen.dart';
-import 'dev_bypass_screen.dart';
+import '../../services/auth_service.dart';
+import '../customer/customer_shell_screen.dart';
+import 'login_screen.dart';
 
-
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class CustomerRegisterScreen extends StatefulWidget {
+  final String role;
+  const CustomerRegisterScreen({super.key, required this.role});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<CustomerRegisterScreen> createState() => _CustomerRegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _mobileController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  
   final AuthService _authService = AuthService();
   bool _isLoading = false;
   bool _isPasswordVisible = false;
 
-  void _login() async {
+  void _register() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        await _authService.loginWithEmail(
+        await _authService.registerWithEmail(
           _emailController.text.trim(),
           _passwordController.text.trim(),
+          {
+            'firstName': _firstNameController.text.trim(),
+            'lastName': _lastNameController.text.trim(),
+            'mobile': _mobileController.text.trim(),
+            'role': widget.role,
+          },
         );
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const CustomerShellScreen(),
+            ),
+                (route) => false,
+          );
+        }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -39,14 +58,14 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _googleSignIn() async {
-    setState(() => _isLoading = true);
+  void _googleSignUp() async {
+     setState(() => _isLoading = true);
     try {
       await _authService.signInWithGoogle();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google Sign-In failed: ${e.toString()}')),
+          SnackBar(content: Text('Google Sign-Up failed: ${e.toString()}')),
         );
       }
     } finally {
@@ -56,7 +75,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final darkRed = const Color(0xFF8B0000); // Dark Red
+    final darkRed = const Color(0xFF8B0000); // Material Red 900 or similar
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -64,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF8B0000) , size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF8B0000), size: 20),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -80,9 +99,9 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 30),
+                const SizedBox(height: 0),
                 const Text(
-                  'Login',
+                  'Register',
                   style: TextStyle(
                     fontSize: 40,
                     fontWeight: FontWeight.w900,
@@ -90,13 +109,33 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 60),
+                const SizedBox(height: 15),
+                TextFormField(
+                  controller: _firstNameController,
+                  decoration: _buildInputDecoration('First Name', Icons.edit_outlined),
+                  validator: (value) => value!.isEmpty ? 'Enter first name' : null,
+                ),
+                const SizedBox(height: 13),
+                TextFormField(
+                  controller: _lastNameController,
+                  decoration: _buildInputDecoration('Last Name', Icons.edit_outlined),
+                  validator: (value) => value!.isEmpty ? 'Enter last name' : null,
+                ),
+                const SizedBox(height: 13),
+                TextFormField(
+                  controller: _mobileController,
+                  keyboardType: TextInputType.phone,
+                  decoration: _buildInputDecoration('Mobile Number', Icons.phone_android_outlined),
+                  validator: (value) => value!.isEmpty ? 'Enter mobile number' : null,
+                ),
+                const SizedBox(height: 13),
                 TextFormField(
                   controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: _buildInputDecoration('Email', Icons.alternate_email),
                   validator: (value) => value!.isEmpty ? 'Enter email' : null,
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 13),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
@@ -109,39 +148,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     isVisible: _isPasswordVisible,
                   ),
-                  validator: (value) => value!.isEmpty ? 'Enter password' : null,
+                  validator: (value) => value!.length < 6 ? 'Password must be 6+ chars' : null,
                 ),
-                const SizedBox(height: 10),
-                Center(
-                  child: TextButton(
-                    onPressed: () {
-                      if (_emailController.text.isNotEmpty) {
-                        _authService.sendPasswordResetEmail(_emailController.text.trim());
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Password reset email sent!')),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Enter your email first')),
-                        );
-                      }
-                    },
-                    child: const Text(
-                      'Forgot Password',
-                      style: TextStyle(
-                        color: Colors.black54,
-                        decoration: TextDecoration.underline,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 30),
                 _isLoading
                     ? Center(child: CircularProgressIndicator(color: darkRed))
                     : ElevatedButton(
-                        onPressed: _login,
+                        onPressed: _register,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8B0000), // Near black
+                          backgroundColor: const Color(0xFF8B0000), // Red color from image
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           shape: RoundedRectangleBorder(
@@ -150,40 +165,43 @@ class _LoginScreenState extends State<LoginScreen> {
                           elevation: 0,
                         ),
                         child: const Text(
-                          'Login',
+                          'Register',
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 30),
                 Row(
                   children: [
-                    const Expanded(child: Divider(thickness: 1)),
+                    Expanded(child: Divider(thickness: 1, color: Colors.grey.withValues(alpha: 0.4))),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text('or', style: TextStyle(color: Colors.grey[600])),
+                      child: Text('or', style: TextStyle(color: Colors.grey.withValues(alpha: 0.6))),
                     ),
-                    const Expanded(child: Divider(thickness: 1)),
+                    Expanded(child: Divider(thickness: 1, color: Colors.grey.withValues(alpha: 0.4))),
                   ],
                 ),
                 const SizedBox(height: 30),
-                _buildGoogleButton(_googleSignIn),
+                _buildGoogleButton(_googleSignUp),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      'Need an account ? ',
-                      style: TextStyle(color: Colors.black54),
+                    Text(
+                      'Already have an account? ',
+                      style: TextStyle(color: Colors.black.withValues(alpha: 0.54)),
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(
+                        Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const LoginScreen(),
+                          ),
+                              (route) => false,
                         );
                       },
                       child: const Text(
-                        'Sign up',
+                        'Login',
                         style: TextStyle(
                           color: Color(0xFF8B0000),
                           fontWeight: FontWeight.bold,
@@ -191,21 +209,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 20),
-                Center(
-                  child: TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const DevBypassScreen()),
-                      );
-                    },
-                    child: const Text(
-                      'Development Bypass (Preview Dashboards)',
-                      style: TextStyle(color: Colors.blue, fontSize: 12),
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 20),
               ],
@@ -225,10 +228,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }) {
     return InputDecoration(
       hintText: label,
-      hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
+      hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.8), fontSize: 15),
       prefixIcon: Padding(
         padding: const EdgeInsets.only(left: 20, right: 10),
-        child: Icon(icon, color: Colors.grey, size: 22),
+        child: Icon(icon, color: Colors.grey.withValues(alpha: 0.8), size: 22),
       ),
       suffixIcon: isPassword
           ? Padding(
@@ -236,7 +239,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: IconButton(
                 icon: Icon(
                   isVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  color: Colors.grey,
+                  color: Colors.grey.withValues(alpha: 0.8),
                   size: 22,
                 ),
                 onPressed: onToggleVisibility,

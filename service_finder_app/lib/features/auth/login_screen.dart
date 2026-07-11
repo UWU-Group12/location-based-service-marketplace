@@ -1,51 +1,32 @@
 import 'package:flutter/material.dart';
-import '../services/auth_service.dart';
-import 'home_screen.dart';
-import 'login_screen.dart';
+import '../../services/auth_service.dart';
+import 'role_selection_screen.dart';
+import 'dev_bypass_screen.dart';
 
-class RegisterScreen extends StatefulWidget {
-  final String role;
-  const RegisterScreen({super.key, required this.role});
+
+class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  State<RegisterScreen> createState() => _RegisterScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
-  final _mobileController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
   final AuthService _authService = AuthService();
   bool _isLoading = false;
   bool _isPasswordVisible = false;
 
-  void _register() async {
+  void _login() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        await _authService.registerWithEmail(
+        await _authService.loginWithEmail(
           _emailController.text.trim(),
           _passwordController.text.trim(),
-          {
-            'firstName': _firstNameController.text.trim(),
-            'lastName': _lastNameController.text.trim(),
-            'mobile': _mobileController.text.trim(),
-            'role': widget.role,
-          },
         );
-        if (mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const HomeScreen(),
-            ),
-                (route) => false,
-          );
-        }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -58,14 +39,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  void _googleSignUp() async {
-     setState(() => _isLoading = true);
+  void _googleSignIn() async {
+    setState(() => _isLoading = true);
     try {
       await _authService.signInWithGoogle();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google Sign-Up failed: ${e.toString()}')),
+          SnackBar(content: Text('Google Sign-In failed: ${e.toString()}')),
         );
       }
     } finally {
@@ -75,7 +56,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final darkRed = const Color(0xFF8B0000); // Material Red 900 or similar
+    final darkRed = const Color(0xFF8B0000); // Dark Red
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -83,7 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF8B0000), size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF8B0000) , size: 20),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -99,9 +80,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 0),
+                const SizedBox(height: 30),
                 const Text(
-                  'Register',
+                  'Login',
                   style: TextStyle(
                     fontSize: 40,
                     fontWeight: FontWeight.w900,
@@ -109,33 +90,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 15),
-                TextFormField(
-                  controller: _firstNameController,
-                  decoration: _buildInputDecoration('First Name', Icons.edit_outlined),
-                  validator: (value) => value!.isEmpty ? 'Enter first name' : null,
-                ),
-                const SizedBox(height: 13),
-                TextFormField(
-                  controller: _lastNameController,
-                  decoration: _buildInputDecoration('Last Name', Icons.edit_outlined),
-                  validator: (value) => value!.isEmpty ? 'Enter last name' : null,
-                ),
-                const SizedBox(height: 13),
-                TextFormField(
-                  controller: _mobileController,
-                  keyboardType: TextInputType.phone,
-                  decoration: _buildInputDecoration('Mobile Number', Icons.phone_android_outlined),
-                  validator: (value) => value!.isEmpty ? 'Enter mobile number' : null,
-                ),
-                const SizedBox(height: 13),
+                const SizedBox(height: 60),
                 TextFormField(
                   controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
                   decoration: _buildInputDecoration('Email', Icons.alternate_email),
                   validator: (value) => value!.isEmpty ? 'Enter email' : null,
                 ),
-                const SizedBox(height: 13),
+                const SizedBox(height: 15),
                 TextFormField(
                   controller: _passwordController,
                   obscureText: !_isPasswordVisible,
@@ -148,15 +109,39 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     },
                     isVisible: _isPasswordVisible,
                   ),
-                  validator: (value) => value!.length < 6 ? 'Password must be 6+ chars' : null,
+                  validator: (value) => value!.isEmpty ? 'Enter password' : null,
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 10),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      if (_emailController.text.isNotEmpty) {
+                        _authService.sendPasswordResetEmail(_emailController.text.trim());
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Password reset email sent!')),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Enter your email first')),
+                        );
+                      }
+                    },
+                    child: const Text(
+                      'Forgot Password',
+                      style: TextStyle(
+                        color: Colors.black54,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
                 _isLoading
                     ? Center(child: CircularProgressIndicator(color: darkRed))
                     : ElevatedButton(
-                        onPressed: _register,
+                        onPressed: _login,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8B0000), // Red color from image
+                          backgroundColor: const Color(0xFF8B0000), // Near black
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 15),
                           shape: RoundedRectangleBorder(
@@ -165,43 +150,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           elevation: 0,
                         ),
                         child: const Text(
-                          'Register',
+                          'Login',
                           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                         ),
                       ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 40),
                 Row(
                   children: [
-                    Expanded(child: Divider(thickness: 1, color: Colors.grey.withValues(alpha: 0.4))),
+                    const Expanded(child: Divider(thickness: 1)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text('or', style: TextStyle(color: Colors.grey.withValues(alpha: 0.6))),
+                      child: Text('or', style: TextStyle(color: Colors.grey[600])),
                     ),
-                    Expanded(child: Divider(thickness: 1, color: Colors.grey.withValues(alpha: 0.4))),
+                    const Expanded(child: Divider(thickness: 1)),
                   ],
                 ),
                 const SizedBox(height: 30),
-                _buildGoogleButton(_googleSignUp),
+                _buildGoogleButton(_googleSignIn),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      'Already have an account? ',
-                      style: TextStyle(color: Colors.black.withValues(alpha: 0.54)),
+                    const Text(
+                      'Need an account ? ',
+                      style: TextStyle(color: Colors.black54),
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushAndRemoveUntil(
+                        Navigator.push(
                           context,
-                          MaterialPageRoute(
-                            builder: (_) => const LoginScreen(),
-                          ),
-                              (route) => false,
+                          MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
                         );
                       },
                       child: const Text(
-                        'Login',
+                        'Sign up',
                         style: TextStyle(
                           color: Color(0xFF8B0000),
                           fontWeight: FontWeight.bold,
@@ -209,6 +191,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const DevBypassScreen()),
+                      );
+                    },
+                    child: const Text(
+                      'Development Bypass (Preview Dashboards)',
+                      style: TextStyle(color: Colors.blue, fontSize: 12),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 20),
               ],
@@ -228,10 +225,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }) {
     return InputDecoration(
       hintText: label,
-      hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.8), fontSize: 15),
+      hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
       prefixIcon: Padding(
         padding: const EdgeInsets.only(left: 20, right: 10),
-        child: Icon(icon, color: Colors.grey.withValues(alpha: 0.8), size: 22),
+        child: Icon(icon, color: Colors.grey, size: 22),
       ),
       suffixIcon: isPassword
           ? Padding(
@@ -239,7 +236,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: IconButton(
                 icon: Icon(
                   isVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  color: Colors.grey.withValues(alpha: 0.8),
+                  color: Colors.grey,
                   size: 22,
                 ),
                 onPressed: onToggleVisibility,
