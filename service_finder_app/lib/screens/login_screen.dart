@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'role_selection_screen.dart';
+import 'dev_bypass_screen.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -79,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 40),
+                const SizedBox(height: 30),
                 const Text(
                   'Login',
                   style: TextStyle(
@@ -142,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF8B0000), // Near black
                           foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          padding: const EdgeInsets.symmetric(vertical: 15),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
@@ -166,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 30),
                 _buildGoogleButton(_googleSignIn),
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -190,6 +191,21 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const DevBypassScreen()),
+                      );
+                    },
+                    child: const Text(
+                      'Development Bypass (Preview Dashboards)',
+                      style: TextStyle(color: Colors.blue, fontSize: 12),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 20),
               ],
@@ -229,7 +245,7 @@ class _LoginScreenState extends State<LoginScreen> {
           : null,
       filled: true,
       fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+      contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
         borderSide: const BorderSide(color: Colors.black12),
