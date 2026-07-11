@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import 'role_selection_screen.dart';
+import 'dev_bypass_screen.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -190,6 +191,21 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const DevBypassScreen()),
+                      );
+                    },
+                    child: const Text(
+                      'Development Bypass (Preview Dashboards)',
+                      style: TextStyle(color: Colors.blue, fontSize: 12),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 20),
               ],
