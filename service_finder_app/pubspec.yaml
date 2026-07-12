@@ -40,6 +40,7 @@ dependencies:
   shared_preferences: ^2.2.2
   google_sign_in: ^6.1.6
   smooth_page_indicator: ^1.1.0
+  firebase_storage: ^13.4.3
 dev_dependencies:
   flutter_test:
     sdk: flutter
