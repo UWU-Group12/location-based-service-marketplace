@@ -1,0 +1,137 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function currentUser() {
+      return get(
+        /databases/$(database)/documents/users/$(request.auth.uid)
+      );
+    }
+
+    function isCustomer() {
+      return signedIn()
+        && currentUser().data.role == 'customer';
+    }
+
+    function isProvider() {
+      return signedIn()
+        && currentUser().data.role == 'provider';
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.admin == true;
+    }
+
+    match /users/{userId} {
+      allow create: if isOwner(userId);
+
+      allow read: if isOwner(userId) || isAdmin();
+
+      allow update: if isAdmin() ||
+        (
+          isOwner(userId) &&
+          request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              'displayName',
+              'phoneNumber',
+              'photoPath',
+              'profileCompleted',
+              'updatedAt'
+            ])
+        );
+
+      allow delete: if isAdmin();
+    }
+
+    match /providerProfiles/{providerId} {
+      allow read: if
+        (
+          signedIn() &&
+          resource.data.verificationStatus == 'verified'
+        )
+        || isOwner(providerId)
+        || isAdmin();
+
+      allow create: if
+        isOwner(providerId)
+        && isProvider()
+        && request.resource.data.verificationStatus == 'pending'
+        && request.resource.data.ratingAverage == 0
+        && request.resource.data.reviewCount == 0;
+
+      allow update: if isAdmin() ||
+        (
+          isOwner(providerId) &&
+          request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly([
+              'displayName',
+              'profileImagePath',
+              'bio',
+              'categoryIds',
+              'baseLocation',
+              'geohash',
+              'locationId',
+              'serviceRadiusKm',
+              'availabilityStatus',
+              'updatedAt'
+            ])
+        );
+    }
+
+    match /providerVerifications/{providerId} {
+      allow create, read: if isOwner(providerId) || isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    match /categories/{categoryId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /locations/{locationId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /serviceRequests/{requestId} {
+      allow create: if
+        isCustomer()
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.requestStatus == 'submitted';
+
+      allow read: if
+        isAdmin()
+        || resource.data.customerId == request.auth.uid
+        || resource.data.providerId == request.auth.uid;
+
+      // Sensitive state changes should use strict transition rules
+      // or trusted Cloud Functions.
+      allow update: if isAdmin();
+    }
+
+    match /quotations/{quotationId} {
+      allow read: if
+        isAdmin()
+        || resource.data.customerId == request.auth.uid
+        || resource.data.providerId == request.auth.uid;
+
+      allow create: if
+        isProvider()
+        && request.resource.data.providerId == request.auth.uid;
+
+      allow update, delete: if isAdmin();
+    }
+  }
+}
