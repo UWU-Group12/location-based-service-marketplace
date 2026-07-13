@@ -34,3 +34,16 @@ jobs:
         run: |
           cd service_finder_app
           flutter analyze
+
+      - name: Build APK
+        if: github.event_name == 'push'
+        run: |
+          cd service_finder_app
+          flutter build apk --release
+
+      - name: Upload APK
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-app-apk
+          path: service_finder_app/build/app/outputs/flutter-apk/app-release.apk
