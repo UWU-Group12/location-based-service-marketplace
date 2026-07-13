@@ -47,3 +47,7 @@ jobs:
         with:
           name: flutter-app-apk
           path: service_finder_app/build/app/outputs/flutter-apk/app-release.apk
+
+      - name: Create google-services.json
+        run: |
+          echo '${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}' > service_finder_app/android/app/google-services.json
