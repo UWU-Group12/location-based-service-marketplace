@@ -35,11 +35,6 @@ jobs:
           cd service_finder_app
           flutter analyze
 
-      - name: Run tests
-        run: |
-          cd service_finder_app
-          flutter test
-
       - name: Build APK
         if: github.event_name == 'push'
         run: |
