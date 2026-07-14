@@ -9,6 +9,7 @@ class RoleSelectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final darkRed = AppColors.primary;
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -31,9 +32,8 @@ class RoleSelectionScreen extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
             child: Text(
               'Select\nuser type',
-              style: TextStyle(
+              style: textTheme.headlineLarge?.copyWith(
                 fontSize: 40,
-                fontWeight: FontWeight.w900,
                 color: darkRed,
                 height: 1.1,
               ),
@@ -146,9 +146,8 @@ class RoleSelectionScreen extends StatelessWidget {
                     children: [
                       Text(
                         role,
-                        style: const TextStyle(
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           fontSize: 24,
-                          fontWeight: FontWeight.w900,
                           color: AppColors.textPrimary,
                           height: 1.1,
                         ),
@@ -156,10 +155,9 @@ class RoleSelectionScreen extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(
                         description,
-                        style: TextStyle(
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontSize: 14,
                           color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],

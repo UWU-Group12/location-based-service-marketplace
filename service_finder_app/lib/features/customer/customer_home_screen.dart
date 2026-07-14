@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/ai_problem_card.dart';
+import '../../core/app_colors.dart';
 
 class CustomerHomeScreen extends StatelessWidget {
   final String userName;
@@ -8,10 +9,11 @@ class CustomerHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final darkRed = const Color(0xFF8B0000);
+    final darkRed = AppColors.primary.withValues(alpha: 0.8);
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -28,14 +30,16 @@ class CustomerHomeScreen extends StatelessWidget {
                     children: [
                       Text(
                         'Good morning,',
-                        style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey[600],
+                          fontSize: 16,
+                        ),
                       ),
                       Text(
-                        '$userName 👋',
-                        style: const TextStyle(
+                        '$userName ',
+                        style: textTheme.headlineMedium?.copyWith(
                           fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                          color: AppColors.primary,
                         ),
                       ),
                     ],
@@ -77,7 +81,12 @@ class CustomerHomeScreen extends StatelessWidget {
                       CircleAvatar(
                         radius: 24,
                         backgroundColor: const Color(0xFFD2B48C), // Light brown
-                        child: Text(initials, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        child: Text(
+                          initials,
+                          style: textTheme.labelLarge?.copyWith(
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ],
                   )
@@ -102,13 +111,20 @@ class CustomerHomeScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text(
+                  Text(
                     'Popular services',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: textTheme.titleLarge?.copyWith(
+                      fontSize: 18,
+                    ),
                   ),
                   TextButton(
                     onPressed: () {},
-                    child: Text('View all', style: TextStyle(color: darkRed, fontWeight: FontWeight.w600)),
+                    child: Text(
+                      'View all',
+                      style: textTheme.labelLarge?.copyWith(
+                        color: darkRed,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -116,10 +132,10 @@ class CustomerHomeScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildServiceItem(Icons.build_outlined, 'Plumbing', const Color(0xFFFDECEC), const Color(0xFFB71C1C)),
-                  _buildServiceItem(Icons.bolt_outlined, 'Electrical', const Color(0xFFE3F2FD), const Color(0xFF0D47A1)),
-                  _buildServiceItem(Icons.gavel_outlined, 'Carpentry', const Color(0xFFFFF3E0), const Color(0xFFE65100)),
-                  _buildServiceItem(Icons.format_paint_outlined, 'Painting', const Color(0xFFE8F5E9), const Color(0xFF1B5E20)),
+                  _buildServiceItem(context, Icons.build_outlined, 'Plumbing', const Color(0xFFFDECEC), const Color(0xFFB71C1C)),
+                  _buildServiceItem(context, Icons.bolt_outlined, 'Electrical', const Color(0xFFE3F2FD), const Color(0xFF0D47A1)),
+                  _buildServiceItem(context, Icons.gavel_outlined, 'Carpentry', const Color(0xFFFFF3E0), const Color(0xFFE65100)),
+                  _buildServiceItem(context, Icons.format_paint_outlined, 'Painting', const Color(0xFFE8F5E9), const Color(0xFF1B5E20)),
                 ],
               ),
               const SizedBox(height: 30),
@@ -130,19 +146,29 @@ class CustomerHomeScreen extends StatelessWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Nearby professionals',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: textTheme.titleLarge?.copyWith(
+                          fontSize: 18,
+                        ),
                       ),
                       Text(
                         'Around Badulla',
-                        style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                        style: textTheme.bodySmall?.copyWith(
+                          color: Colors.grey[500],
+                          fontSize: 13,
+                        ),
                       ),
                     ],
                   ),
                   TextButton(
                     onPressed: () {},
-                    child: Text('See all', style: TextStyle(color: darkRed, fontWeight: FontWeight.w600)),
+                    child: Text(
+                      'See all',
+                      style: textTheme.labelLarge?.copyWith(
+                        color: darkRed,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -172,11 +198,10 @@ class CustomerHomeScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(15),
                       ),
                       alignment: Alignment.center,
-                      child: const Text(
+                      child: Text(
                         'KS',
-                        style: TextStyle(
+                        style: textTheme.titleMedium?.copyWith(
                           fontSize: 20,
-                          fontWeight: FontWeight.bold,
                           color: Color(0xFF455A64),
                         ),
                       ),
@@ -189,11 +214,10 @@ class CustomerHomeScreen extends StatelessWidget {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
+                              Text(
                                 'Kasun Silva',
-                                style: TextStyle(
+                                style: textTheme.titleMedium?.copyWith(
                                   fontSize: 17,
-                                  fontWeight: FontWeight.bold,
                                 ),
                               ),
                               Container(
@@ -213,12 +237,11 @@ class CustomerHomeScreen extends StatelessWidget {
                                       ),
                                     ),
                                     const SizedBox(width: 5),
-                                    const Text(
+                                    Text(
                                       'Available Today',
-                                      style: TextStyle(
+                                      style: textTheme.labelSmall?.copyWith(
                                         color: Color(0xFF2E7D32),
                                         fontSize: 11,
-                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ],
@@ -226,29 +249,40 @@ class CustomerHomeScreen extends StatelessWidget {
                               ),
                             ],
                           ),
-                          const Text(
+                          Text(
                             'Plumbing specialist',
-                            style: TextStyle(color: Colors.grey, fontSize: 14),
+                            style: textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey,
+                              fontSize: 14,
+                            ),
                           ),
                           const SizedBox(height: 8),
                           Row(
                             children: [
                               const Icon(Icons.star, color: Color(0xFFFFA000), size: 18),
                               const SizedBox(width: 4),
-                              const Text(
+                              Text(
                                 '4.8',
-                                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                style: textTheme.labelLarge?.copyWith(
+                                  fontSize: 14,
+                                ),
                               ),
                               Text(
                                 ' (86)',
-                                style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: Colors.grey[500],
+                                  fontSize: 14,
+                                ),
                               ),
                               const SizedBox(width: 15),
                               Icon(Icons.location_on_outlined, color: Colors.grey[400], size: 18),
                               const SizedBox(width: 4),
                               Text(
                                 '1.8 km',
-                                style: TextStyle(color: Colors.grey[500], fontSize: 14),
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color: Colors.grey[500],
+                                  fontSize: 14,
+                                ),
                               ),
                             ],
                           ),
@@ -268,7 +302,9 @@ class CustomerHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildServiceItem(IconData icon, String label, Color boxColor, Color iconColor) {
+  Widget _buildServiceItem(BuildContext context, IconData icon, String label, Color boxColor, Color iconColor) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Column(
       children: [
         Container(
@@ -290,10 +326,9 @@ class CustomerHomeScreen extends StatelessWidget {
         const SizedBox(height: 10),
         Text(
           label,
-          style: TextStyle(
+          style: textTheme.bodySmall?.copyWith(
             fontSize: 13,
             color: Colors.black.withValues(alpha: 0.6),
-            fontWeight: FontWeight.w500,
           ),
         ),
       ],

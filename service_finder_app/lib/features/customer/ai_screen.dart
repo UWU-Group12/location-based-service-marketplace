@@ -20,6 +20,8 @@ class _AiScreenState extends State<AiScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -39,11 +41,10 @@ class _AiScreenState extends State<AiScreen> {
             ),
           ),
         ),
-        title: const Text(
+        title: Text(
           "Describe Your Problem",
-          style: TextStyle(
+          style: textTheme.titleLarge?.copyWith(
             color: Colors.black,
-            fontWeight: FontWeight.bold,
             fontSize: 18,
           ),
         ),
@@ -66,12 +67,11 @@ class _AiScreenState extends State<AiScreen> {
                 children: [
                   const Icon(Icons.auto_awesome_outlined, color: AppColors.primary, size: 24),
                   const SizedBox(height: 12),
-                  const Text(
+                  Text(
                     "Tell us what is wrong and we will help you find the right service.",
-                    style: TextStyle(
+                    style: textTheme.bodyLarge?.copyWith(
                       color: Color(0xFF4A1010),
                       fontSize: 15,
-                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -93,13 +93,13 @@ class _AiScreenState extends State<AiScreen> {
                     maxLines: 8,
                     maxLength: _maxCharacters,
                     onChanged: (value) => setState(() {}),
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: "Tell us what problem you are facing...",
-                      hintStyle: TextStyle(
+                      hintStyle: textTheme.bodyMedium?.copyWith(
                         color: Colors.grey,
                         fontSize: 14,
                       ),
-                      contentPadding: EdgeInsets.all(20),
+                      contentPadding: const EdgeInsets.all(20),
 
                       // Ignore global InputDecorationTheme
                       filled: false,
@@ -119,7 +119,10 @@ class _AiScreenState extends State<AiScreen> {
                         Icon(Icons.mic_none_outlined, color: Colors.black.withValues(alpha: 0.5), size: 22),
                         Text(
                           "${_problemController.text.length}/$_maxCharacters",
-                          style: TextStyle(color: Colors.black.withValues(alpha: 0.4), fontSize: 12),
+                          style: textTheme.bodySmall?.copyWith(
+                            color: Colors.black.withValues(alpha: 0.4),
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -143,10 +146,9 @@ class _AiScreenState extends State<AiScreen> {
                   Expanded(
                     child: Text(
                       "You can review and change the AI suggestion.",
-                      style: TextStyle(
+                      style: textTheme.bodySmall?.copyWith(
                         color: Colors.blueGrey.shade700,
                         fontSize: 13,
-                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -169,17 +171,17 @@ class _AiScreenState extends State<AiScreen> {
                 ),
                 elevation: 0,
               ),
-              child: const Text(
+              child: Text(
                 "Ask AI",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: textTheme.labelLarge?.copyWith(fontSize: 16),
               ),
             ),
             const SizedBox(height: 40),
             
             // AI Suggestion Placeholder Section
-            const Text(
+            Text(
               "AI Suggestion",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: textTheme.titleLarge?.copyWith(fontSize: 18),
             ),
             const SizedBox(height: 12),
             Container(
@@ -189,17 +191,20 @@ class _AiScreenState extends State<AiScreen> {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: AppColors.border),
               ),
-              child: const Text(
+              child: Text(
                 "AI results will appear here after you describe your problem and click the button above.",
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
               ),
             ),
             const SizedBox(height: 30),
             
             // Recommended Professionals Placeholder Section
-            const Text(
+            Text(
               "Recommended Professionals",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: textTheme.titleLarge?.copyWith(fontSize: 18),
             ),
             const SizedBox(height: 12),
             Container(
@@ -209,9 +214,12 @@ class _AiScreenState extends State<AiScreen> {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: AppColors.border),
               ),
-              child: const Text(
+              child: Text(
                 "Matching service providers will appear here.",
-                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 14,
+                ),
               ),
             ),
             const SizedBox(height: 40),
