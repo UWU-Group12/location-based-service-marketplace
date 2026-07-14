@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widgets/ai_problem_card.dart';
 
 class CustomerHomeScreen extends StatelessWidget {
   final String userName;
@@ -103,50 +104,7 @@ class CustomerHomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 25),
               // AI Banner
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFDECEC),
-                  borderRadius: BorderRadius.circular(25),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.auto_awesome_outlined, color: darkRed, size: 20),
-                    ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Describe your problem',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF4A1010),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Get an AI-assisted suggestion',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: const Color(0xFF4A1010).withValues(alpha: 0.6),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(Icons.arrow_forward_ios, size: 14, color: darkRed.withValues(alpha: 0.6)),
-                  ],
-                ),
-              ),
+              const AiProblemCard(),
               const SizedBox(height: 30),
               // Popular Services
               Row(
