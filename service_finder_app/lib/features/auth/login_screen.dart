@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import 'role_selection_screen.dart';
 import 'dev_bypass_screen.dart';
-
+import '../../core/app_colors.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -56,15 +56,15 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final darkRed = const Color(0xFF8B0000); // Dark Red
+    final darkRed = AppColors.primary; // Dark Red
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF8B0000) , size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary, size: 20),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -86,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: TextStyle(
                     fontSize: 40,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF8B0000),
+                    color: AppColors.primary,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -129,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: const Text(
                       'Forgot Password',
                       style: TextStyle(
-                        color: Colors.black54,
+                        color: AppColors.textSecondary,
                         decoration: TextDecoration.underline,
                       ),
                     ),
@@ -140,18 +140,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     ? Center(child: CircularProgressIndicator(color: darkRed))
                     : ElevatedButton(
                         onPressed: _login,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8B0000), // Near black
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          elevation: 0,
-                        ),
                         child: const Text(
                           'Login',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
                 const SizedBox(height: 40),
@@ -160,7 +154,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Expanded(child: Divider(thickness: 1)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text('or', style: TextStyle(color: Colors.grey[600])),
+                      child: Text('or', style: TextStyle(color: AppColors.hint)),
                     ),
                     const Expanded(child: Divider(thickness: 1)),
                   ],
@@ -173,7 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const Text(
                       'Need an account ? ',
-                      style: TextStyle(color: Colors.black54),
+                      style: TextStyle(color: AppColors.textSecondary),
                     ),
                     GestureDetector(
                       onTap: () {
@@ -185,7 +179,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: const Text(
                         'Sign up',
                         style: TextStyle(
-                          color: Color(0xFF8B0000),
+                          color: AppColors.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -225,10 +219,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }) {
     return InputDecoration(
       hintText: label,
-      hintStyle: const TextStyle(color: Colors.grey, fontSize: 16),
+      hintStyle: const TextStyle(color: AppColors.hint, fontSize: 16),
       prefixIcon: Padding(
         padding: const EdgeInsets.only(left: 20, right: 10),
-        child: Icon(icon, color: Colors.grey, size: 22),
+        child: Icon(icon, color: AppColors.hint, size: 22),
       ),
       suffixIcon: isPassword
           ? Padding(
@@ -236,7 +230,7 @@ class _LoginScreenState extends State<LoginScreen> {
               child: IconButton(
                 icon: Icon(
                   isVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  color: Colors.grey,
+                  color: AppColors.hint,
                   size: 22,
                 ),
                 onPressed: onToggleVisibility,
@@ -244,23 +238,23 @@ class _LoginScreenState extends State<LoginScreen> {
             )
           : null,
       filled: true,
-      fillColor: Colors.white,
+      fillColor: AppColors.background,
       contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
-        borderSide: const BorderSide(color: Colors.black12),
+        borderSide: const BorderSide(color: AppColors.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
-        borderSide: const BorderSide(color: Colors.black26),
+        borderSide: const BorderSide(color: AppColors.focusedBorder),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
-        borderSide: const BorderSide(color: Colors.redAccent),
+        borderSide: const BorderSide(color: AppColors.error),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
-        borderSide: const BorderSide(color: Colors.redAccent),
+        borderSide: const BorderSide(color: AppColors.error),
       ),
     );
   }
@@ -269,8 +263,8 @@ class _LoginScreenState extends State<LoginScreen> {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFFF1F1F1),
-        foregroundColor: Colors.black,
+        backgroundColor: AppColors.googleButton,
+        foregroundColor: AppColors.textPrimary,
         padding: const EdgeInsets.symmetric(vertical: 15),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30),

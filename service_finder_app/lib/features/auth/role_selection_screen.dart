@@ -1,21 +1,22 @@
 import 'package:flutter/material.dart';
 import 'customer_register_screen.dart';
 import 'provider_register_screen.dart';
+import '../../core/app_colors.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
   const RoleSelectionScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final darkRed = const Color(0xFF8B0000);
+    final darkRed = AppColors.primary;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -43,14 +44,14 @@ class RoleSelectionScreen extends StatelessWidget {
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFFFFFFFF),
+                color: AppColors.background,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(50),
                   topRight: Radius.circular(50),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: AppColors.textPrimary.withValues(alpha: 0.08),
                     blurRadius: 20,
                     offset: const Offset(0, -5),
                   ),
@@ -67,7 +68,7 @@ class RoleSelectionScreen extends StatelessWidget {
                       description: 'Offer your professional services',
                       imagePath: 'assets/images/provider.png',
                       isProvider: true,
-                      cardColor: const Color(0xFFFFF3F3),
+                      cardColor: AppColors.providerCard,
                     ),
                     const SizedBox(height: 25),
                     _buildRoleCard(
@@ -76,7 +77,7 @@ class RoleSelectionScreen extends StatelessWidget {
                       description: 'Find the best services near you',
                       imagePath: 'assets/images/client.png',
                       isProvider: false,
-                      cardColor: const Color(0xFFF3F8FF),
+                      cardColor: AppColors.customerCard,
                     ),
                   ],
                 ),
@@ -103,7 +104,7 @@ class RoleSelectionScreen extends StatelessWidget {
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: AppColors.textPrimary.withValues(alpha: 0.03),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -133,7 +134,7 @@ class RoleSelectionScreen extends StatelessWidget {
                     imagePath,
                     fit: BoxFit.contain,
                     errorBuilder: (context, error, stackTrace) =>
-                    const Icon(Icons.person, size: 80, color: Colors.black12),
+                    const Icon(Icons.person, size: 80, color: AppColors.border),
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -148,7 +149,7 @@ class RoleSelectionScreen extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.w900,
-                          color: Colors.black,
+                          color: AppColors.textPrimary,
                           height: 1.1,
                         ),
                       ),
@@ -157,7 +158,7 @@ class RoleSelectionScreen extends StatelessWidget {
                         description,
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.black.withValues(alpha: 0.6),
+                          color: AppColors.textSecondary,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -167,7 +168,7 @@ class RoleSelectionScreen extends StatelessWidget {
                 Icon(
                   Icons.arrow_forward_ios,
                   size: 18,
-                  color: Colors.black.withValues(alpha: 0.6),
+                  color: AppColors.textSecondary,
                 ),
               ],
             ),

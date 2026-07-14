@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../services/pref_service.dart';
 import 'role_selection_screen.dart';
+import '../../core/app_colors.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -26,19 +27,19 @@ class _SplashScreenState extends State<SplashScreen> {
           },
           children: [
             _buildPage(
-              color: Colors.white,
+              color: AppColors.background,
               image: 'https://i.pinimg.com/736x/83/e9/99/83e999fcb40750b2e2a777d8cc497810.jpg',
               title: 'Find Top Services',
               subtitle: 'Connect with reliable service providers in your local area easily.',
             ),
             _buildPage(
-              color: Colors.white,
+              color: AppColors.background,
               image: 'https://i.pinimg.com/736x/1e/e4/53/1ee453e7e6a44b0c78c11e65ba6a007c.jpg',
               title: 'Offer Your Expertise',
               subtitle: 'Are you a professional? Grow your business by reaching more clients.',
             ),
             _buildPage(
-              color: Colors.white,
+              color: AppColors.background,
               image: 'https://i.pinimg.com/736x/ab/3e/29/ab3e29bf3c5f217b86837b3660d4d7c4.jpg',
               title: 'Secure & Reliable',
               subtitle: 'Enjoy secure transactions and transparent service reviews.',
@@ -49,13 +50,13 @@ class _SplashScreenState extends State<SplashScreen> {
       bottomSheet: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         height: 80,
-        color: Colors.white,
+        color: AppColors.background,
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             TextButton(
               onPressed: () => _controller.jumpToPage(2),
-              child: Text('SKIP', style: TextStyle(color: Colors.red[900])),
+              child: Text('SKIP', style: TextStyle(color: AppColors.primary)),
             ),
             Center(
               child: SmoothPageIndicator(
@@ -63,8 +64,8 @@ class _SplashScreenState extends State<SplashScreen> {
                 count: 3,
                 effect: WormEffect(
                   spacing: 16,
-                  dotColor: Colors.black26,
-                  activeDotColor: Colors.red[900]!,
+                  dotColor: AppColors.focusedBorder,
+                  activeDotColor: AppColors.primary,
                 ),
                 onDotClicked: (index) => _controller.animateToPage(
                   index,
@@ -88,14 +89,14 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 );
               },
-                    child: Text('DONE', style: TextStyle(color: Colors.red[900], fontWeight: FontWeight.bold)),
+                    child: Text('DONE', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                   )
                 : TextButton(
                     onPressed: () => _controller.nextPage(
                       duration: const Duration(milliseconds: 500),
                       curve: Curves.easeInOut,
                     ),
-                    child: Text('NEXT', style: TextStyle(color: Colors.red[900])),
+                    child: Text('NEXT', style: TextStyle(color: AppColors.primary)),
                   ),
           ],
         ),
@@ -119,7 +120,7 @@ class _SplashScreenState extends State<SplashScreen> {
           Text(
             title,
             style: TextStyle(
-              color: Colors.red[900],
+              color: AppColors.primary,
               fontSize: 32,
               fontWeight: FontWeight.bold,
             ),
@@ -130,7 +131,7 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Text(
               subtitle,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Colors.black54, fontSize: 16),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 16),
             ),
           ),
         ],

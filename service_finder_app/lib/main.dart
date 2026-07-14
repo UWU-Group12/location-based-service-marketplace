@@ -6,6 +6,7 @@ import 'services/pref_service.dart';
 import 'features/auth/splash_screen.dart';
 import 'features/auth/login_screen.dart';
 import 'features/customer/customer_shell_screen.dart';
+import 'core/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,14 +38,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Service Finder',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF8B0000),
-          primary: const Color(0xFF8B0000),
-        ),
-        useMaterial3: true,
-        scaffoldBackgroundColor: Colors.white,
-      ),
+      theme: AppTheme.lightTheme,
       home: isFirstLaunch ? const SplashScreen() : const AuthWrapper(),
     );
   }
