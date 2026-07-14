@@ -95,10 +95,20 @@ class _AiScreenState extends State<AiScreen> {
                     onChanged: (value) => setState(() {}),
                     decoration: const InputDecoration(
                       hintText: "Tell us what problem you are facing...",
-                      hintStyle: TextStyle(color: Colors.grey, fontSize: 14),
+                      hintStyle: TextStyle(
+                        color: Colors.grey,
+                        fontSize: 14,
+                      ),
                       contentPadding: EdgeInsets.all(20),
+
+                      // Ignore global InputDecorationTheme
+                      filled: false,
                       border: InputBorder.none,
-                      counterText: "", // Hide default counter
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+
+                      counterText: "",
                     ),
                   ),
                   Padding(

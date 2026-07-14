@@ -85,23 +85,15 @@ class CustomerHomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 25),
               // Search Bar
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.black.withValues(alpha: 0.1)),
-                ),
-                child: TextField(
-                  decoration: InputDecoration(
-                    icon: Icon(Icons.search, color: Colors.black.withValues(alpha: 0.7), size: 24),
-                    hintText: 'What service do you need?',
-                    hintStyle: TextStyle(color: Colors.grey[400], fontSize: 16),
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 15),
+              TextField(
+                    decoration: InputDecoration(
+                      hintText: 'What service do you need?',
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: Colors.black.withValues(alpha: 0.7),
+                      ),
+                    ),
                   ),
-                ),
-              ),
               const SizedBox(height: 25),
               // AI Banner
               const AiProblemCard(),

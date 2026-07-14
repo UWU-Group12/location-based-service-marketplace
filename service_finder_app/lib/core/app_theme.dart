@@ -35,10 +35,14 @@ class AppTheme {
     ),
 
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(
-        foregroundColor: AppColors.primary,
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          textStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.normal,
+          ),
+        ),
       ),
-    ),
 
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
