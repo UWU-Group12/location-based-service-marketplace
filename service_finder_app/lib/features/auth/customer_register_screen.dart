@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../customer/customer_shell_screen.dart';
 import 'login_screen.dart';
+import '../../core/app_colors.dart';
 
 class CustomerRegisterScreen extends StatefulWidget {
   final String role;
@@ -22,6 +23,16 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
   final AuthService _authService = AuthService();
   bool _isLoading = false;
   bool _isPasswordVisible = false;
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _mobileController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   void _register() async {
     if (_formKey.currentState!.validate()) {
@@ -75,15 +86,15 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final darkRed = const Color(0xFF8B0000); // Material Red 900 or similar
+    final darkRed = AppColors.primary; // Material Red 900 or similar
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF8B0000), size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary, size: 20),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -105,7 +116,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   style: TextStyle(
                     fontSize: 40,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF8B0000),
+                    color: AppColors.primary,
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -155,29 +166,23 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                     ? Center(child: CircularProgressIndicator(color: darkRed))
                     : ElevatedButton(
                         onPressed: _register,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF8B0000), // Red color from image
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 15),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          elevation: 0,
-                        ),
                         child: const Text(
                           'Register',
-                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 18, 
+                            fontWeight: FontWeight.bold
+                            ),
                         ),
                       ),
                 const SizedBox(height: 30),
                 Row(
                   children: [
-                    Expanded(child: Divider(thickness: 1, color: Colors.grey.withValues(alpha: 0.4))),
+                    Expanded(child: Divider(thickness: 1, color: AppColors.hint.withValues(alpha: 0.4))),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text('or', style: TextStyle(color: Colors.grey.withValues(alpha: 0.6))),
+                      child: Text('or', style: TextStyle(color: AppColors.hint.withValues(alpha: 0.6))),
                     ),
-                    Expanded(child: Divider(thickness: 1, color: Colors.grey.withValues(alpha: 0.4))),
+                    Expanded(child: Divider(thickness: 1, color: AppColors.hint.withValues(alpha: 0.4))),
                   ],
                 ),
                 const SizedBox(height: 30),
@@ -188,7 +193,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   children: [
                     Text(
                       'Already have an account? ',
-                      style: TextStyle(color: Colors.black.withValues(alpha: 0.54)),
+                      style: TextStyle(color: AppColors.textPrimary.withValues(alpha: 0.54)),
                     ),
                     GestureDetector(
                       onTap: () {
@@ -203,7 +208,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                       child: const Text(
                         'Login',
                         style: TextStyle(
-                          color: Color(0xFF8B0000),
+                          color: AppColors.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -228,10 +233,10 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
   }) {
     return InputDecoration(
       hintText: label,
-      hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.8), fontSize: 15),
+      hintStyle: TextStyle(color: AppColors.hint.withValues(alpha: 0.8), fontSize: 15),
       prefixIcon: Padding(
         padding: const EdgeInsets.only(left: 20, right: 10),
-        child: Icon(icon, color: Colors.grey.withValues(alpha: 0.8), size: 22),
+        child: Icon(icon, color: AppColors.hint.withValues(alpha: 0.8), size: 22),
       ),
       suffixIcon: isPassword
           ? Padding(
@@ -239,7 +244,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
               child: IconButton(
                 icon: Icon(
                   isVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                  color: Colors.grey.withValues(alpha: 0.8),
+                  color: AppColors.hint.withValues(alpha: 0.8),
                   size: 22,
                 ),
                 onPressed: onToggleVisibility,
@@ -247,23 +252,23 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
             )
           : null,
       filled: true,
-      fillColor: Colors.white,
+      fillColor: AppColors.background,
       contentPadding: const EdgeInsets.symmetric(vertical: 15, horizontal: 20),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
-        borderSide: const BorderSide(color: Colors.black12),
+        borderSide: const BorderSide(color: AppColors.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
-        borderSide: const BorderSide(color: Colors.black26),
+        borderSide: const BorderSide(color: AppColors.focusedBorder),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
-        borderSide: const BorderSide(color: Colors.redAccent),
+        borderSide: const BorderSide(color: AppColors.error),
       ),
       focusedErrorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(30),
-        borderSide: const BorderSide(color: Colors.redAccent),
+        borderSide: const BorderSide(color: AppColors.error),
       ),
     );
   }
@@ -272,8 +277,8 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFFF1F1F1),
-        foregroundColor: Colors.black,
+        backgroundColor: AppColors.googleButton,
+        foregroundColor: AppColors.textPrimary,
         padding: const EdgeInsets.symmetric(vertical: 15),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(30),
