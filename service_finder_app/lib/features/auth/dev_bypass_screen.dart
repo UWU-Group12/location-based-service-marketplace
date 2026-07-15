@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../customer/customer_shell_screen.dart';
+import '../../core/app_router.dart';
 
 class DevBypassScreen extends StatelessWidget {
   const DevBypassScreen({super.key});
@@ -39,12 +39,7 @@ class DevBypassScreen extends StatelessWidget {
                 icon: Icons.person,
                 color: Colors.blue[700]!,
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CustomerShellScreen(debugRole: 'Customer'),
-                    ),
-                  );
+                  AppRouter.goToCustomerDashboard(context, debugRole: 'Customer');
                 },
               ),
               const SizedBox(height: 20),
@@ -54,12 +49,7 @@ class DevBypassScreen extends StatelessWidget {
                 icon: Icons.work,
                 color: darkRed,
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CustomerShellScreen(debugRole: 'Service Provider'),
-                    ),
-                  );
+                  AppRouter.goToCustomerDashboard(context, debugRole: 'Service Provider');
                 },
               ),
               const SizedBox(height: 50),

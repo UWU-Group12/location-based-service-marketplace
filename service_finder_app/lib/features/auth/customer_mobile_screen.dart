@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
-import '../../core/app_router.dart';
 
-class ProviderRegisterScreen extends StatelessWidget {
-  const ProviderRegisterScreen({super.key});
+class CustomerMobileScreen extends StatelessWidget {
+  const CustomerMobileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -19,22 +18,8 @@ class ProviderRegisterScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Container(
-                width: 160,
-                height: 160,
-                margin: const EdgeInsets.only(bottom: 32),
-                decoration: BoxDecoration(
-                  color: AppColors.providerCard,
-                  borderRadius: BorderRadius.circular(36),
-                ),
-                child: const Icon(
-                  Icons.badge_outlined,
-                  size: 84,
-                  color: AppColors.primary,
-                ),
-              ),
               Text(
-                'Create your provider profile',
+                'Enter your mobile number',
                 textAlign: TextAlign.center,
                 style: textTheme.headlineMedium?.copyWith(
                   fontSize: 30,
@@ -42,19 +27,12 @@ class ProviderRegisterScreen extends StatelessWidget {
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 16),
-              Text(
-                'Add your business details to continue.',
-                textAlign: TextAlign.center,
-                style: textTheme.bodyLarge?.copyWith(
-                  color: AppColors.textSecondary,
-                ),
-              ),
               const SizedBox(height: 28),
               TextField(
+                keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(
-                  hintText: 'Business name',
-                  prefixIcon: Icon(Icons.storefront_outlined),
+                  hintText: 'Mobile number',
+                  prefixIcon: Icon(Icons.phone_android_outlined),
                 ),
               ),
               const SizedBox(height: 20),
@@ -62,8 +40,7 @@ class ProviderRegisterScreen extends StatelessWidget {
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // TODO: Create provider profile and navigate to provider dashboard.
-                    AppRouter.goToProviderDashboard(context);
+                    // TODO: Create user and navigate dashboard.
                   },
                   child: const Text('Continue'),
                 ),

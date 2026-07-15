@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/app_router.dart';
 import '../../services/auth_service.dart';
-import 'role_selection_screen.dart';
-import 'dev_bypass_screen.dart';
 import '../../core/app_colors.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -172,10 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
-                        );
+                        AppRouter.goToRoleSelection(context);
                       },
                       child: Text(
                         'Sign up',
@@ -190,10 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Center(
                   child: TextButton(
                     onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const DevBypassScreen()),
-                      );
+                      AppRouter.goToDevBypass(context);
                     },
                     child: Text(
                       'Development Bypass (Preview Dashboards)',
