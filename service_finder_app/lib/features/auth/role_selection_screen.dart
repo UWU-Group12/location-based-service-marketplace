@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'customer_register_screen.dart';
-import 'provider_register_screen.dart';
+import '../../core/app_router.dart';
 import '../../core/app_colors.dart';
 
 class RoleSelectionScreen extends StatelessWidget {
@@ -115,14 +114,11 @@ class RoleSelectionScreen extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(30),
           onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => isProvider
-                    ? const ProviderRegisterScreen()
-                    : const CustomerRegisterScreen(role: 'Customer'),
-              ),
-            );
+            if (isProvider) {
+              AppRouter.goToProviderRegister(context);
+            } else {
+              AppRouter.goToCustomerRegister(context);
+            }
           },
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),

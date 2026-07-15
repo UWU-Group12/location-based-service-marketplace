@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import '../../core/app_router.dart';
 import '../../services/auth_service.dart';
-import '../customer/customer_shell_screen.dart';
-import 'login_screen.dart';
 import '../../core/app_colors.dart';
 
 class CustomerRegisterScreen extends StatefulWidget {
@@ -49,13 +48,11 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
           },
         );
         if (mounted) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const CustomerShellScreen(),
-            ),
-                (route) => false,
-          );
+          if (widget.role == 'Customer') {
+            AppRouter.goToCustomerDashboard(context);
+          } else {
+            AppRouter.goToProviderDashboard(context);
+          }
         }
       } catch (e) {
         if (mounted) {
@@ -198,13 +195,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const LoginScreen(),
-                          ),
-                              (route) => false,
-                        );
+                        AppRouter.goToLogin(context);
                       },
                       child: Text(
                         'Login',

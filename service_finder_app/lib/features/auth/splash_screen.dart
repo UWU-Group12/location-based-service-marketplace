@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '../../services/pref_service.dart';
-import 'role_selection_screen.dart';
+import '../../core/app_router.dart';
 import '../../core/app_colors.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -77,17 +77,11 @@ class _SplashScreenState extends State<SplashScreen> {
             isLastPage
                 ? TextButton(
               onPressed: () async {
-                final navigator = Navigator.of(context);
-
                 await PrefService.setFirstLaunchComplete();
 
-                if (!mounted) return;
+                if (!context.mounted) return;
 
-                navigator.pushReplacement(
-                  MaterialPageRoute(
-                    builder: (_) => const RoleSelectionScreen(),
-                  ),
-                );
+                AppRouter.goToWelcome(context);
               },
                     child: Text('DONE', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
                   )

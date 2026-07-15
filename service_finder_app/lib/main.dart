@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'services/pref_service.dart';
 import 'features/auth/splash_screen.dart';
-import 'features/auth/login_screen.dart';
+import 'features/auth/welcome_screen.dart';
 import 'features/customer/customer_shell_screen.dart';
 import 'core/app_theme.dart';
 
@@ -58,7 +58,7 @@ class AuthWrapper extends StatelessWidget {
         if (snapshot.hasData) {
           return const CustomerShellScreen();
         }
-        return const LoginScreen();
+        return const WelcomeScreen();
       },
     );
   }
