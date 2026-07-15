@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import '../features/auth/customer_register_screen.dart';
 import '../features/auth/dev_bypass_screen.dart';
 import '../features/auth/login_screen.dart';
-import '../features/Provider_onboarding/provider_profile_name.dart';
+import '../features/provider_onboarding/provider_profile_name.dart';
 import '../features/auth/role_selection_screen.dart';
 import '../features/auth/welcome_screen.dart';
 import '../features/customer/customer_shell_screen.dart';
 import '../features/provider/provider_dashboard_screen.dart';
-import '../features/Provider_onboarding/provider_profile_contact.dart';
-import '../features/Provider_onboarding/provider_profile_password.dart';
-import '../features/Provider_onboarding/build_professional_profile.dart';
+import '../features/provider_onboarding/provider_profile_contact.dart';
+import '../features/provider_onboarding/provider_profile_password.dart';
+import '../features/provider_onboarding/build_professional_profile.dart';
 
 class AppRouter {
 	AppRouter._();
