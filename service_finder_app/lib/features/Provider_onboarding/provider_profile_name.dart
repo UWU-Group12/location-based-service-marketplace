@@ -133,7 +133,7 @@ class _ProviderProfileNameState extends State<ProviderProfileName> {
               // SVG Illustration
               Center(
                 child: SvgPicture.asset(
-                  'assets/svg/provider_name.svg',
+                  'assets/onboardingsvg/provider_name.svg',
                   width:200,
                   height:200,
                   fit: BoxFit.contain,

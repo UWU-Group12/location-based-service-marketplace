@@ -131,7 +131,7 @@ class _ProviderProfilePasswordState
 
               child: SvgPicture.asset(
 
-                'assets/svg/provider_password.svg',
+                'assets/onboardingsvg/provider_password.svg',
 
                 width:200,
 

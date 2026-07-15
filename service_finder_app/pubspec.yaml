@@ -68,9 +68,10 @@ flutter:
   assets:
     - assets/images/client.png
     - assets/images/provider.png
-    - assets/svg/provider_name.svg
-    - assets/svg/provider_contact.svg
-    - assets/svg/provider_password.svg
+    - assets/images/provider_name.png
+    - assets/onboardingsvg/provider_name.svg
+    - assets/onboardingsvg/provider_contact.svg
+    - assets/onboardingsvg/provider_password.svg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

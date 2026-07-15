@@ -73,7 +73,7 @@ class _ProviderProfileContactState
 
               Center(
                 child: SvgPicture.asset(
-                  'assets/svg/provider_contact.svg',
+                  'assets/onboardingsvg/provider_contact.svg',
                   width:200,
                   height:200,
                   fit: BoxFit.contain,
