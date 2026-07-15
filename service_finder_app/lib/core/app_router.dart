@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../features/auth/customer_register_screen.dart';
 import '../features/auth/dev_bypass_screen.dart';
 import '../features/auth/login_screen.dart';
-import '../features/Provider_onboarding/provider_profile_name.dart';
+import '../features/provider_onboarding/provider_profile_name.dart';
 import '../features/auth/role_selection_screen.dart';
 import '../features/auth/welcome_screen.dart';
 import '../features/customer/customer_shell_screen.dart';
