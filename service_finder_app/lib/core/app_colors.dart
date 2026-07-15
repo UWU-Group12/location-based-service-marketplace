@@ -8,7 +8,7 @@ class AppColors {
   static const Color secondary = Color(0xFFF3F8FF);
 
   // Backgrounds
-  static const Color background = Colors.white;
+  static const Color background = Color.fromARGB(255, 250, 251, 255);
   static const Color providerCard = Color(0xFFFFF3F3);
   static const Color customerCard = Color(0xFFF3F8FF);
   static const Color googleButton = Color(0xFFF1F1F1);

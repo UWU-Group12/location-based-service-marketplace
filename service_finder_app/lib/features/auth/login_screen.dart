@@ -57,6 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final darkRed = AppColors.primary; // Dark Red
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -81,11 +82,10 @@ class _LoginScreenState extends State<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 30),
-                const Text(
+                Text(
                   'Login',
-                  style: TextStyle(
+                  style: textTheme.headlineLarge?.copyWith(
                     fontSize: 40,
-                    fontWeight: FontWeight.w900,
                     color: AppColors.primary,
                   ),
                   textAlign: TextAlign.center,
@@ -126,9 +126,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       }
                     },
-                    child: const Text(
+                    child: Text(
                       'Forgot Password',
-                      style: TextStyle(
+                      style: textTheme.labelMedium?.copyWith(
                         color: AppColors.textSecondary,
                         decoration: TextDecoration.underline,
                       ),
@@ -140,13 +140,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ? Center(child: CircularProgressIndicator(color: darkRed))
                     : ElevatedButton(
                         onPressed: _login,
-                        child: const Text(
-                          'Login',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        child: const Text('Login'),
                       ),
                 const SizedBox(height: 40),
                 Row(
@@ -154,7 +148,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Expanded(child: Divider(thickness: 1)),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text('or', style: TextStyle(color: AppColors.hint)),
+                      child: Text(
+                        'or',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppColors.hint,
+                        ),
+                      ),
                     ),
                     const Expanded(child: Divider(thickness: 1)),
                   ],
@@ -165,9 +164,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
+                    Text(
                       'Need an account ? ',
-                      style: TextStyle(color: AppColors.textSecondary),
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     GestureDetector(
                       onTap: () {
@@ -176,11 +177,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           MaterialPageRoute(builder: (context) => const RoleSelectionScreen()),
                         );
                       },
-                      child: const Text(
+                      child: Text(
                         'Sign up',
-                        style: TextStyle(
+                        style: textTheme.labelLarge?.copyWith(
                           color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
@@ -195,9 +195,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         MaterialPageRoute(builder: (context) => const DevBypassScreen()),
                       );
                     },
-                    child: const Text(
+                    child: Text(
                       'Development Bypass (Preview Dashboards)',
-                      style: TextStyle(color: Colors.blue, fontSize: 12),
+                      style: textTheme.labelSmall?.copyWith(
+                        color: Colors.blue,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ),
@@ -280,9 +283,12 @@ class _LoginScreenState extends State<LoginScreen> {
             errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
           ),
           const SizedBox(width: 10),
-          const Text(
+          Text(
             'Continue with Google',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontSize: 16,
+              color: AppColors.textPrimary,
+            ),
           ),
         ],
       ),

@@ -87,6 +87,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final darkRed = AppColors.primary; // Material Red 900 or similar
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -111,11 +112,10 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 0),
-                const Text(
+                Text(
                   'Register',
-                  style: TextStyle(
+                  style: textTheme.headlineLarge?.copyWith(
                     fontSize: 40,
-                    fontWeight: FontWeight.w900,
                     color: AppColors.primary,
                   ),
                   textAlign: TextAlign.center,
@@ -166,13 +166,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                     ? Center(child: CircularProgressIndicator(color: darkRed))
                     : ElevatedButton(
                         onPressed: _register,
-                        child: const Text(
-                          'Register',
-                          style: TextStyle(
-                            fontSize: 18, 
-                            fontWeight: FontWeight.bold
-                            ),
-                        ),
+                        child: const Text('Register'),
                       ),
                 const SizedBox(height: 30),
                 Row(
@@ -180,7 +174,12 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                     Expanded(child: Divider(thickness: 1, color: AppColors.hint.withValues(alpha: 0.4))),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
-                      child: Text('or', style: TextStyle(color: AppColors.hint.withValues(alpha: 0.6))),
+                      child: Text(
+                        'or',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppColors.hint.withValues(alpha: 0.6),
+                        ),
+                      ),
                     ),
                     Expanded(child: Divider(thickness: 1, color: AppColors.hint.withValues(alpha: 0.4))),
                   ],
@@ -193,7 +192,9 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   children: [
                     Text(
                       'Already have an account? ',
-                      style: TextStyle(color: AppColors.textPrimary.withValues(alpha: 0.54)),
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textPrimary.withValues(alpha: 0.54),
+                      ),
                     ),
                     GestureDetector(
                       onTap: () {
@@ -205,11 +206,10 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                               (route) => false,
                         );
                       },
-                      child: const Text(
+                      child: Text(
                         'Login',
-                        style: TextStyle(
+                        style: textTheme.labelLarge?.copyWith(
                           color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
@@ -294,9 +294,12 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
             errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
           ),
           const SizedBox(width: 10),
-          const Text(
+          Text(
             'Continue with Google',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontSize: 16,
+              color: AppColors.textPrimary,
+            ),
           ),
         ],
       ),
