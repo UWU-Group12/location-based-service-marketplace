@@ -7,6 +7,9 @@ import 'features/auth/splash_screen.dart';
 import 'features/auth/welcome_screen.dart';
 import 'features/customer/customer_shell_screen.dart';
 import 'core/app_theme.dart';
+import 'package:provider/provider.dart';
+import 'features/provider/provider_onboarding_provider.dart';
+import 'features/provider/provider_dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,14 +27,34 @@ void main() async {
     }
   }
   
-  final bool isFirstLaunch = await PrefService.isFirstLaunch();
+  final bool isFirstLaunch =
+    await PrefService.isFirstLaunch();
+
+final bool isProviderCompleted =
+    await PrefService.isProviderOnboardingCompleted();
+
   
-  runApp(MyApp(isFirstLaunch: isFirstLaunch));
+  runApp(
+  ChangeNotifierProvider(
+    create: (_) => ProviderOnboardingProvider(),
+    child: MyApp(
+      isFirstLaunch: isFirstLaunch,
+      isProviderCompleted: isProviderCompleted,
+    ),
+  ),
+);
+
 }
 
 class MyApp extends StatelessWidget {
   final bool isFirstLaunch;
-  const MyApp({super.key, required this.isFirstLaunch});
+  final bool isProviderCompleted;
+
+  const MyApp({
+    super.key,
+    required this.isFirstLaunch,
+    required this.isProviderCompleted,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +62,13 @@ class MyApp extends StatelessWidget {
       title: 'Service Finder',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: isFirstLaunch ? const SplashScreen() : const AuthWrapper(),
+      home: isFirstLaunch
+    ? const SplashScreen()
+    : isProviderCompleted
+        ? const ProviderDashboardScreen(
+            userName: "Provider",
+          )
+        : const AuthWrapper(),
     );
   }
 }
