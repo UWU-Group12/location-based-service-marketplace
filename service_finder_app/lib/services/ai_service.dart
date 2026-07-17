@@ -4,32 +4,33 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../models/category_suggestion_model.dart';
+import 'firestore_service.dart';
 
 class AIService {
   final String workerUrl =
       "https://dry-tooth-cd62.hansikachathumina.workers.dev";
+  final FirestoreService _firestoreService = FirestoreService();
 
   Future<CategorySuggestion?> suggestCategory(String description) async {
     try {
+      final categories = await _firestoreService.getActiveCategories();
+      final categoryList = categories
+          .map((category) => category.name)
+          .join("\n");
+
       final response = await http.post(
         Uri.parse(workerUrl),
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({
           "prompt":
               """
+
 You are a service category assistant.
 
 Choose ONLY one category from this list:
 
-Plumber
-Electrician
-Carpenter
-Painter
-Mason
-Mobile Repair Technician
-Appliance Repair Technician
-Welder
-Cleaner
+$categoryList
+
 Other
 
 
