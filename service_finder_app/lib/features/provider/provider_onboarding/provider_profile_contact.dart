@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+import '../provider_onboarding_provider.dart';
+
 import '../../../core/app_colors.dart';
 import '../../../core/app_router.dart';
 
@@ -38,10 +41,20 @@ class _ProviderProfileContactState
   }
 
   void _continue() {
-    if (!canContinue) return;
 
-    AppRouter.goToProviderProfilePassword(context);
-  }
+  if (!canContinue) return;
+
+  Provider.of<ProviderOnboardingProvider>(
+    context,
+    listen: false,
+  ).setContact(
+    email: _emailController.text.trim(),
+    phone: _phoneController.text.trim(),
+  );
+
+  AppRouter.goToProviderProfilePassword(context);
+
+}
 
   @override
   Widget build(BuildContext context) {

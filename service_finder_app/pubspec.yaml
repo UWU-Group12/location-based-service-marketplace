@@ -34,6 +34,7 @@ dependencies:
   flutter_svg: ^2.0.10+1
   google_fonts: ^6.2.1
   http: ^1.6.0
+  provider: ^6.1.2
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -73,6 +74,9 @@ flutter:
     - assets/onboardingsvg/provider_name.svg
     - assets/onboardingsvg/provider_contact.svg
     - assets/onboardingsvg/provider_password.svg
+    - assets/onboardingsvg/provider_profile1.svg
+    - assets/onboardingsvg/provider_service.svg
+    - assets/onboardingsvg/provider_personal_details.svg
 
   # To add assets to your application, add an assets section, like this:
   # assets:

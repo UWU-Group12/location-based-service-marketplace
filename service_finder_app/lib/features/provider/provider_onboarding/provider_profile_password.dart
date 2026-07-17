@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
+import '../provider_onboarding_provider.dart';
 
 import '../../../core/app_colors.dart';
 import '../../../core/app_router.dart';
@@ -65,12 +67,18 @@ class _ProviderProfilePasswordState
 
   void _continue() {
 
-    if (!canContinue) return;
+  if (!canContinue) return;
 
+  Provider.of<ProviderOnboardingProvider>(
+    context,
+    listen: false,
+  ).setPassword(
+    password: _passwordController.text.trim(),
+  );
 
-    AppRouter.goToBuildProfessionalProfile(context);
+  AppRouter.goToBuildProfessionalProfile(context);
 
-  }
+}
 
   @override
   Widget build(BuildContext context) {
