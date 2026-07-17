@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../../core/app_colors.dart';
 import '../../../core/app_router.dart';
 import '../provider_onboarding_provider.dart';
-import '../../../services/pref_service.dart';
 
 class ProviderProfileSummary extends StatefulWidget {
   const ProviderProfileSummary({super.key});
@@ -23,11 +22,12 @@ class _ProviderProfileSummaryState
   bool get canSubmit =>
       confirmed;
 
-  void _submit() async {
+  void _continue() {
+
   if (!canSubmit) return;
-  await PrefService.setProviderOnboardingCompleted();
-  if (!mounted) return;
-  AppRouter.goToProviderDashboard(context);
+
+  AppRouter.goToProviderProfileSummary(context);
+
 }
 
 
@@ -170,13 +170,7 @@ class _ProviderProfileSummaryState
               ),
 
             ),
-
-
-
             const SizedBox(height:25),
-
-
-
             Text(
 
               "Review your profile",
@@ -345,21 +339,13 @@ class _ProviderProfileSummaryState
 
 
             ElevatedButton(
-
-              onPressed:
-              canSubmit
-                  ? _submit
+              onPressed: canSubmit
+                  ? _continue
                   : null,
-
-
-              child:
-              const Text(
-                "Submit for verification",
+              child: const Text(
+                "Continue",
               ),
-
             ),
-
-
 
             const SizedBox(height:30),
 
