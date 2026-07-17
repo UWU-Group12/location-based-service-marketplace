@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:service_finder_app/core/app_router.dart';
 import '../../widgets/ai_problem_card.dart';
 import '../../core/app_colors.dart';
 
@@ -118,7 +119,7 @@ class CustomerHomeScreen extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () {},
+                    onPressed: () { AppRouter.goToServiceCategoryScreen(context);},
                     child: Text(
                       'View all',
                       style: textTheme.labelLarge?.copyWith(

@@ -17,8 +17,9 @@ import '../features/provider/provider_onboarding/provider_profile_experience.dar
 import '../features/provider/provider_onboarding/provider_working_area.dart';
 import '../features/provider/provider_onboarding/provider_verification_documents.dart';
 import '../features/provider/provider_onboarding/provider_profile_summary.dart';
+import '../features/customer/provider_list_screen.dart';
 
-
+import '../features/customer/service_categories_screen.dart';
 class AppRouter {
 	AppRouter._();
 
@@ -170,4 +171,18 @@ static void goToProviderDashboardScreen(BuildContext context) {
 	static void googleSignIn(BuildContext context) {
 		// TODO: Implement Google Sign-In flow.
 	}
+
+	static void goToServiceCategoryScreen(BuildContext context) {
+		Navigator.of(context).push(_buildRoute(const ServiceCategoriesScreen()));
+	}
+
+  static void goToProviderListScreen(BuildContext context, String category)
+  {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProviderListScreen(category: category),
+      ),
+    );
+  }
 }
