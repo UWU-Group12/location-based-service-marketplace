@@ -1,15 +1,52 @@
 import 'package:flutter/material.dart';
-import 'package:service_finder_app/core/app_router.dart';
 import '../../widgets/ai_problem_card.dart';
 import '../../core/app_colors.dart';
+import 'provider_listing_screen.dart';
+import '../../data/service_categories.dart';
 
-class CustomerHomeScreen extends StatelessWidget {
+class CustomerHomeScreen extends StatefulWidget {
   final String userName;
   final String initials;
   const CustomerHomeScreen({super.key, required this.userName, required this.initials});
 
   @override
-  Widget build(BuildContext context) {
+  State<CustomerHomeScreen> createState() => _CustomerHomeScreenState();
+}
+
+class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
+  final TextEditingController _searchController =
+    TextEditingController();
+    List<String> filteredServices = [];
+
+    void _searchServices(String value) {
+
+      if (value.isEmpty) {
+        setState(() {
+          filteredServices = [];
+        });
+        return;
+      }
+
+      setState(() {
+        filteredServices = serviceCategories
+            .where(
+              (service) => service
+                  .toLowerCase()
+                  .contains(value.toLowerCase()),
+            )
+            .toList();
+      });
+
+    }
+
+    @override
+
+    void dispose() {
+      _searchController.dispose();
+      super.dispose();
+    }
+    @override
+    Widget build(BuildContext context) {
     final darkRed = AppColors.primary.withValues(alpha: 0.8);
     final textTheme = Theme.of(context).textTheme;
 
@@ -37,7 +74,7 @@ class CustomerHomeScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        '$userName ',
+                        widget.userName,
                         style: textTheme.headlineMedium?.copyWith(
                           fontSize: 28,
                           color: AppColors.primary,
@@ -83,7 +120,7 @@ class CustomerHomeScreen extends StatelessWidget {
                         radius: 24,
                         backgroundColor: const Color(0xFFD2B48C), // Light brown
                         child: Text(
-                          initials,
+                          widget.initials,
                           style: textTheme.labelLarge?.copyWith(
                             color: Colors.white,
                           ),
@@ -95,7 +132,11 @@ class CustomerHomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 25),
               // Search Bar
-              TextField(
+              Column(
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    onChanged: _searchServices,
                     decoration: InputDecoration(
                       hintText: 'What service do you need?',
                       prefixIcon: Icon(
@@ -104,6 +145,51 @@ class CustomerHomeScreen extends StatelessWidget {
                       ),
                     ),
                   ),
+
+                  if (filteredServices.isNotEmpty)
+                  Container(
+                    constraints: const BoxConstraints(
+                      maxHeight: 250,
+                    ),
+                    margin: const EdgeInsets.only(top: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(15),
+                      border: Border.all(
+                        color: Colors.grey.shade200,
+                      ),
+                    ),
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: filteredServices.map(
+                        (service) {
+                          return ListTile(
+                            title: Text(service),
+                            leading: const Icon(Icons.search),
+                            onTap: () {
+                              _searchController.text = service;
+
+                              setState(() {
+                                filteredServices = [];
+                              });
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ProviderListingScreen(
+                                    service: service,
+                                  ),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ).toList(),
+                    ),
+                  ),
+                ],
+              ),
+
               const SizedBox(height: 25),
               // AI Banner
               const AiProblemCard(),
@@ -119,8 +205,8 @@ class CustomerHomeScreen extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () { AppRouter.goToServiceCategoryScreen(context);},
-                    child: Text(
+                    onPressed: () {},
+                    child: Text(  
                       'View all',
                       style: textTheme.labelLarge?.copyWith(
                         color: darkRed,
@@ -133,20 +219,47 @@ class CustomerHomeScreen extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  _buildServiceItem(context, Icons.build_outlined, 'Plumbing', const Color(0xFFFDECEC), const Color(0xFFB71C1C)),
-                  _buildServiceItem(context, Icons.bolt_outlined, 'Electrical', const Color(0xFFE3F2FD), const Color(0xFF0D47A1)),
-                  _buildServiceItem(context, Icons.gavel_outlined, 'Carpentry', const Color(0xFFFFF3E0), const Color(0xFFE65100)),
-                  _buildServiceItem(context, Icons.format_paint_outlined, 'Painting', const Color(0xFFE8F5E9), const Color(0xFF1B5E20)),
-                ],
-              ),
-              const SizedBox(height: 30),
-              // Nearby Professionals
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+                  _buildServiceItem(
+                    context,
+                    Icons.build_outlined,
+                    'Plumbing',
+                    const Color(0xFFFDECEC),
+                    const Color(0xFFB71C1C),
+                  ),
+
+                  _buildServiceItem(
+                    context,
+                    Icons.bolt_outlined,
+                    'Electrical',
+                    const Color(0xFFE3F2FD),
+                    const Color(0xFF0D47A1),
+                  ),
+
+                  _buildServiceItem(
+                    context,
+                    Icons.gavel_outlined,
+                    'Carpentry',
+                    const Color(0xFFFFF3E0),
+                    const Color(0xFFE65100),
+                  ),
+
+                  _buildServiceItem(
+                    context,
+                    Icons.format_paint_outlined,
+                    'Painting',
+                    const Color(0xFFE8F5E9),
+                    const Color(0xFF1B5E20),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 30),
+            // Nearby Professionals
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                       Text(
                         'Nearby professionals',
                         style: textTheme.titleLarge?.copyWith(
@@ -303,10 +416,28 @@ class CustomerHomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildServiceItem(BuildContext context, IconData icon, String label, Color boxColor, Color iconColor) {
+  Widget _buildServiceItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    Color boxColor,
+    Color iconColor,
+  ) 
+  {
     final textTheme = Theme.of(context).textTheme;
 
-    return Column(
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ProviderListingScreen(
+              service: label,
+            ),
+          ),
+        );
+      },
+      child: Column(
       children: [
         Container(
           height: 65,
@@ -333,6 +464,8 @@ class CustomerHomeScreen extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
+    
   }
 }
