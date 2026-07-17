@@ -18,7 +18,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
   final _mobileController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  
+
   final AuthService _authService = AuthService();
   bool _isLoading = false;
   bool _isPasswordVisible = false;
@@ -41,10 +41,14 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
           _emailController.text.trim(),
           _passwordController.text.trim(),
           {
-            'firstName': _firstNameController.text.trim(),
-            'lastName': _lastNameController.text.trim(),
-            'mobile': _mobileController.text.trim(),
-            'role': widget.role,
+            'displayName': _firstNameController.text.trim()+" "+_lastNameController.text.trim(),
+            'email': _emailController.text.trim(),
+            'phoneNumber': _mobileController.text.trim(),
+            'photoPath': 'place_holders/profile.jpg',
+            'role': 'customer',
+            'accountStatus':'active',
+            'profileCompleted':false,
+
           },
         );
         if (mounted) {
@@ -56,9 +60,9 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
         }
       } catch (e) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
         }
       } finally {
         if (mounted) setState(() => _isLoading = false);
@@ -67,7 +71,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
   }
 
   void _googleSignUp() async {
-     setState(() => _isLoading = true);
+    setState(() => _isLoading = true);
     try {
       await _authService.signInWithGoogle();
     } catch (e) {
@@ -92,7 +96,11 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: AppColors.primary,
+            size: 20,
+          ),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -120,27 +128,42 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                 const SizedBox(height: 15),
                 TextFormField(
                   controller: _firstNameController,
-                  decoration: _buildInputDecoration('First Name', Icons.edit_outlined),
-                  validator: (value) => value!.isEmpty ? 'Enter first name' : null,
+                  decoration: _buildInputDecoration(
+                    'First Name',
+                    Icons.edit_outlined,
+                  ),
+                  validator: (value) =>
+                      value!.isEmpty ? 'Enter first name' : null,
                 ),
                 const SizedBox(height: 13),
                 TextFormField(
                   controller: _lastNameController,
-                  decoration: _buildInputDecoration('Last Name', Icons.edit_outlined),
-                  validator: (value) => value!.isEmpty ? 'Enter last name' : null,
+                  decoration: _buildInputDecoration(
+                    'Last Name',
+                    Icons.edit_outlined,
+                  ),
+                  validator: (value) =>
+                      value!.isEmpty ? 'Enter last name' : null,
                 ),
                 const SizedBox(height: 13),
                 TextFormField(
                   controller: _mobileController,
                   keyboardType: TextInputType.phone,
-                  decoration: _buildInputDecoration('Mobile Number', Icons.phone_android_outlined),
-                  validator: (value) => value!.isEmpty ? 'Enter mobile number' : null,
+                  decoration: _buildInputDecoration(
+                    'Mobile Number',
+                    Icons.phone_android_outlined,
+                  ),
+                  validator: (value) =>
+                      value!.isEmpty ? 'Enter mobile number' : null,
                 ),
                 const SizedBox(height: 13),
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: _buildInputDecoration('Email', Icons.alternate_email),
+                  decoration: _buildInputDecoration(
+                    'Email',
+                    Icons.alternate_email,
+                  ),
                   validator: (value) => value!.isEmpty ? 'Enter email' : null,
                 ),
                 const SizedBox(height: 13),
@@ -156,7 +179,8 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                     },
                     isVisible: _isPasswordVisible,
                   ),
-                  validator: (value) => value!.length < 6 ? 'Password must be 6+ chars' : null,
+                  validator: (value) =>
+                      value!.length < 6 ? 'Password must be 6+ chars' : null,
                 ),
                 const SizedBox(height: 30),
                 _isLoading
@@ -168,7 +192,12 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                 const SizedBox(height: 30),
                 Row(
                   children: [
-                    Expanded(child: Divider(thickness: 1, color: AppColors.hint.withValues(alpha: 0.4))),
+                    Expanded(
+                      child: Divider(
+                        thickness: 1,
+                        color: AppColors.hint.withValues(alpha: 0.4),
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 10),
                       child: Text(
@@ -178,7 +207,12 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                         ),
                       ),
                     ),
-                    Expanded(child: Divider(thickness: 1, color: AppColors.hint.withValues(alpha: 0.4))),
+                    Expanded(
+                      child: Divider(
+                        thickness: 1,
+                        color: AppColors.hint.withValues(alpha: 0.4),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 30),
@@ -224,17 +258,26 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
   }) {
     return InputDecoration(
       hintText: label,
-      hintStyle: TextStyle(color: AppColors.hint.withValues(alpha: 0.8), fontSize: 15),
+      hintStyle: TextStyle(
+        color: AppColors.hint.withValues(alpha: 0.8),
+        fontSize: 15,
+      ),
       prefixIcon: Padding(
         padding: const EdgeInsets.only(left: 20, right: 10),
-        child: Icon(icon, color: AppColors.hint.withValues(alpha: 0.8), size: 22),
+        child: Icon(
+          icon,
+          color: AppColors.hint.withValues(alpha: 0.8),
+          size: 22,
+        ),
       ),
       suffixIcon: isPassword
           ? Padding(
               padding: const EdgeInsets.only(right: 20),
               child: IconButton(
                 icon: Icon(
-                  isVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  isVisible
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   color: AppColors.hint.withValues(alpha: 0.8),
                   size: 22,
                 ),
@@ -271,9 +314,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
         backgroundColor: AppColors.googleButton,
         foregroundColor: AppColors.textPrimary,
         padding: const EdgeInsets.symmetric(vertical: 15),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         elevation: 0,
       ),
       child: Row(
@@ -282,7 +323,8 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
           Image.network(
             'https://img.icons8.com/?size=256&id=17949&format=png',
             height: 24,
-            errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.error),
           ),
           const SizedBox(width: 10),
           Text(

@@ -21,6 +21,7 @@ class AuthService {
           ...userData,
           'uid': user.uid,
           'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
         });
       }
       return result;
@@ -65,5 +66,23 @@ class AuthService {
   Future<void> signOut() async {
     await _auth.signOut();
     await _googleSignIn.signOut();
+  }
+
+  Future<String?> getUserRole(String userId) async {
+    final document = await _firestore
+        .collection('users')
+        .doc(userId)
+        .get();
+
+    if (!document.exists) {
+      return null;
+    }
+
+    final data = document.data();
+
+    return data?['role']
+        ?.toString()
+        .trim()
+        .toLowerCase();
   }
 }
