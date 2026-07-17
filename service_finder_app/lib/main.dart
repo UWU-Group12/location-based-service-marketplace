@@ -64,17 +64,19 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       home: isFirstLaunch
     ? const SplashScreen()
-    : isProviderCompleted
-        ? const ProviderDashboardScreen(
-            userName: "Provider",
-          )
-        : const AuthWrapper(),
+    : AuthWrapper(isProviderCompleted: isProviderCompleted,),
     );
   }
-}
 
-class AuthWrapper extends StatelessWidget {
-  const AuthWrapper({super.key});
+  }
+  class AuthWrapper extends StatelessWidget {
+
+    final bool isProviderCompleted;
+
+    const AuthWrapper({
+      super.key,
+      required this.isProviderCompleted,
+    });
 
   @override
   Widget build(BuildContext context) {
@@ -85,6 +87,13 @@ class AuthWrapper extends StatelessWidget {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (snapshot.hasData) {
+
+          if (isProviderCompleted) {
+            return const ProviderDashboardScreen(
+              userName: "Provider",
+            );
+          }
+
           return const CustomerShellScreen();
         }
         return const WelcomeScreen();
