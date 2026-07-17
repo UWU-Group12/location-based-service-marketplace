@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ServiceCategory {
-
   final String id;
   final String name;
   final String description;
@@ -18,22 +17,24 @@ class ServiceCategory {
     required this.sortOrder,
   });
 
-  factory ServiceCategory.fromFireBase(DocumentSnapshot<Map<String, dynamic>> document){
-
+  factory ServiceCategory.fromFireBase(
+    DocumentSnapshot<Map<String, dynamic>> document,
+  ) {
     final data = document.data();
 
-    if(data == null){
+    if (data == null) {
       throw StateError("Category ID ${document.id} dosen't contain data");
     }
 
     final String iconPath = data['iconPath'] as String;
 
     return ServiceCategory(
-        id: document.id,
-        name: data['name'] as String,
-        description: data['description'] as String,
-        iconPath: iconPath,
-        active: data['active'] as bool,
-        sortOrder: (data['sortOrder'] as num).toInt());
+      id: document.id,
+      name: data['name'] as String,
+      description: data['description'] as String,
+      iconPath: iconPath,
+      active: data['active'] as bool,
+      sortOrder: (data['sortOrder'] as num).toInt(),
+    );
   }
 }

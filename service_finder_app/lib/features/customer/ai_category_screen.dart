@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
 import '../../core/app_colors.dart';
 
-class AiScreen extends StatefulWidget {
-  const AiScreen({super.key});
+import '../../services/ai_service.dart';
+import '../../models/category_suggestion_model.dart';
+
+class AiCategoryScreen extends StatefulWidget {
+  const AiCategoryScreen({super.key});
 
   @override
-  State<AiScreen> createState() => _AiScreenState();
+  State<AiCategoryScreen> createState() => _AiCategoryScreenState();
 }
 
-class _AiScreenState extends State<AiScreen> {
+class _AiCategoryScreenState extends State<AiCategoryScreen> {
   final TextEditingController _problemController = TextEditingController();
+
   final int _maxCharacters = 500;
+
+  final AIService _aiService = AIService();
+
+  CategorySuggestion? _categorySuggestion;
+
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -59,13 +69,19 @@ class _AiScreenState extends State<AiScreen> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: const Color(0xFFFDECEC), // Light red tint matching the design
+                color: const Color(
+                  0xFFFDECEC,
+                ), // Light red tint matching the design
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(Icons.auto_awesome_outlined, color: AppColors.primary, size: 24),
+                  const Icon(
+                    Icons.auto_awesome_outlined,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     "Tell us what is wrong and we will help you find the right service.",
@@ -78,7 +94,7 @@ class _AiScreenState extends State<AiScreen> {
               ),
             ),
             const SizedBox(height: 25),
-            
+
             // Text Input Area
             Container(
               decoration: BoxDecoration(
@@ -116,7 +132,11 @@ class _AiScreenState extends State<AiScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(Icons.mic_none_outlined, color: Colors.black.withValues(alpha: 0.5), size: 22),
+                        Icon(
+                          Icons.mic_none_outlined,
+                          color: Colors.black.withValues(alpha: 0.5),
+                          size: 22,
+                        ),
                         Text(
                           "${_problemController.text.length}/$_maxCharacters",
                           style: textTheme.bodySmall?.copyWith(
@@ -131,7 +151,7 @@ class _AiScreenState extends State<AiScreen> {
               ),
             ),
             const SizedBox(height: 15),
-            
+
             // Info Box
             Container(
               padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
@@ -141,7 +161,11 @@ class _AiScreenState extends State<AiScreen> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.check_circle_outline, color: Colors.blueGrey.withValues(alpha: 0.7), size: 20),
+                  Icon(
+                    Icons.check_circle_outline,
+                    color: Colors.blueGrey.withValues(alpha: 0.7),
+                    size: 20,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -156,11 +180,27 @@ class _AiScreenState extends State<AiScreen> {
               ),
             ),
             const SizedBox(height: 30),
-            
+
             // Primary Action Button
             ElevatedButton(
-              onPressed: () {
-                // Future implementation: trigger AI processing
+              onPressed: () async {
+                if (_problemController.text.trim().isEmpty) {
+                  return;
+                }
+
+                setState(() {
+                  _isLoading = true;
+                });
+
+                final result = await _aiService.suggestCategory(
+                  _problemController.text,
+                );
+
+                setState(() {
+                  _categorySuggestion = result;
+
+                  _isLoading = false;
+                });
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
@@ -171,13 +211,15 @@ class _AiScreenState extends State<AiScreen> {
                 ),
                 elevation: 0,
               ),
-              child: Text(
-                "Ask AI",
-                style: textTheme.labelLarge?.copyWith(fontSize: 16),
-              ),
+              child: _isLoading
+                  ? const CircularProgressIndicator(color: Colors.white)
+                  : Text(
+                      "Ask AI",
+                      style: textTheme.labelLarge?.copyWith(fontSize: 16),
+                    ),
             ),
             const SizedBox(height: 40),
-            
+
             // AI Suggestion Placeholder Section
             Text(
               "AI Suggestion",
@@ -191,16 +233,44 @@ class _AiScreenState extends State<AiScreen> {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: AppColors.border),
               ),
-              child: Text(
-                "AI results will appear here after you describe your problem and click the button above.",
-                style: textTheme.bodyMedium?.copyWith(
-                  color: AppColors.textSecondary,
-                  fontSize: 14,
-                ),
-              ),
+              child: _categorySuggestion == null
+                  ? Text(
+                      "AI results will appear here after you describe your problem and click the button above.",
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text("Category:", style: textTheme.titleMedium),
+
+                        const SizedBox(height: 8),
+
+                        Text(
+                          _categorySuggestion!.category,
+                          style: textTheme.bodyLarge?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 15),
+
+                        Text("Reason:", style: textTheme.titleMedium),
+
+                        const SizedBox(height: 8),
+
+                        Text(
+                          _categorySuggestion!.reason,
+                          style: textTheme.bodyMedium,
+                        ),
+                      ],
+                    ),
             ),
             const SizedBox(height: 30),
-            
+
             // Recommended Professionals Placeholder Section
             Text(
               "Recommended Professionals",
