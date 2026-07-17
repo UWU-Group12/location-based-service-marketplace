@@ -12,4 +12,25 @@ class PrefService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_isFirstLaunchKey, false);
   }
+
+  static Future<void> setProviderOnboardingCompleted() async {
+
+  final prefs = await SharedPreferences.getInstance();
+
+  await prefs.setBool(
+    'provider_onboarding_completed',
+    true,
+  );
+
+}
+
+static Future<bool> isProviderOnboardingCompleted() async {
+
+  final prefs = await SharedPreferences.getInstance();
+
+  return prefs.getBool(
+    'provider_onboarding_completed',
+  ) ?? false;
+
+}
 }

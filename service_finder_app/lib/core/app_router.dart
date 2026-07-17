@@ -11,6 +11,13 @@ import '../features/provider/provider_dashboard_screen.dart';
 import '../features/provider/provider_onboarding/provider_profile_contact.dart';
 import '../features/provider/provider_onboarding/provider_profile_password.dart';
 import '../features/provider/provider_onboarding/build_professional_profile.dart';
+import '../features/provider/provider_onboarding/provider_profile_personal_details.dart';
+import '../features/provider/provider_onboarding/provider_profile_service_info.dart';
+import '../features/provider/provider_onboarding/provider_profile_experience.dart';
+import '../features/provider/provider_onboarding/provider_working_area.dart';
+import '../features/provider/provider_onboarding/provider_verification_documents.dart';
+import '../features/provider/provider_onboarding/provider_profile_summary.dart';
+
 
 class AppRouter {
 	AppRouter._();
@@ -94,6 +101,67 @@ static void goToBuildProfessionalProfile(BuildContext context) {
 			(route) => false,
 		);
 	}
+
+  static void goToProviderProfilePersonalDetails(BuildContext context) {
+  Navigator.of(context).push(
+    _buildRoute(
+      const ProviderProfilePersonalDetails(),
+    ),
+  );
+}
+
+static void goToProviderProfileServiceInfo(BuildContext context) {
+  Navigator.of(context).push(
+    _buildRoute(
+      const ProviderProfileServiceInfo(),
+    ),
+  );
+}
+
+static void goToProviderProfileExperience(BuildContext context) {
+  Navigator.of(context).push(
+    _buildRoute(
+      const ProviderProfileExperience(),
+    ),
+  );
+}
+
+static void goToProviderWorkingArea(BuildContext context) {
+  Navigator.of(context).push(
+    _buildRoute(
+      const ProviderWorkingArea(),
+    ),
+  );
+}
+
+static void goToVerificationDocuments(BuildContext context) {
+  Navigator.of(context).push(
+    _buildRoute(
+      const ProviderVerificationDocuments(),
+    ),
+  );
+}
+
+static void goToProviderProfileSummary(BuildContext context) {
+  Navigator.of(context).push(
+    _buildRoute(
+      const ProviderProfileSummary(),
+    ),
+  );
+}
+
+static void goToProviderDashboardScreen(BuildContext context) {
+
+  Navigator.of(context).pushAndRemoveUntil(
+    MaterialPageRoute(
+      builder: (_) => const ProviderDashboardScreen(
+        userName: "Provider",
+      ),
+    ),
+    (route) => false,
+  );
+
+}
 
 	static void goToDevBypass(BuildContext context) {
 		Navigator.of(context).push(_buildRoute(const DevBypassScreen()));
