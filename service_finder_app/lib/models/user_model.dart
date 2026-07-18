@@ -1,33 +1,54 @@
-enum UserRole { customer, provider, admin }
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class AppUser {
-  final String uid;
+class UserModel {
+  final String id;
+  final String displayName;
   final String email;
-  final UserRole role;
-
-  AppUser({
-    required this.uid,
+  final String? phoneNumber;
+  final String? photoPath;
+  final String role; //customer or provider
+  final String accountStatus; //active acc , suspended acc ,disabled acc
+  final bool profileCompleted;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+UserModel({
+    required this.id,
+    required this.displayName,
     required this.email,
+    this.phoneNumber,
+    this.photoPath,
     required this.role,
-  });
+    required this.accountStatus,
+    required this.profileCompleted,
+    required this.createdAt,
+    required this.updatedAt,
+});
 
-  // Convert Firestore Document data to our AppUser Model
-  factory AppUser.fromMap(Map<String, dynamic> map, String documentId) {
-    return AppUser(
-      uid: documentId,
-      email: map['email'] ?? '',
-      role: UserRole.values.firstWhere(
-            (e) => e.name == map['role'],
-        orElse: () => UserRole.customer, // Default role
-      ),
-    );
-  }
-
-  // Convert our AppUser Model data to a Map to save into Firestore
-  Map<String, dynamic> toMap() {
-    return {
-      'email': email,
-      'role': role.name,
-    };
-  }
+factory UserModel.fromFirestore(String docId,Map <String ,dynamic>data){
+  return UserModel(
+    id: docId,
+    displayName: data['displayName'] ?? 'user',
+    email: data['email']?? '',
+    phoneNumber: data['phoneNumber'],
+    photoPath: data['photoPath'],
+    role: data['role']?? 'customer',
+    accountStatus: data['accountStatus']?? 'active',
+    profileCompleted: data['profileCompleted']?? false,
+    createdAt: (data['createdAt']as Timestamp).toDate(),
+    updatedAt: (data['updatedAt']as Timestamp).toDate(),
+  );
+}
+Map <String, dynamic>toFirestore(){
+  return{
+    'displayName': displayName,
+    'email': email,
+    'phoneNumber':phoneNumber,
+    'photoPath': photoPath,
+    'role': role,
+    'accountStatus': accountStatus,
+    'profileCompleted':profileCompleted,
+    'createdAt': Timestamp.fromDate(createdAt),
+    'updatedAt':Timestamp.fromDate(updatedAt),
+  };
+ }
 }
