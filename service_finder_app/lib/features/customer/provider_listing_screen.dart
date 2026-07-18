@@ -4,6 +4,7 @@ import '../../core/app_colors.dart';
 import '../../data/dummy_providers.dart';
 import '../../models/service_provider_model.dart';
 import '../../widgets/provider_card.dart';
+import 'provider_details_screen.dart';
 
 class ProviderListingScreen extends StatelessWidget {
   final String service;
@@ -51,8 +52,14 @@ class ProviderListingScreen extends StatelessWidget {
                 return ProviderCard(
                   provider: provider,
                   onTap: () {
-                    // Next step:
-                    // Open Provider Details Screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProviderDetailsScreen(
+                          provider: provider,
+                        ),
+                      ),
+                    );
                   },
                 );
               },
