@@ -21,7 +21,7 @@ class ReviewModel{
     required this.createdAt,
     required this.updatedAt,
 });
-  factory ReviewModel.fromFirebase(String docId, Map<String, dynamic>data){
+  factory ReviewModel.fromFirestore(String docId, Map<String, dynamic>data){
     return ReviewModel(
       requestId: docId,
       customerId: data['customerId']?? '',
