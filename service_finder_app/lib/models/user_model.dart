@@ -51,6 +51,13 @@ class UserModel {
     required String documentId,
     required Map<String, dynamic> data,
   }) {
+    final createdAt = _readOptionalDate(data['createdAt']);
+    final updatedAt = _readOptionalDate(data['updatedAt']);
+
+    // Server timestamps can be null briefly while a Firestore write is pending.
+    final resolvedCreatedAt = createdAt ?? updatedAt ?? DateTime.now();
+    final resolvedUpdatedAt = updatedAt ?? resolvedCreatedAt;
+
     return UserModel(
       id: documentId,
       displayName: _readString(data['displayName'], fieldName: 'displayName'),
@@ -60,8 +67,8 @@ class UserModel {
       role: _readRole(data['role']),
       accountStatus: _readAccountStatus(data['accountStatus']),
       profileCompleted: data['profileCompleted'] as bool? ?? false,
-      createdAt: _readDate(data['createdAt'], fieldName: 'createdAt'),
-      updatedAt: _readDate(data['updatedAt'], fieldName: 'updatedAt'),
+      createdAt: resolvedCreatedAt,
+      updatedAt: resolvedUpdatedAt,
     );
   }
 
@@ -136,7 +143,7 @@ class UserModel {
     }
   }
 
-  static DateTime _readDate(dynamic value, {required String fieldName}) {
+  static DateTime? _readOptionalDate(dynamic value) {
     if (value is Timestamp) {
       return value.toDate();
     }
@@ -145,6 +152,10 @@ class UserModel {
       return value;
     }
 
-    throw FormatException('User field "$fieldName" must be a Timestamp.');
+    if (value is String) {
+      return DateTime.tryParse(value);
+    }
+
+    return null;
   }
 }
