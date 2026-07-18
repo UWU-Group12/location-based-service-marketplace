@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/app_colors.dart';
 import '../../../core/app_router.dart';
-import '../../../services/pref_service.dart';
+import '../provider_onboarding_provider.dart';
 
 class ProviderVerificationDocuments extends StatefulWidget {
   const ProviderVerificationDocuments({super.key});
@@ -15,36 +16,37 @@ class ProviderVerificationDocuments extends StatefulWidget {
 
 class _ProviderVerificationDocumentsState
     extends State<ProviderVerificationDocuments> {
-
   bool frontUploaded = false;
   bool backUploaded = false;
 
   String? frontImagePath;
   String? backImagePath;
 
-  bool get canContinue =>
-      frontUploaded && backUploaded;
-
   void _uploadFront() {
-  setState(() {
-    frontUploaded = true;
-    frontImagePath = "national_id_front_image";
-  });
-}
+    setState(() {
+      frontUploaded = true;
+      frontImagePath = "national_id_front_image";
+    });
+  }
 
   void _uploadBack() {
-  setState(() {
-    backUploaded = true;
-    backImagePath = "national_id_back_image";
-  });
-}
+    setState(() {
+      backUploaded = true;
+      backImagePath = "national_id_back_image";
+    });
+  }
 
-  void _submit() async {
-  if (!canContinue) return;
-  await PrefService.setProviderOnboardingCompleted();
-  if (!mounted) return;
-  AppRouter.goToProviderDashboard(context);
-}
+  void _continue() {
+    Provider.of<ProviderOnboardingProvider>(
+      context,
+      listen: false,
+    ).setVerificationDocuments(
+      nationalIdFront: frontImagePath ?? '',
+      nationalIdBack: backImagePath ?? '',
+    );
+
+    AppRouter.goToProviderProfileSummary(context);
+  }
 
   Widget _buildUploadCard({
     required String title,
@@ -59,14 +61,10 @@ class _ProviderVerificationDocumentsState
         padding: const EdgeInsets.all(20),
         margin: const EdgeInsets.only(bottom: 18),
         decoration: BoxDecoration(
-          color: uploaded
-              ? AppColors.providerCard
-              : AppColors.background,
+          color: uploaded ? AppColors.providerCard : AppColors.background,
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
-            color: uploaded
-                ? AppColors.primary
-                : AppColors.border,
+            color: uploaded ? AppColors.primary : AppColors.border,
             width: uploaded ? 2 : 1,
           ),
         ),
@@ -82,9 +80,7 @@ class _ProviderVerificationDocumentsState
             const SizedBox(width: 18),
             Expanded(
               child: Text(
-                uploaded
-                    ? "$title Uploaded"
-                    : title,
+                uploaded ? "$title Uploaded" : title,
                 style: textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -103,7 +99,6 @@ class _ProviderVerificationDocumentsState
 
   @override
   Widget build(BuildContext context) {
-
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -129,7 +124,6 @@ class _ProviderVerificationDocumentsState
           crossAxisAlignment: CrossAxisAlignment.stretch,
 
           children: [
-
             const SizedBox(height: 10),
 
             Center(
@@ -155,7 +149,8 @@ class _ProviderVerificationDocumentsState
             const SizedBox(height: 12),
 
             Text(
-              "Upload your national ID to verify your professional profile.",
+              "Keep this step for verification. Files selected here are not "
+              "uploaded until storage services are connected.",
               textAlign: TextAlign.center,
               style: textTheme.bodyLarge?.copyWith(
                 color: AppColors.textSecondary,
@@ -178,14 +173,7 @@ class _ProviderVerificationDocumentsState
 
             const SizedBox(height: 25),
 
-            ElevatedButton(
-              onPressed: canContinue
-                  ? _submit
-                  : null,
-              child: const Text(
-                "Continue",
-              ),
-            ),
+            ElevatedButton(onPressed: _continue, child: const Text("Continue")),
 
             const SizedBox(height: 30),
           ],

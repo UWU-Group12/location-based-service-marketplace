@@ -1,12 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
 import 'customer_home_screen.dart';
-import '../provider/provider_dashboard_screen.dart';
+import 'customer_profile_screen.dart';
 
 class CustomerShellScreen extends StatefulWidget {
-  final String? debugRole; // Optional parameter for development bypass
-  const CustomerShellScreen({super.key, this.debugRole});
+  // Give a name only when using the development bypass.
+  // Normal users will load their information from Firebase.
+  final String? debugUserName;
+
+  const CustomerShellScreen({super.key, this.debugUserName});
 
   @override
   State<CustomerShellScreen> createState() => _CustomerShellScreenState();
@@ -14,42 +18,122 @@ class CustomerShellScreen extends StatefulWidget {
 
 class _CustomerShellScreenState extends State<CustomerShellScreen> {
   int _currentIndex = 0;
-  String _userName = 'Nimal'; // Default for preview
-  String _initials = 'NP'; // Default for preview
-  String _userRole = 'Customer';
+
+  String _userName = 'User';
+  String _initials = 'U';
+
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    if (widget.debugRole != null) {
-      // Use debug mode values
-      _userRole = widget.debugRole == 'Service Provider' ? 'Service Provider' : 'Customer';
+
+    if (widget.debugUserName != null) {
+      final debugName = widget.debugUserName!.trim();
+
+      _userName = debugName.isEmpty ? 'Demo Customer' : debugName;
+      _initials = _createInitials(_userName);
       _isLoading = false;
     } else {
-      // Regular Firebase mode
-      _fetchUserData();
+      _loadCustomerData();
     }
   }
 
-  Future<void> _fetchUserData() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-      if (doc.exists) {
-        final data = doc.data();
-        final firstName = data?['firstName'] ?? 'User';
-        final lastName = data?['lastName'] ?? '';
-        setState(() {
-          _userName = firstName;
-          _initials = "${firstName[0]}${lastName.isNotEmpty ? lastName[0] : ''}".toUpperCase();
-          _userRole = data?['role'] ?? 'Customer';
-          _isLoading = false;
-        });
-      } else {
-        setState(() => _isLoading = false);
+  Future<void> _loadCustomerData() async {
+    try {
+      final firebaseUser = FirebaseAuth.instance.currentUser;
+
+      if (firebaseUser == null) {
+        _showError('You must sign in before opening this page.');
+        return;
       }
+
+      final userDocument = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(firebaseUser.uid)
+          .get();
+
+      if (!userDocument.exists || userDocument.data() == null) {
+        _showError('Your user profile could not be found.');
+        return;
+      }
+
+      final userData = userDocument.data()!;
+
+      final role = userData['role'] as String? ?? '';
+      final accountStatus = userData['accountStatus'] as String? ?? 'active';
+
+      if (role != 'customer') {
+        _showError('This account is not registered as a customer.');
+        return;
+      }
+
+      if (accountStatus != 'active') {
+        _showError('This account is currently unavailable.');
+        return;
+      }
+
+      final firestoreName = (userData['displayName'] as String?)?.trim();
+
+      final authenticationName = firebaseUser.displayName?.trim();
+
+      final resolvedName = firestoreName != null && firestoreName.isNotEmpty
+          ? firestoreName
+          : authenticationName != null && authenticationName.isNotEmpty
+          ? authenticationName
+          : 'User';
+
+      if (!mounted) return;
+
+      setState(() {
+        _userName = resolvedName;
+        _initials = _createInitials(resolvedName);
+        _isLoading = false;
+        _errorMessage = null;
+      });
+    } on FirebaseException catch (error) {
+      debugPrint(
+        'Customer data loading error: '
+        '${error.code} - ${error.message}',
+      );
+
+      _showError('Unable to load your account. Please try again.');
+    } catch (error) {
+      debugPrint('Customer data loading error: $error');
+
+      _showError('Unable to load your account. Please try again.');
     }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+
+    setState(() {
+      _errorMessage = message;
+      _isLoading = false;
+    });
+  }
+
+  String _createInitials(String name) {
+    final nameParts = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .toList();
+
+    if (nameParts.isEmpty) {
+      return 'U';
+    }
+
+    if (nameParts.length == 1) {
+      return nameParts.first[0].toUpperCase();
+    }
+
+    final firstInitial = nameParts.first[0];
+    final lastInitial = nameParts.last[0];
+
+    return '$firstInitial$lastInitial'.toUpperCase();
   }
 
   @override
@@ -58,44 +142,122 @@ class _CustomerShellScreenState extends State<CustomerShellScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    final List<Widget> pages = _userRole == 'Customer' 
-        ? [
-            CustomerHomeScreen(userName: _userName, initials: _initials),
-            const Center(child: Text('Requests Page')),
-            const Center(child: Text('Updates Page')),
-            const Center(child: Text('Profile Page')),
-          ]
-        : [
-            ProviderDashboardScreen(userName: _userName),
-            const Center(child: Text('Appointments Page')),
-            const Center(child: Text('Earning Page')),
-            const Center(child: Text('Profile Page')),
-          ];
+    if (_errorMessage != null) {
+      return Scaffold(
+        body: _ShellErrorView(
+          message: _errorMessage!,
+          onRetry: _loadCustomerData,
+        ),
+      );
+    }
+
+    final pages = <Widget>[
+      CustomerHomeScreen(userName: _userName, initials: _initials),
+      const _CustomerPlaceholderPage(
+        icon: Icons.receipt_long_outlined,
+        title: 'Requests',
+        message: 'Your service requests will appear here.',
+      ),
+      const _CustomerPlaceholderPage(
+        icon: Icons.notifications_outlined,
+        title: 'Notifications',
+        message: 'Your notifications will appear here.',
+      ),
+      const CustomerProfileScreen(),
+    ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
-      ),
+      body: IndexedStack(index: _currentIndex, children: pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
         type: BottomNavigationBarType.fixed,
         selectedItemColor: const Color(0xFF8B0000),
         unselectedItemColor: Colors.grey,
-        items: _userRole == 'Customer' 
-          ? const [
-              BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: 'Home', activeIcon: Icon(Icons.home)),
-              BottomNavigationBarItem(icon: Icon(Icons.chat_bubble_outline), label: 'Requests'),
-              BottomNavigationBarItem(icon: Icon(Icons.notifications_none_outlined), label: 'Updates'),
-              BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
-            ]
-          : const [
-              BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), label: 'Dashboard', activeIcon: Icon(Icons.dashboard)),
-              BottomNavigationBarItem(icon: Icon(Icons.calendar_today_outlined), label: 'Jobs'),
-              BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_outlined), label: 'Earnings'),
-              BottomNavigationBarItem(icon: Icon(Icons.person_outline), label: 'Profile'),
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long_outlined),
+            activeIcon: Icon(Icons.receipt_long),
+            label: 'Requests',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications_outlined),
+            activeIcon: Icon(Icons.notifications),
+            label: 'Notifications',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CustomerPlaceholderPage extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String message;
+
+  const _CustomerPlaceholderPage({
+    required this.icon,
+    required this.title,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 56, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(message, textAlign: TextAlign.center),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ShellErrorView extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ShellErrorView({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 56, color: Colors.red),
+            const SizedBox(height: 16),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            ElevatedButton(onPressed: onRetry, child: const Text('Try Again')),
+          ],
+        ),
       ),
     );
   }

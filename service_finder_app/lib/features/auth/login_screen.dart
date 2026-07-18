@@ -18,38 +18,112 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _isPasswordVisible = false;
 
-  void _login() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      try {
-        await _authService.loginWithEmail(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
-        );
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: ${e.toString()}')),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final result = await _authService.loginWithEmail(
+        _emailController.text.trim(),
+        _passwordController.text.trim(),
+      );
+
+      final user = result.user;
+
+      if (user == null) {
+        throw Exception('Login succeeded but user data is missing.');
+      }
+
+      final userProfile = await _authService.requireActiveUserProfile(user.uid);
+
+      if (!mounted) {
+        return;
+      }
+
+      AppRouter.goToSignedInHome(context, userProfile);
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Login failed: $error')));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
 
-  void _googleSignIn() async {
-    setState(() => _isLoading = true);
+  Future<void> _googleSignIn() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      await _authService.signInWithGoogle();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google Sign-In failed: ${e.toString()}')),
-        );
+      final result = await _authService.signInWithGoogle();
+
+      // The user closed the Google account selection window.
+      if (result == null) {
+        return;
       }
+
+      final firebaseUser = result.user;
+      if (firebaseUser == null) {
+        throw StateError('Firebase did not return the Google user.');
+      }
+
+      final existingProfile = await _authService.getUserProfile(
+        firebaseUser.uid,
+      );
+
+      if (!mounted) return;
+
+      if (existingProfile == null) {
+        AppRouter.goToRoleSelection(context);
+        return;
+      }
+
+      final userProfile = await _authService.requireActiveUserProfile(
+        firebaseUser.uid,
+      );
+
+      if (!mounted) return;
+
+      AppRouter.goToSignedInHome(
+        context,
+        userProfile,
+        signedInWithGoogle: _authService.currentUserUsesGoogle,
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Google Sign-In failed: $error')));
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -64,7 +138,11 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: AppColors.primary,
+            size: 20,
+          ),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -92,7 +170,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 60),
                 TextFormField(
                   controller: _emailController,
-                  decoration: _buildInputDecoration('Email', Icons.alternate_email),
+                  decoration: _buildInputDecoration(
+                    'Email',
+                    Icons.alternate_email,
+                  ),
                   validator: (value) => value!.isEmpty ? 'Enter email' : null,
                 ),
                 const SizedBox(height: 15),
@@ -108,20 +189,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                     isVisible: _isPasswordVisible,
                   ),
-                  validator: (value) => value!.isEmpty ? 'Enter password' : null,
+                  validator: (value) =>
+                      value!.isEmpty ? 'Enter password' : null,
                 ),
                 const SizedBox(height: 10),
                 Center(
                   child: TextButton(
                     onPressed: () {
                       if (_emailController.text.isNotEmpty) {
-                        _authService.sendPasswordResetEmail(_emailController.text.trim());
+                        _authService.sendPasswordResetEmail(
+                          _emailController.text.trim(),
+                        );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Password reset email sent!')),
+                          const SnackBar(
+                            content: Text('Password reset email sent!'),
+                          ),
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Enter your email first')),
+                          const SnackBar(
+                            content: Text('Enter your email first'),
+                          ),
                         );
                       }
                     },
@@ -158,7 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 30),
-                _buildGoogleButton(_googleSignIn),
+                _buildGoogleButton(_isLoading ? null : _googleSignIn),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -225,7 +313,9 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.only(right: 20),
               child: IconButton(
                 icon: Icon(
-                  isVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  isVisible
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
                   color: AppColors.hint,
                   size: 22,
                 ),
@@ -255,16 +345,14 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildGoogleButton(VoidCallback onPressed) {
+  Widget _buildGoogleButton(VoidCallback? onPressed) {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.googleButton,
         foregroundColor: AppColors.textPrimary,
         padding: const EdgeInsets.symmetric(vertical: 15),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(30),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         elevation: 0,
       ),
       child: Row(
@@ -273,7 +361,8 @@ class _LoginScreenState extends State<LoginScreen> {
           Image.network(
             'https://img.icons8.com/?size=256&id=17949&format=png',
             height: 24,
-            errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.error),
           ),
           const SizedBox(width: 10),
           Text(

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 class ProviderOnboardingProvider extends ChangeNotifier {
-
   // Personal Details
   String firstName = '';
   String lastName = '';
@@ -34,43 +33,31 @@ class ProviderOnboardingProvider extends ChangeNotifier {
   String nationalIdFront = '';
   String nationalIdBack = '';
 
-
   // Update personal details
-  void setName({
-    required String firstName,
-    required String lastName,
-  }) {
+  void setName({required String firstName, required String lastName}) {
     this.firstName = firstName;
     this.lastName = lastName;
     notifyListeners();
   }
 
-
   // Update contact details
-  void setContact({
-    required String email,
-    required String phone,
-  }) {
+  void setContact({required String email, required String phone}) {
     this.email = email;
     this.phone = phone;
     notifyListeners();
   }
 
-
   // Update password
-  void setPassword({
-    required String password,
-  }) {
+  void setPassword({required String password}) {
     this.password = password;
     notifyListeners();
   }
 
-
   // Update professional profile
   void setPersonalDetails({
-    required String address,
     required String about,
     String? imagePath,
+    String? address,
   }) {
     homeAddress = address;
     this.about = about;
@@ -79,13 +66,11 @@ class ProviderOnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
   // Update selected service
   void setService(String service) {
     selectedService = service;
     notifyListeners();
   }
-
 
   // Update experience and working schedule
   void setWorkingInformation({
@@ -99,17 +84,12 @@ class ProviderOnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
   // Update location
-  void setLocation({
-    required String location,
-    required double radius,
-  }) {
+  void setLocation({required String location, required double radius}) {
     this.location = location;
     workingRadius = radius;
     notifyListeners();
   }
-
 
   // Update verification documents
   void setVerificationDocuments({
@@ -121,7 +101,6 @@ class ProviderOnboardingProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-
   // Clear all data if onboarding is cancelled
   void clear() {
     firstName = '';
@@ -132,9 +111,9 @@ class ProviderOnboardingProvider extends ChangeNotifier {
 
     password = '';
 
-    profileImagePath = '';
-    homeAddress = '';
-    about = '';
+    profileImagePath = null;
+    homeAddress = null;
+    about = null;
 
     selectedService = '';
 

@@ -18,30 +18,21 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
   double radius = 5;
   String selectedLocation = '';
 
-  bool get canContinue => locationSelected;
-
   void _selectLocation() {
-  setState(() {
-    locationSelected = true;
-    selectedLocation = "Selected Location";
-  });
-}
+    setState(() {
+      locationSelected = true;
+      selectedLocation = "Selected Location";
+    });
+  }
 
   void _continue() {
+    Provider.of<ProviderOnboardingProvider>(
+      context,
+      listen: false,
+    ).setLocation(location: selectedLocation, radius: radius);
 
-  if (!canContinue) return;
-
-  Provider.of<ProviderOnboardingProvider>(
-    context,
-    listen: false,
-  ).setLocation(
-    location: selectedLocation,
-    radius: radius,
-  );
-
-  AppRouter.goToVerificationDocuments(context);
-
-}
+    AppRouter.goToVerificationDocuments(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -85,22 +76,21 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
               ),
             ),
             const SizedBox(height: 12),
-            // Text(
-            //   "Choose where you provide your services and how far you are willing to travel.",
-            //   textAlign: TextAlign.center,
-            //   style: textTheme.bodyLarge?.copyWith(
-            //     color: AppColors.textSecondary,
-            //   ),
-            // ),
+            Text(
+              "You can keep this step for now. The selected location will not "
+              "be saved to Firebase until location services are connected.",
+              textAlign: TextAlign.center,
+              style: textTheme.bodyLarge?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
             const SizedBox(height: 35),
             Container(
               height: 220,
               decoration: BoxDecoration(
                 color: AppColors.providerCard,
                 borderRadius: BorderRadius.circular(30),
-                border: Border.all(
-                  color: AppColors.border,
-                ),
+                border: Border.all(color: AppColors.border),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -123,9 +113,7 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
                   ElevatedButton(
                     onPressed: _selectLocation,
                     child: Text(
-                      locationSelected
-                          ? "Change Location"
-                          : "Choose Location",
+                      locationSelected ? "Change Location" : "Choose Location",
                     ),
                   ),
                 ],
@@ -151,12 +139,7 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
               },
             ),
             const SizedBox(height: 25),
-            ElevatedButton(
-              onPressed: canContinue ? _continue : null,
-              child: const Text(
-                "Continue",
-              ),
-            ),
+            ElevatedButton(onPressed: _continue, child: const Text("Continue")),
             const SizedBox(height: 30),
           ],
         ),

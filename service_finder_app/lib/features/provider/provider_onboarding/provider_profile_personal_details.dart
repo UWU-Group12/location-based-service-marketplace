@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:provider/provider.dart';
 
 import '../../../core/app_colors.dart';
 import '../../../core/app_router.dart';
+import '../provider_onboarding_provider.dart';
 
 class ProviderProfilePersonalDetails extends StatefulWidget {
   const ProviderProfilePersonalDetails({super.key});
@@ -14,16 +16,11 @@ class ProviderProfilePersonalDetails extends StatefulWidget {
 
 class _ProviderProfilePersonalDetailsState
     extends State<ProviderProfilePersonalDetails> {
-
   final _addressController = TextEditingController();
   final _aboutController = TextEditingController();
-
   bool hasProfileImage = false;
 
-  bool get canContinue =>
-      hasProfileImage &&
-      _addressController.text.trim().isNotEmpty &&
-      _aboutController.text.trim().isNotEmpty;
+  bool get canContinue => _aboutController.text.trim().isNotEmpty;
 
   @override
   void initState() {
@@ -47,11 +44,19 @@ class _ProviderProfilePersonalDetailsState
   void _continue() {
     if (!canContinue) return;
 
+    Provider.of<ProviderOnboardingProvider>(
+      context,
+      listen: false,
+    ).setPersonalDetails(
+      address: _addressController.text.trim(),
+      about: _aboutController.text.trim(),
+      imagePath: hasProfileImage ? 'profile_image_not_uploaded' : null,
+    );
+
     AppRouter.goToProviderProfileServiceInfo(context);
   }
 
-  void _uploadImage() {
-    // Image picker will be added later
+  void _selectImage() {
     setState(() {
       hasProfileImage = true;
     });
@@ -59,7 +64,6 @@ class _ProviderProfilePersonalDetailsState
 
   @override
   Widget build(BuildContext context) {
-
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -85,7 +89,6 @@ class _ProviderProfilePersonalDetailsState
           crossAxisAlignment: CrossAxisAlignment.stretch,
 
           children: [
-
             const SizedBox(height: 10),
 
             Center(
@@ -110,39 +113,29 @@ class _ProviderProfilePersonalDetailsState
 
             const SizedBox(height: 12),
 
-            // Text(
-            //   "Add your personal details so customers can know more about you.",
-            //   textAlign: TextAlign.center,
-            //   style: textTheme.bodyLarge?.copyWith(
-            //     color: AppColors.textSecondary,
-            //   ),
-            // ),
-
+            Text(
+              "These details are kept during registration. Image upload and "
+              "location services will be connected later.",
+              textAlign: TextAlign.center,
+              style: textTheme.bodyLarge?.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
             const SizedBox(height: 35),
 
-
             GestureDetector(
-              onTap: _uploadImage,
-
+              onTap: _selectImage,
               child: Center(
                 child: Container(
                   width: 120,
                   height: 120,
-
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: AppColors.providerCard,
-                    border: Border.all(
-                      color: AppColors.primary,
-                      width: 2,
-                    ),
+                    border: Border.all(color: AppColors.primary, width: 2),
                   ),
-
                   child: Icon(
-                    hasProfileImage
-                        ? Icons.check
-                        : Icons.add_a_photo_outlined,
-
+                    hasProfileImage ? Icons.check : Icons.add_a_photo_outlined,
                     size: 45,
                     color: AppColors.primary,
                   ),
@@ -150,44 +143,32 @@ class _ProviderProfilePersonalDetailsState
               ),
             ),
 
-
             const SizedBox(height: 35),
-
 
             TextField(
               controller: _addressController,
-
               maxLines: 2,
-
               decoration: InputDecoration(
                 hintText: "Home Address",
-                prefixIcon: const Icon(
-                  Icons.home_outlined,
-                ),
-
+                prefixIcon: const Icon(Icons.home_outlined),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),
               ),
             ),
 
-
             const SizedBox(height: 18),
-
-
             TextField(
               controller: _aboutController,
 
               maxLines: 4,
 
               decoration: InputDecoration(
-                hintText: "About",
+                hintText: "About your services",
 
                 prefixIcon: const Padding(
                   padding: EdgeInsets.only(bottom: 60),
-                  child: Icon(
-                    Icons.description_outlined,
-                  ),
+                  child: Icon(Icons.description_outlined),
                 ),
 
                 border: OutlineInputBorder(
@@ -196,20 +177,13 @@ class _ProviderProfilePersonalDetailsState
               ),
             ),
 
-
             const SizedBox(height: 35),
 
-
             ElevatedButton(
-              onPressed: canContinue
-                  ? _continue
-                  : null,
+              onPressed: canContinue ? _continue : null,
 
-              child: const Text(
-                "Continue",
-              ),
+              child: const Text("Continue"),
             ),
-
 
             const SizedBox(height: 30),
           ],

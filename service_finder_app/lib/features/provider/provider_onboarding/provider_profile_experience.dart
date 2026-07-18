@@ -12,28 +12,14 @@ class ProviderProfileExperience extends StatefulWidget {
   @override
   State<ProviderProfileExperience> createState() =>
       _ProviderProfileExperienceState();
-    
 }
 
 class _ProviderProfileExperienceState extends State<ProviderProfileExperience> {
   final _experienceController = TextEditingController();
 
-  final List<String> days = [
-    "Mon",
-    "Tue",
-    "Wed",
-    "Thu",
-    "Fri",
-    "Sat",
-    "Sun",
-  ];
+  final List<String> days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-  final List<String> hours = [
-    "Morning",
-    "Afternoon",
-    "Evening",
-    "Full Day",
-  ];
+  final List<String> hours = ["Morning", "Afternoon", "Evening", "Full Day"];
 
   final List<String> selectedDays = [];
   String? selectedHours;
@@ -60,21 +46,19 @@ class _ProviderProfileExperienceState extends State<ProviderProfileExperience> {
   }
 
   void _continue() {
+    if (!canContinue) return;
 
-  if (!canContinue) return;
+    Provider.of<ProviderOnboardingProvider>(
+      context,
+      listen: false,
+    ).setWorkingInformation(
+      experienceYears: _experienceController.text.trim(),
+      workingDays: selectedDays,
+      workingHours: selectedHours!,
+    );
 
-  Provider.of<ProviderOnboardingProvider>(
-    context,
-    listen: false,
-  ).setWorkingInformation(
-    experienceYears: _experienceController.text.trim(),
-    workingDays: selectedDays,
-    workingHours: selectedHours!,
-  );
-
-  AppRouter.goToProviderWorkingArea(context);
-
-}
+    AppRouter.goToProviderWorkingArea(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -172,17 +156,13 @@ class _ProviderProfileExperienceState extends State<ProviderProfileExperience> {
                           : AppColors.background,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: selected
-                            ? AppColors.primary
-                            : AppColors.border,
+                        color: selected ? AppColors.primary : AppColors.border,
                       ),
                     ),
                     child: Text(
                       day,
                       style: textTheme.bodyMedium?.copyWith(
-                        color: selected
-                            ? Colors.white
-                            : AppColors.textPrimary,
+                        color: selected ? Colors.white : AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -216,9 +196,7 @@ class _ProviderProfileExperienceState extends State<ProviderProfileExperience> {
                         : AppColors.background,
                     borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                      color: selected
-                          ? AppColors.primary
-                          : AppColors.border,
+                      color: selected ? AppColors.primary : AppColors.border,
                     ),
                   ),
                   child: Row(
