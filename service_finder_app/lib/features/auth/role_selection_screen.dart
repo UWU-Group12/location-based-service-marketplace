@@ -115,7 +115,7 @@ class RoleSelectionScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(30),
           onTap: () {
             if (isProvider) {
-              AppRouter.goToProviderRegister(context);
+              AppRouter.goToProviderProfileName(context);
             } else {
               AppRouter.goToCustomerRegister(context);
             }
