@@ -38,7 +38,7 @@ class ProviderModel {
     required this.updatedAt, //profile updated 2 hours ago
   });
 
-  Map <String, dynamic> toMap(){
+  Map<String, dynamic> toFirestore(){
     return{
       'providerId': providerId,
       'displayName': displayName,
@@ -58,12 +58,13 @@ class ProviderModel {
       'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
-  factory ProviderModel.fromMap(String docId, Map<String, dynamic> data) {
+
+  factory ProviderModel.fromFirestore(String docId, Map<String, dynamic> data) {
     return ProviderModel(
       providerId: docId,
-      displayName:data['displayName'] ?? '',
+      displayName: data['displayName'] ?? '',
       profileImagePath: data['profileImagePath'],
-      bio:data['bio'],
+      bio: data['bio'],
       categoryIds: List<String>.from(data['categoryIds'] ?? []),
       baseLocation: data['baseLocation'] ?? const GeoPoint(0,0),
       geohash: data['geohash'] ?? '',
@@ -76,8 +77,6 @@ class ProviderModel {
       completedJobCount: data['completedJobCount'] ?? 0,
       createdAt: (data['createdAt'] as Timestamp).toDate(),
       updatedAt: (data['updatedAt'] as Timestamp).toDate(),
-
-
     );
   }
 
