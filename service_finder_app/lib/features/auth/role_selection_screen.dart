@@ -1,9 +1,73 @@
 import 'package:flutter/material.dart';
+
 import '../../core/app_router.dart';
 import '../../core/app_colors.dart';
+import '../../models/user_model.dart';
+import '../../services/auth_service.dart';
 
-class RoleSelectionScreen extends StatelessWidget {
+class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});
+
+  @override
+  State<RoleSelectionScreen> createState() => _RoleSelectionScreenState();
+}
+
+class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
+
+  Future<void> _selectRole(bool isProvider) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final currentProfile = await _authService.getUserProfileForCurrentUser();
+
+      if (!mounted) return;
+
+      if (currentProfile != null) {
+        AppRouter.goToSignedInHome(
+          context,
+          currentProfile,
+          signedInWithGoogle: _authService.currentUserUsesGoogle,
+        );
+        return;
+      }
+
+      if (_authService.hasAuthenticatedUser) {
+        final role = isProvider ? UserRole.provider : UserRole.customer;
+        final newProfile = await _authService.createCurrentUserProfile(role);
+
+        if (!mounted) return;
+
+        AppRouter.goToSignedInHome(
+          context,
+          newProfile,
+          signedInWithGoogle: _authService.currentUserUsesGoogle,
+        );
+        return;
+      }
+
+      if (isProvider) {
+        AppRouter.goToProviderProfileName(context);
+      } else {
+        AppRouter.goToCustomerRegister(context);
+      }
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not save your role: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +80,11 @@ class RoleSelectionScreen extends StatelessWidget {
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.textPrimary, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: AppColors.textPrimary,
+            size: 20,
+          ),
           onPressed: () {
             if (Navigator.canPop(context)) {
               Navigator.pop(context);
@@ -27,6 +95,7 @@ class RoleSelectionScreen extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_isLoading) const LinearProgressIndicator(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 20),
             child: Text(
@@ -113,13 +182,7 @@ class RoleSelectionScreen extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(30),
-          onTap: () {
-            if (isProvider) {
-              AppRouter.goToProviderProfileName(context);
-            } else {
-              AppRouter.goToCustomerRegister(context);
-            }
-          },
+          onTap: _isLoading ? null : () => _selectRole(isProvider),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Row(
@@ -129,8 +192,11 @@ class RoleSelectionScreen extends StatelessWidget {
                   child: Image.asset(
                     imagePath,
                     fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) =>
-                    const Icon(Icons.person, size: 80, color: AppColors.border),
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.person,
+                      size: 80,
+                      color: AppColors.border,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 20),
@@ -142,11 +208,12 @@ class RoleSelectionScreen extends StatelessWidget {
                     children: [
                       Text(
                         role,
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontSize: 24,
-                          color: AppColors.textPrimary,
-                          height: 1.1,
-                        ),
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(
+                              fontSize: 24,
+                              color: AppColors.textPrimary,
+                              height: 1.1,
+                            ),
                       ),
                       const SizedBox(height: 8),
                       Text(

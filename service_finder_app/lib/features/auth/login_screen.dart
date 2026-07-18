@@ -18,6 +18,13 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _isPasswordVisible = false;
 
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -33,13 +40,19 @@ class _LoginScreenState extends State<LoginScreen> {
         _passwordController.text.trim(),
       );
 
-      final user = result?.user;
+      final user = result.user;
 
       if (user == null) {
         throw Exception('Login succeeded but user data is missing.');
       }
 
-      await _goToDashboard(user.uid);
+      final userProfile = await _authService.requireActiveUserProfile(user.uid);
+
+      if (!mounted) {
+        return;
+      }
+
+      AppRouter.goToSignedInHome(context, userProfile);
     } catch (error) {
       if (!mounted) {
         return;
@@ -70,13 +83,33 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      final user = result.user;
-
-      if (user == null) {
-        throw Exception('Google user data is missing.');
+      final firebaseUser = result.user;
+      if (firebaseUser == null) {
+        throw StateError('Firebase did not return the Google user.');
       }
 
-      await _goToDashboard(user.uid);
+      final existingProfile = await _authService.getUserProfile(
+        firebaseUser.uid,
+      );
+
+      if (!mounted) return;
+
+      if (existingProfile == null) {
+        AppRouter.goToRoleSelection(context);
+        return;
+      }
+
+      final userProfile = await _authService.requireActiveUserProfile(
+        firebaseUser.uid,
+      );
+
+      if (!mounted) return;
+
+      AppRouter.goToSignedInHome(
+        context,
+        userProfile,
+        signedInWithGoogle: _authService.currentUserUsesGoogle,
+      );
     } catch (error) {
       if (!mounted) {
         return;
@@ -213,7 +246,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 30),
-                _buildGoogleButton(_googleSignIn),
+                _buildGoogleButton(_isLoading ? null : _googleSignIn),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -312,7 +345,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildGoogleButton(VoidCallback onPressed) {
+  Widget _buildGoogleButton(VoidCallback? onPressed) {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
@@ -342,26 +375,5 @@ class _LoginScreenState extends State<LoginScreen> {
         ],
       ),
     );
-  }
-
-  Future<void> _goToDashboard(String userId) async {
-    final role = await _authService.getUserRole(userId);
-
-    if (!mounted) {
-      return;
-    }
-    debugPrint(role);
-
-    if (role == 'customer') {
-      AppRouter.goToCustomerDashboard(context);
-    } else if (role == 'provider') {
-      AppRouter.goToProviderDashboard(context);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('User role was not found. Please contact support.'),
-        ),
-      );
-    }
   }
 }

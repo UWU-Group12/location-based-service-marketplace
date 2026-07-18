@@ -10,22 +10,21 @@ class ProviderProfileContact extends StatefulWidget {
   const ProviderProfileContact({super.key});
 
   @override
-  State<ProviderProfileContact> createState() =>
-      _ProviderProfileContactState();
+  State<ProviderProfileContact> createState() => _ProviderProfileContactState();
 }
 
-class _ProviderProfileContactState
-    extends State<ProviderProfileContact> {
-
+class _ProviderProfileContactState extends State<ProviderProfileContact> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
 
   bool get canContinue =>
+      _emailController.text.trim().contains('@') &&
       _phoneController.text.trim().isNotEmpty;
 
   @override
   void initState() {
     super.initState();
+    _emailController.addListener(_refresh);
     _phoneController.addListener(_refresh);
   }
 
@@ -41,20 +40,15 @@ class _ProviderProfileContactState
   }
 
   void _continue() {
+    if (!canContinue) return;
 
-  if (!canContinue) return;
+    Provider.of<ProviderOnboardingProvider>(context, listen: false).setContact(
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
+    );
 
-  Provider.of<ProviderOnboardingProvider>(
-    context,
-    listen: false,
-  ).setContact(
-    email: _emailController.text.trim(),
-    phone: _phoneController.text.trim(),
-  );
-
-  AppRouter.goToProviderProfilePassword(context);
-
-}
+    AppRouter.goToProviderProfilePassword(context);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,10 +61,7 @@ class _ProviderProfileContactState
         backgroundColor: AppColors.background,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new,
-            color: AppColors.primary,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.primary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -81,17 +72,16 @@ class _ProviderProfileContactState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-
             const SizedBox(height: 20),
 
-              Center(
-                child: SvgPicture.asset(
-                  'assets/onboardingsvg/provider_contact.svg',
-                  width:200,
-                  height:200,
-                  fit: BoxFit.contain,
-                ),
+            Center(
+              child: SvgPicture.asset(
+                'assets/onboardingsvg/provider_contact.svg',
+                width: 200,
+                height: 200,
+                fit: BoxFit.contain,
               ),
+            ),
 
             const SizedBox(height: 35),
 
@@ -114,7 +104,6 @@ class _ProviderProfileContactState
             //     color: AppColors.textSecondary,
             //   ),
             // ),
-
             const SizedBox(height: 35),
 
             TextField(

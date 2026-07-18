@@ -18,9 +18,11 @@ import '../features/provider/provider_onboarding/provider_working_area.dart';
 import '../features/provider/provider_onboarding/provider_verification_documents.dart';
 import '../features/provider/provider_onboarding/provider_profile_summary.dart';
 import '../features/customer/provider_list_screen.dart';
+import '../models/user_model.dart';
 
 import '../features/customer/service_categories_screen.dart';
 import '../features/provider/provider_shell_screen.dart';
+
 class AppRouter {
   AppRouter._();
 
@@ -79,12 +81,11 @@ class AppRouter {
 
   static void goToProviderDashboard(
     BuildContext context, {
-        String? debugUserName,
+    String? debugUserName,
   }) {
-    Navigator.of(context).pushAndRemoveUntil(
-      _buildRoute(ProviderShellScreen()),
-      (route) => false,
-    );
+    Navigator.of(
+      context,
+    ).pushAndRemoveUntil(_buildRoute(ProviderShellScreen()), (route) => false);
   }
 
   static void goToProviderProfilePersonalDetails(BuildContext context) {
@@ -128,10 +129,6 @@ class AppRouter {
     Navigator.of(context).push(_buildRoute(const DevBypassScreen()));
   }
 
-  static void googleSignIn(BuildContext context) {
-    // TODO: Implement Google Sign-In flow.
-  }
-
   static void goToServiceCategoryScreen(BuildContext context) {
     Navigator.of(context).push(_buildRoute(const ServiceCategoriesScreen()));
   }
@@ -149,5 +146,32 @@ class AppRouter {
     Navigator.of(
       context,
     ).pushAndRemoveUntil(_buildRoute(const LoginScreen()), (route) => false);
+  }
+
+  static void goToSignedInHome(
+    BuildContext context,
+    UserModel user, {
+    bool signedInWithGoogle = false,
+  }) {
+    switch (user.role) {
+      case UserRole.customer:
+        goToCustomerDashboard(context);
+        return;
+      case UserRole.provider:
+        if (user.profileCompleted) {
+          goToProviderDashboard(context);
+        } else if (signedInWithGoogle) {
+          Navigator.of(context).pushAndRemoveUntil(
+            _buildRoute(const BuildProfessionalProfile()),
+            (route) => false,
+          );
+        } else {
+          Navigator.of(context).pushAndRemoveUntil(
+            _buildRoute(const ProviderProfileName()),
+            (route) => false,
+          );
+        }
+        return;
+    }
   }
 }

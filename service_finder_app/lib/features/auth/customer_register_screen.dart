@@ -33,36 +33,44 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
     super.dispose();
   }
 
-  void _register() async {
+  Future<void> _register() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        await _authService.registerWithEmail(
+        final result = await _authService.registerWithEmail(
           _emailController.text.trim(),
           _passwordController.text.trim(),
           {
-            'displayName': _firstNameController.text.trim()+" "+_lastNameController.text.trim(),
+            'displayName':
+                '${_firstNameController.text.trim()} '
+                '${_lastNameController.text.trim()}',
             'email': _emailController.text.trim(),
             'phoneNumber': _mobileController.text.trim(),
-            'photoPath': 'place_holders/profile.jpg',
             'role': 'customer',
-            'accountStatus':'active',
-            'profileCompleted':false,
-
+            'accountStatus': 'active',
+            'profileCompleted': true,
           },
         );
-        if (mounted) {
-          if (widget.role == 'Customer') {
-            AppRouter.goToCustomerDashboard(context);
-          } else {
-            AppRouter.goToProviderDashboard(context);
-          }
+
+        final firebaseUser = result.user;
+        if (firebaseUser == null) {
+          throw StateError('Firebase did not return the registered user.');
         }
-      } catch (e) {
+
+        final userProfile = await _authService.requireActiveUserProfile(
+          firebaseUser.uid,
+        );
+
+        if (!mounted) {
+          return;
+        }
+
+        AppRouter.goToSignedInHome(context, userProfile);
+      } catch (error) {
         if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error: ${e.toString()}')));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Registration failed: $error')),
+          );
         }
       } finally {
         if (mounted) setState(() => _isLoading = false);
@@ -70,14 +78,47 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
     }
   }
 
-  void _googleSignUp() async {
+  Future<void> _googleSignUp() async {
     setState(() => _isLoading = true);
+
     try {
-      await _authService.signInWithGoogle();
-    } catch (e) {
+      final result = await _authService.signInWithGoogle();
+
+      if (result == null) {
+        return;
+      }
+
+      final firebaseUser = result.user;
+      if (firebaseUser == null) {
+        throw StateError('Firebase did not return the Google user.');
+      }
+
+      final existingProfile = await _authService.getUserProfile(
+        firebaseUser.uid,
+      );
+
+      if (!mounted) return;
+
+      if (existingProfile == null) {
+        AppRouter.goToRoleSelection(context);
+        return;
+      }
+
+      final userProfile = await _authService.requireActiveUserProfile(
+        firebaseUser.uid,
+      );
+
+      if (!mounted) return;
+
+      AppRouter.goToSignedInHome(
+        context,
+        userProfile,
+        signedInWithGoogle: _authService.currentUserUsesGoogle,
+      );
+    } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Google Sign-Up failed: ${e.toString()}')),
+          SnackBar(content: Text('Google Sign-Up failed: $error')),
         );
       }
     } finally {
@@ -216,7 +257,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
                   ],
                 ),
                 const SizedBox(height: 30),
-                _buildGoogleButton(_googleSignUp),
+                _buildGoogleButton(_isLoading ? null : _googleSignUp),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -307,7 +348,7 @@ class _CustomerRegisterScreenState extends State<CustomerRegisterScreen> {
     );
   }
 
-  Widget _buildGoogleButton(VoidCallback onPressed) {
+  Widget _buildGoogleButton(VoidCallback? onPressed) {
     return ElevatedButton(
       onPressed: onPressed,
       style: ElevatedButton.styleFrom(
