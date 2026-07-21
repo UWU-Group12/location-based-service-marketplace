@@ -8,46 +8,45 @@ import '../../data/service_categories.dart';
 class CustomerHomeScreen extends StatefulWidget {
   final String userName;
   final String initials;
-  const CustomerHomeScreen({super.key, required this.userName, required this.initials});
+  const CustomerHomeScreen({
+    super.key,
+    required this.userName,
+    required this.initials,
+  });
 
   @override
   State<CustomerHomeScreen> createState() => _CustomerHomeScreenState();
 }
 
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
-  final TextEditingController _searchController =
-    TextEditingController();
-    List<String> filteredServices = [];
+  final TextEditingController _searchController = TextEditingController();
+  List<String> filteredServices = [];
 
-    void _searchServices(String value) {
-
-      if (value.isEmpty) {
-        setState(() {
-          filteredServices = [];
-        });
-        return;
-      }
-
+  void _searchServices(String value) {
+    if (value.isEmpty) {
       setState(() {
-        filteredServices = serviceCategories
-            .where(
-              (service) => service
-                  .toLowerCase()
-                  .contains(value.toLowerCase()),
-            )
-            .toList();
+        filteredServices = [];
       });
-
+      return;
     }
 
-    @override
+    setState(() {
+      filteredServices = serviceCategories
+          .where(
+            (service) => service.toLowerCase().contains(value.toLowerCase()),
+          )
+          .toList();
+    });
+  }
 
-    void dispose() {
-      _searchController.dispose();
-      super.dispose();
-    }
-    @override
-    Widget build(BuildContext context) {
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final darkRed = AppColors.primary.withValues(alpha: 0.8);
     final textTheme = Theme.of(context).textTheme;
 
@@ -94,12 +93,16 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 10,
-                            )
+                            ),
                           ],
                         ),
                         child: Stack(
                           children: [
-                            const Icon(Icons.notifications_none_outlined, size: 28, color: Colors.black),
+                            const Icon(
+                              Icons.notifications_none_outlined,
+                              size: 28,
+                              color: Colors.black,
+                            ),
                             Positioned(
                               right: 2,
                               top: 2,
@@ -109,10 +112,13 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                                 decoration: BoxDecoration(
                                   color: darkRed,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 1.5),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 1.5,
+                                  ),
                                 ),
                               ),
-                            )
+                            ),
                           ],
                         ),
                       ),
@@ -128,7 +134,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         ),
                       ),
                     ],
-                  )
+                  ),
                 ],
               ),
               const SizedBox(height: 25),
@@ -148,22 +154,17 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                   ),
 
                   if (filteredServices.isNotEmpty)
-                  Container(
-                    constraints: const BoxConstraints(
-                      maxHeight: 250,
-                    ),
-                    margin: const EdgeInsets.only(top: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(15),
-                      border: Border.all(
-                        color: Colors.grey.shade200,
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 250),
+                      margin: const EdgeInsets.only(top: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(15),
+                        border: Border.all(color: Colors.grey.shade200),
                       ),
-                    ),
-                    child: ListView(
-                      shrinkWrap: true,
-                      children: filteredServices.map(
-                        (service) {
+                      child: ListView(
+                        shrinkWrap: true,
+                        children: filteredServices.map((service) {
                           return ListTile(
                             title: Text(service),
                             leading: const Icon(Icons.search),
@@ -177,17 +178,15 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => ProviderListingScreen(
-                                    service: service,
-                                  ),
+                                  builder: (_) =>
+                                      ProviderListingScreen(service: service),
                                 ),
                               );
                             },
                           );
-                        },
-                      ).toList(),
+                        }).toList(),
+                      ),
                     ),
-                  ),
                 ],
               ),
 
@@ -201,19 +200,15 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 children: [
                   Text(
                     'Popular services',
-                    style: textTheme.titleLarge?.copyWith(
-                      fontSize: 18,
-                    ),
+                    style: textTheme.titleLarge?.copyWith(fontSize: 18),
                   ),
                   TextButton(
                     onPressed: () {
                       AppRouter.goToServiceCategoryScreen(context);
                     },
-                    child: Text(  
+                    child: Text(
                       'View all',
-                      style: textTheme.labelLarge?.copyWith(
-                        color: darkRed,
-                      ),
+                      style: textTheme.labelLarge?.copyWith(color: darkRed),
                     ),
                   ),
                 ],
@@ -253,24 +248,22 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     const Color(0xFFE8F5E9),
                     const Color(0xFF1B5E20),
                   ),
-              ],
-            ),
-            const SizedBox(height: 30),
-            // Nearby Professionals
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                ],
+              ),
+              const SizedBox(height: 30),
+              // Nearby Professionals
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        'Nearby professionals',
-                        style: textTheme.titleLarge?.copyWith(
-                          fontSize: 18,
-                        ),
+                        'Available professionals',
+                        style: textTheme.titleLarge?.copyWith(fontSize: 18),
                       ),
                       Text(
-                        'Around Badulla',
+                        'Browse providers by service',
                         style: textTheme.bodySmall?.copyWith(
                           color: Colors.grey[500],
                           fontSize: 13,
@@ -282,9 +275,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     onPressed: () {},
                     child: Text(
                       'See all',
-                      style: textTheme.labelLarge?.copyWith(
-                        color: darkRed,
-                      ),
+                      style: textTheme.labelLarge?.copyWith(color: darkRed),
                     ),
                   ),
                 ],
@@ -296,13 +287,15 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(25),
-                  border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
+                  border: Border.all(
+                    color: Colors.black.withValues(alpha: 0.05),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.02),
                       blurRadius: 10,
                       offset: const Offset(0, 5),
-                    )
+                    ),
                   ],
                 ),
                 child: Row(
@@ -338,7 +331,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: const Color(0xFFE8F5E9),
                                   borderRadius: BorderRadius.circular(10),
@@ -376,7 +372,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              const Icon(Icons.star, color: Color(0xFFFFA000), size: 18),
+                              const Icon(
+                                Icons.star,
+                                color: Color(0xFFFFA000),
+                                size: 18,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 '4.8',
@@ -392,10 +392,14 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                                 ),
                               ),
                               const SizedBox(width: 15),
-                              Icon(Icons.location_on_outlined, color: Colors.grey[400], size: 18),
+                              Icon(
+                                Icons.location_on_outlined,
+                                color: Colors.grey[400],
+                                size: 18,
+                              ),
                               const SizedBox(width: 4),
                               Text(
-                                '1.8 km',
+                                'Badulla',
                                 style: textTheme.bodyMedium?.copyWith(
                                   color: Colors.grey[500],
                                   fontSize: 14,
@@ -407,7 +411,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black.withValues(alpha: 0.15)),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Colors.black.withValues(alpha: 0.15),
+                    ),
                   ],
                 ),
               ),
@@ -425,8 +433,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     String label,
     Color boxColor,
     Color iconColor,
-  ) 
-  {
+  ) {
     final textTheme = Theme.of(context).textTheme;
 
     return GestureDetector(
@@ -434,41 +441,42 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ProviderListingScreen(
-              service: label,
-            ),
+            builder: (_) => ProviderListingScreen(service: label),
           ),
         );
       },
       child: Column(
-      children: [
-        Container(
-          height: 65,
-          width: 65,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.03),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              )
-            ],
+        children: [
+          Container(
+            height: 65,
+            width: 65,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(15),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(
+              icon,
+              color: iconColor.withValues(alpha: 0.7),
+              size: 28,
+            ),
           ),
-          child: Icon(icon, color: iconColor.withValues(alpha: 0.7), size: 28),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          label,
-          style: textTheme.bodySmall?.copyWith(
-            fontSize: 13,
-            color: Colors.black.withValues(alpha: 0.6),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: textTheme.bodySmall?.copyWith(
+              fontSize: 13,
+              color: Colors.black.withValues(alpha: 0.6),
+            ),
           ),
-        ),
-      ],
+        ],
       ),
     );
-    
   }
 }

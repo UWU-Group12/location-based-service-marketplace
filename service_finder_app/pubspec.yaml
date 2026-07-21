@@ -46,6 +46,8 @@ dependencies:
   google_sign_in: ^6.1.6
   smooth_page_indicator: ^1.1.0
   firebase_storage: ^13.4.3
+  image_picker: 1.2.3
+  geolocator: ^14.0.3
 dev_dependencies:
   flutter_test:
     sdk: flutter

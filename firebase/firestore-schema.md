@@ -141,8 +141,10 @@ Stores provider information that customers are allowed to view and search.
     "electrician",
     "home-appliance-repair"
   ],
+  "experienceYears": 5,
+  "workingDays": ["Mon", "Tue", "Wed", "Thu", "Fri"],
+  "workingHours": "Full Day",
   "baseLocation": "GeoPoint",
-  "geohash": "tc1abc123",
   "locationId": "badulla-town",
   "serviceRadiusKm": 20,
   "availabilityStatus": "available",
@@ -164,10 +166,13 @@ Stores provider information that customers are allowed to view and search.
 | `profileImagePath` | String | No | Provider profile image path |
 | `bio` | String | No | Provider description |
 | `categoryIds` | Array<String> | Yes | Selected service categories |
-| `baseLocation` | GeoPoint | Yes | Provider's working location |
-| `geohash` | String | Yes | Used for nearby search |
+| `experienceYears` | Number | Yes | Whole years of professional experience |
+| `workingDays` | Array<String> | Yes | Days the provider normally works |
+| `workingHours` | String | Yes | Selected working-hours period |
+| `baseLocation` | GeoPoint | Yes | Provider's captured working location |
+| `geohash` | String | No | Reserved for a future geohash search improvement |
 | `locationId` | String | Yes | Supported location reference |
-| `serviceRadiusKm` | Number | Yes | Maximum working distance |
+| `serviceRadiusKm` | Number | Yes | Maximum working distance: 5, 10, 15, 20, or 30 km |
 | `availabilityStatus` | String | Yes | Current availability |
 | `verificationStatus` | String | Yes | Provider verification state |
 | `ratingAverage` | Number | Yes | Average provider rating |
@@ -367,8 +372,7 @@ Stores customer service requests sent to selected providers.
   ],
   "serviceLocation": {
     "point": "GeoPoint",
-    "geohash": "tc1abc123",
-    "addressText": "Badulla town"
+      "addressText": "Badulla town"
   },
   "requestStatus": "submitted",
   "quotationStatus": "pending",
@@ -759,7 +763,7 @@ FirebaseFirestore.instance
     .where('categoryIds', arrayContains: selectedCategoryId);
 ```
 
-Nearby provider search should also use geohash bounds and exact distance filtering.
+For the current MVP, this query shows all verified and available providers in the selected category. Location-based filtering can be added later.
 
 ---
 
@@ -784,8 +788,7 @@ providerId ASC, moderationStatus ASC, createdAt DESC
 providerProfiles
 verificationStatus ASC,
 availabilityStatus ASC,
-categoryIds ARRAY,
-geohash ASC
+categoryIds ARRAY
 ```
 
 Firestore may request additional indexes when new compound queries are added.

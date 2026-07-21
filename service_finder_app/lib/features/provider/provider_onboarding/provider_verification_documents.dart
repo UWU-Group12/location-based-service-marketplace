@@ -1,5 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/app_colors.dart';
@@ -16,79 +18,160 @@ class ProviderVerificationDocuments extends StatefulWidget {
 
 class _ProviderVerificationDocumentsState
     extends State<ProviderVerificationDocuments> {
-  bool frontUploaded = false;
-  bool backUploaded = false;
+  final ImagePicker _imagePicker = ImagePicker();
 
-  String? frontImagePath;
-  String? backImagePath;
+  String? _frontImagePath;
+  String? _backImagePath;
+  bool _initialized = false;
+  bool _isPickingImage = false;
 
-  void _uploadFront() {
-    setState(() {
-      frontUploaded = true;
-      frontImagePath = "national_id_front_image";
-    });
+  bool get canContinue =>
+      _frontImagePath != null && _backImagePath != null && !_isPickingImage;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    if (_initialized) return;
+
+    final onboarding = Provider.of<ProviderOnboardingProvider>(
+      context,
+      listen: false,
+    );
+    _frontImagePath = onboarding.nationalIdFrontPath;
+    _backImagePath = onboarding.nationalIdBackPath;
+    _initialized = true;
   }
 
-  void _uploadBack() {
-    setState(() {
-      backUploaded = true;
-      backImagePath = "national_id_back_image";
-    });
+  Future<void> _pickDocument({required bool isFront}) async {
+    if (_isPickingImage) return;
+
+    setState(() => _isPickingImage = true);
+
+    try {
+      final image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 90,
+        maxWidth: 2000,
+      );
+
+      if (image == null || !mounted) return;
+
+      setState(() {
+        if (isFront) {
+          _frontImagePath = image.path;
+        } else {
+          _backImagePath = image.path;
+        }
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not select the image: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isPickingImage = false);
+      }
+    }
   }
 
   void _continue() {
+    if (!canContinue) return;
+
     Provider.of<ProviderOnboardingProvider>(
       context,
       listen: false,
     ).setVerificationDocuments(
-      nationalIdFront: frontImagePath ?? '',
-      nationalIdBack: backImagePath ?? '',
+      nationalIdFrontPath: _frontImagePath!,
+      nationalIdBackPath: _backImagePath!,
     );
 
     AppRouter.goToProviderProfileSummary(context);
   }
 
+  String _fileName(String path) {
+    return path.replaceAll(r'\', '/').split('/').last;
+  }
+
   Widget _buildUploadCard({
     required String title,
-    required bool uploaded,
+    required String? imagePath,
     required VoidCallback onTap,
   }) {
     final textTheme = Theme.of(context).textTheme;
+    final selected = imagePath != null;
 
-    return GestureDetector(
-      onTap: onTap,
+    return InkWell(
+      onTap: _isPickingImage ? null : onTap,
+      borderRadius: BorderRadius.circular(25),
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         margin: const EdgeInsets.only(bottom: 18),
         decoration: BoxDecoration(
-          color: uploaded ? AppColors.providerCard : AppColors.background,
+          color: selected ? AppColors.providerCard : AppColors.background,
           borderRadius: BorderRadius.circular(25),
           border: Border.all(
-            color: uploaded ? AppColors.primary : AppColors.border,
-            width: uploaded ? 2 : 1,
+            color: selected ? AppColors.primary : AppColors.border,
+            width: selected ? 2 : 1,
           ),
         ),
         child: Row(
           children: [
-            Icon(
-              uploaded
-                  ? Icons.check_circle_outline
-                  : Icons.upload_file_outlined,
-              size: 35,
-              color: AppColors.primary,
-            ),
-            const SizedBox(width: 18),
-            Expanded(
-              child: Text(
-                uploaded ? "$title Uploaded" : title,
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+            if (selected)
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(
+                  File(imagePath),
+                  width: 64,
+                  height: 64,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) => const SizedBox(
+                    width: 64,
+                    height: 64,
+                    child: Icon(Icons.image_not_supported_outlined),
+                  ),
+                ),
+              )
+            else
+              const SizedBox(
+                width: 64,
+                height: 64,
+                child: Icon(
+                  Icons.add_photo_alternate_outlined,
+                  size: 38,
+                  color: AppColors.primary,
                 ),
               ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    selected ? '$title selected' : title,
+                    style: textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  if (selected) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      _fileName(imagePath),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 18,
+            Icon(
+              selected ? Icons.edit_outlined : Icons.arrow_forward_ios,
+              size: 20,
               color: AppColors.textSecondary,
             ),
           ],
@@ -103,7 +186,6 @@ class _ProviderVerificationDocumentsState
 
     return Scaffold(
       backgroundColor: AppColors.background,
-
       appBar: AppBar(
         backgroundColor: AppColors.background,
         elevation: 0,
@@ -116,28 +198,20 @@ class _ProviderVerificationDocumentsState
           onPressed: () => Navigator.pop(context),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24),
-
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-
           children: [
-            const SizedBox(height: 10),
-
-            Center(
-              child: SvgPicture.asset(
-                'assets/onboardingsvg/provider_verification.svg',
-                width: 220,
-                fit: BoxFit.contain,
-              ),
+            const SizedBox(height: 18),
+            const Icon(
+              Icons.verified_user_outlined,
+              size: 110,
+              color: AppColors.primary,
             ),
-
             const SizedBox(height: 25),
-
             Text(
-              "Verification documents",
+              'Verification documents',
               textAlign: TextAlign.center,
               style: textTheme.headlineMedium?.copyWith(
                 fontSize: 32,
@@ -145,36 +219,40 @@ class _ProviderVerificationDocumentsState
                 color: AppColors.textPrimary,
               ),
             ),
-
             const SizedBox(height: 12),
-
             Text(
-              "Keep this step for verification. Files selected here are not "
-              "uploaded until storage services are connected.",
+              'Select clear images of both sides of your National ID. '
+              'They are uploaded securely when you create your profile.',
               textAlign: TextAlign.center,
               style: textTheme.bodyLarge?.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
-
             const SizedBox(height: 35),
-
             _buildUploadCard(
-              title: "National ID Front Side",
-              uploaded: frontUploaded,
-              onTap: _uploadFront,
+              title: 'National ID front side',
+              imagePath: _frontImagePath,
+              onTap: () => _pickDocument(isFront: true),
             ),
-
             _buildUploadCard(
-              title: "National ID Back Side",
-              uploaded: backUploaded,
-              onTap: _uploadBack,
+              title: 'National ID back side',
+              imagePath: _backImagePath,
+              onTap: () => _pickDocument(isFront: false),
             ),
-
             const SizedBox(height: 25),
-
-            ElevatedButton(onPressed: _continue, child: const Text("Continue")),
-
+            ElevatedButton(
+              onPressed: canContinue ? _continue : null,
+              child: _isPickingImage
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Continue'),
+            ),
             const SizedBox(height: 30),
           ],
         ),

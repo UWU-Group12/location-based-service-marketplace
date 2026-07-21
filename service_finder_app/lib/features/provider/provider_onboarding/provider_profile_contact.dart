@@ -15,17 +15,13 @@ class ProviderProfileContact extends StatefulWidget {
 
 class _ProviderProfileContactState extends State<ProviderProfileContact> {
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
 
-  bool get canContinue =>
-      _emailController.text.trim().contains('@') &&
-      _phoneController.text.trim().isNotEmpty;
+  bool get canContinue => _emailController.text.trim().contains('@');
 
   @override
   void initState() {
     super.initState();
     _emailController.addListener(_refresh);
-    _phoneController.addListener(_refresh);
   }
 
   void _refresh() {
@@ -35,17 +31,16 @@ class _ProviderProfileContactState extends State<ProviderProfileContact> {
   @override
   void dispose() {
     _emailController.dispose();
-    _phoneController.dispose();
     super.dispose();
   }
 
   void _continue() {
     if (!canContinue) return;
 
-    Provider.of<ProviderOnboardingProvider>(context, listen: false).setContact(
-      email: _emailController.text.trim(),
-      phone: _phoneController.text.trim(),
-    );
+    Provider.of<ProviderOnboardingProvider>(
+      context,
+      listen: false,
+    ).setContact(email: _emailController.text.trim());
 
     AppRouter.goToProviderProfilePassword(context);
   }
@@ -110,22 +105,8 @@ class _ProviderProfileContactState extends State<ProviderProfileContact> {
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               decoration: InputDecoration(
-                labelText: "Email Address (Optional)",
+                labelText: "Email Address",
                 prefixIcon: const Icon(Icons.email_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            TextField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: InputDecoration(
-                labelText: "Mobile Number",
-                prefixIcon: const Icon(Icons.phone_android_outlined),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
                 ),

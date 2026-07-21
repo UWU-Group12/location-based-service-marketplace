@@ -66,7 +66,10 @@ class AppRouter {
   }
 
   static void goToBuildProfessionalProfile(BuildContext context) {
-    Navigator.of(context).push(_buildRoute(const BuildProfessionalProfile()));
+    Navigator.of(context).pushAndRemoveUntil(
+      _buildRoute(const BuildProfessionalProfile()),
+      (route) => false,
+    );
   }
 
   static void goToCustomerDashboard(
@@ -133,11 +136,18 @@ class AppRouter {
     Navigator.of(context).push(_buildRoute(const ServiceCategoriesScreen()));
   }
 
-  static void goToProviderListScreen(BuildContext context, String category) {
+  static void goToProviderListScreen(
+    BuildContext context, {
+    required String categoryId,
+    required String categoryName,
+  }) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ProviderListScreen(category: category),
+        builder: (context) => ProviderListScreen(
+          categoryId: categoryId,
+          categoryName: categoryName,
+        ),
       ),
     );
   }
@@ -148,11 +158,7 @@ class AppRouter {
     ).pushAndRemoveUntil(_buildRoute(const LoginScreen()), (route) => false);
   }
 
-  static void goToSignedInHome(
-    BuildContext context,
-    UserModel user, {
-    bool signedInWithGoogle = false,
-  }) {
+  static void goToSignedInHome(BuildContext context, UserModel user) {
     switch (user.role) {
       case UserRole.customer:
         goToCustomerDashboard(context);
@@ -160,16 +166,8 @@ class AppRouter {
       case UserRole.provider:
         if (user.profileCompleted) {
           goToProviderDashboard(context);
-        } else if (signedInWithGoogle) {
-          Navigator.of(context).pushAndRemoveUntil(
-            _buildRoute(const BuildProfessionalProfile()),
-            (route) => false,
-          );
         } else {
-          Navigator.of(context).pushAndRemoveUntil(
-            _buildRoute(const ProviderProfileName()),
-            (route) => false,
-          );
+          goToBuildProfessionalProfile(context);
         }
         return;
     }

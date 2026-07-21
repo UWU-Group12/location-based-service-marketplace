@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:provider/provider.dart';
 import '../provider_onboarding_provider.dart';
 
@@ -24,8 +24,11 @@ class _ProviderProfileExperienceState extends State<ProviderProfileExperience> {
   final List<String> selectedDays = [];
   String? selectedHours;
 
+  int? get experienceYears => int.tryParse(_experienceController.text.trim());
+
   bool get canContinue =>
-      _experienceController.text.trim().isNotEmpty &&
+      experienceYears != null &&
+      experienceYears! >= 0 &&
       selectedDays.isNotEmpty &&
       selectedHours != null;
 
@@ -52,7 +55,7 @@ class _ProviderProfileExperienceState extends State<ProviderProfileExperience> {
       context,
       listen: false,
     ).setWorkingInformation(
-      experienceYears: _experienceController.text.trim(),
+      experienceYears: experienceYears!,
       workingDays: selectedDays,
       workingHours: selectedHours!,
     );
@@ -84,11 +87,11 @@ class _ProviderProfileExperienceState extends State<ProviderProfileExperience> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 10),
-            Center(
-              child: SvgPicture.asset(
-                'assets/onboardingsvg/provider_experience.svg',
-                width: 220,
-                fit: BoxFit.contain,
+            const Center(
+              child: Icon(
+                Icons.work_history_outlined,
+                size: 110,
+                color: AppColors.primary,
               ),
             ),
             const SizedBox(height: 25),

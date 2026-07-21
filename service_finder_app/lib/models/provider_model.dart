@@ -6,6 +6,9 @@ class ProviderModel {
   final String? profileImagePath;
   final String? bio;
   final List<String> categoryIds;
+  final int experienceYears;
+  final List<String> workingDays;
+  final String workingHours;
   final GeoPoint? baseLocation;
   final String? geohash;
   final String? locationId;
@@ -24,6 +27,9 @@ class ProviderModel {
     this.profileImagePath,
     this.bio,
     required this.categoryIds,
+    this.experienceYears = 0,
+    this.workingDays = const [],
+    this.workingHours = '',
     this.baseLocation,
     this.geohash,
     this.locationId,
@@ -44,6 +50,9 @@ class ProviderModel {
       if (profileImagePath != null) 'profileImagePath': profileImagePath,
       if (bio != null) 'bio': bio,
       'categoryIds': categoryIds,
+      'experienceYears': experienceYears,
+      'workingDays': workingDays,
+      'workingHours': workingHours,
       if (baseLocation != null) 'baseLocation': baseLocation,
       if (geohash != null) 'geohash': geohash,
       if (locationId != null) 'locationId': locationId,
@@ -65,6 +74,9 @@ class ProviderModel {
       profileImagePath: data['profileImagePath'],
       bio: data['bio'],
       categoryIds: List<String>.from(data['categoryIds'] ?? []),
+      experienceYears: (data['experienceYears'] as num?)?.toInt() ?? 0,
+      workingDays: List<String>.from(data['workingDays'] ?? []),
+      workingHours: data['workingHours'] as String? ?? '',
       baseLocation: data['baseLocation'] as GeoPoint?,
       geohash: data['geohash'] as String?,
       locationId: data['locationId'] as String?,

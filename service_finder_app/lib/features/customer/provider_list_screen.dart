@@ -1,26 +1,19 @@
 import 'package:flutter/material.dart';
 
-class ProviderListScreen extends StatefulWidget {
+import 'provider_listing_screen.dart';
 
-  final String category;
-  const ProviderListScreen({super.key,required this.category});
+class ProviderListScreen extends StatelessWidget {
+  final String categoryId;
+  final String categoryName;
 
-  @override
-  State<ProviderListScreen> createState() => _ProviderListScreenState();
-}
+  const ProviderListScreen({
+    super.key,
+    required this.categoryId,
+    required this.categoryName,
+  });
 
-class _ProviderListScreenState extends State<ProviderListScreen> {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        // The back button is automatically added by Navigator.push
-        title: Text(widget.category),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-      ),
-      body: Center(
-        child: Text("Under Development"),
-      ),
-    );
+    return ProviderListingScreen(service: categoryName, categoryId: categoryId);
   }
 }

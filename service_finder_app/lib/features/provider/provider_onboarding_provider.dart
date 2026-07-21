@@ -1,132 +1,112 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 class ProviderOnboardingProvider extends ChangeNotifier {
-  // Personal Details
+  // Account and personal details
   String firstName = '';
   String lastName = '';
-
-  // Contact Details
   String email = '';
   String phone = '';
 
-  // Account Security
-  String password = '';
-
-  // Professional Profile
-  String? profileImagePath;
-  String? homeAddress;
+  // Professional profile
+  String? profileImageLocalPath;
   String? about;
 
-  // Service Information
+  // Service information
   String selectedService = '';
 
-  // Working Information
-  String experienceYears = '';
+  // Service availability
+  int? experienceYears;
   List<String> workingDays = [];
   String workingHours = '';
 
-  // Location
-  String location = '';
-  double workingRadius = 0;
+  // Working location
+  GeoPoint? baseLocation;
+  String selectedLocationId = '';
+  String selectedLocationName = '';
+  double? serviceRadiusKm;
 
-  // Verification
-  String nationalIdFront = '';
-  String nationalIdBack = '';
+  // Local files are uploaded only when the provider confirms registration.
+  String? nationalIdFrontPath;
+  String? nationalIdBackPath;
 
-  // Update personal details
   void setName({required String firstName, required String lastName}) {
     this.firstName = firstName;
     this.lastName = lastName;
     notifyListeners();
   }
 
-  // Update contact details
-  void setContact({required String email, required String phone}) {
+  void setContact({required String email}) {
     this.email = email;
-    this.phone = phone;
     notifyListeners();
   }
 
-  // Update password
-  void setPassword({required String password}) {
-    this.password = password;
-    notifyListeners();
-  }
-
-  // Update professional profile
   void setPersonalDetails({
+    required String phone,
     required String about,
-    String? imagePath,
-    String? address,
+    String? imageLocalPath,
   }) {
-    homeAddress = address;
+    this.phone = phone;
     this.about = about;
-    profileImagePath = imagePath;
-
+    profileImageLocalPath = imageLocalPath;
     notifyListeners();
   }
 
-  // Update selected service
   void setService(String service) {
     selectedService = service;
     notifyListeners();
   }
 
-  // Update experience and working schedule
   void setWorkingInformation({
-    required String experienceYears,
+    required int experienceYears,
     required List<String> workingDays,
     required String workingHours,
   }) {
     this.experienceYears = experienceYears;
-    this.workingDays = workingDays;
+    this.workingDays = List.unmodifiable(workingDays);
     this.workingHours = workingHours;
     notifyListeners();
   }
 
-  // Update location
-  void setLocation({required String location, required double radius}) {
-    this.location = location;
-    workingRadius = radius;
-    notifyListeners();
-  }
-
-  // Update verification documents
-  void setVerificationDocuments({
-    required String nationalIdFront,
-    required String nationalIdBack,
+  void setLocation({
+    required GeoPoint baseLocation,
+    required String locationId,
+    required String locationName,
+    required double serviceRadiusKm,
   }) {
-    this.nationalIdFront = nationalIdFront;
-    this.nationalIdBack = nationalIdBack;
+    this.baseLocation = baseLocation;
+    selectedLocationId = locationId;
+    selectedLocationName = locationName;
+    this.serviceRadiusKm = serviceRadiusKm;
     notifyListeners();
   }
 
-  // Clear all data if onboarding is cancelled
+  void setVerificationDocuments({
+    required String nationalIdFrontPath,
+    required String nationalIdBackPath,
+  }) {
+    this.nationalIdFrontPath = nationalIdFrontPath;
+    this.nationalIdBackPath = nationalIdBackPath;
+    notifyListeners();
+  }
+
   void clear() {
     firstName = '';
     lastName = '';
-
     email = '';
     phone = '';
-
-    password = '';
-
-    profileImagePath = null;
-    homeAddress = null;
+    profileImageLocalPath = null;
     about = null;
-
     selectedService = '';
-
-    experienceYears = '';
+    experienceYears = null;
     workingDays = [];
     workingHours = '';
-
-    location = '';
-    workingRadius = 0;
-
-    nationalIdFront = '';
-    nationalIdBack = '';
-
+    baseLocation = null;
+    selectedLocationId = '';
+    selectedLocationName = '';
+    serviceRadiusKm = null;
+    nationalIdFrontPath = null;
+    nationalIdBackPath = null;
     notifyListeners();
   }
 }

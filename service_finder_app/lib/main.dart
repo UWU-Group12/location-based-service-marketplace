@@ -9,7 +9,6 @@ import 'features/auth/splash_screen.dart';
 import 'features/auth/welcome_screen.dart';
 import 'features/customer/customer_shell_screen.dart';
 import 'features/provider/provider_onboarding/build_professional_profile.dart';
-import 'features/provider/provider_onboarding/provider_profile_name.dart';
 import 'features/provider/provider_onboarding_provider.dart';
 import 'features/provider/provider_shell_screen.dart';
 import 'firebase_options.dart';
@@ -127,11 +126,7 @@ class _SignedInHome extends StatelessWidget {
               return const ProviderShellScreen();
             }
 
-            if (AuthService().currentUserUsesGoogle) {
-              return const BuildProfessionalProfile();
-            }
-
-            return const ProviderProfileName();
+            return const BuildProfessionalProfile();
         }
       },
     );

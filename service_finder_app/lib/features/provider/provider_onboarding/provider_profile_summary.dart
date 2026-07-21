@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+
 import 'package:provider/provider.dart';
 
 import '../../../core/app_colors.dart';
@@ -28,17 +28,33 @@ class _ProviderProfileSummaryState extends State<ProviderProfileSummary> {
       listen: false,
     );
 
+    if (onboarding.baseLocation == null ||
+        onboarding.selectedLocationId.isEmpty ||
+        onboarding.serviceRadiusKm == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please complete your working area before submitting.'),
+        ),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
-      final user = await ProviderRegistrationService().register(
-        firstName: onboarding.firstName,
-        lastName: onboarding.lastName,
-        email: onboarding.email,
+      final user = await ProviderRegistrationService().completeProviderProfile(
         phoneNumber: onboarding.phone,
-        password: onboarding.password,
         bio: onboarding.about ?? '',
+        profileImageLocalPath: onboarding.profileImageLocalPath,
         categoryId: onboarding.selectedService,
+        experienceYears: onboarding.experienceYears ?? 0,
+        workingDays: onboarding.workingDays,
+        workingHours: onboarding.workingHours,
+        baseLocation: onboarding.baseLocation!,
+        locationId: onboarding.selectedLocationId,
+        serviceRadiusKm: onboarding.serviceRadiusKm!,
+        nationalIdFrontPath: onboarding.nationalIdFrontPath ?? '',
+        nationalIdBackPath: onboarding.nationalIdBackPath ?? '',
       );
 
       if (!mounted) return;
@@ -46,9 +62,14 @@ class _ProviderProfileSummaryState extends State<ProviderProfileSummary> {
       onboarding.clear();
       AppRouter.goToSignedInHome(context, user);
     } catch (error) {
+      debugPrint('Provider profile completion error: $error');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Provider registration failed: $error')),
+          const SnackBar(
+            content: Text(
+              'Could not complete your provider profile. Please try again.',
+            ),
+          ),
         );
       }
     } finally {
@@ -154,13 +175,11 @@ class _ProviderProfileSummaryState extends State<ProviderProfileSummary> {
           children: [
             const SizedBox(height: 10),
 
-            Center(
-              child: SvgPicture.asset(
-                'assets/onboardingsvg/provider_summary.svg',
-
-                width: 220,
-
-                fit: BoxFit.contain,
+            const Center(
+              child: Icon(
+                Icons.fact_check_outlined,
+                size: 110,
+                color: AppColors.primary,
               ),
             ),
             const SizedBox(height: 25),
@@ -204,15 +223,11 @@ class _ProviderProfileSummaryState extends State<ProviderProfileSummary> {
                     ? "Your Google account email will be used"
                     : provider.email,
 
-                if (provider.phone.isNotEmpty) provider.phone,
+                provider.phone,
 
-                provider.profileImagePath == null
+                provider.profileImageLocalPath == null
                     ? "Profile image not selected"
-                    : "Profile image selected (not uploaded)",
-
-                provider.homeAddress?.trim().isEmpty ?? true
-                    ? "Home address not provided"
-                    : provider.homeAddress!,
+                    : "Profile image ready for upload",
 
                 provider.about ?? "",
               ],
@@ -223,7 +238,7 @@ class _ProviderProfileSummaryState extends State<ProviderProfileSummary> {
 
               details: [
                 _formatCategoryId(provider.selectedService),
-                "${provider.experienceYears} years experience",
+                "${provider.experienceYears ?? 0} years experience",
                 "Working days: ${provider.workingDays.join(', ')}",
                 "Working hours: ${provider.workingHours}",
               ],
@@ -232,23 +247,27 @@ class _ProviderProfileSummaryState extends State<ProviderProfileSummary> {
             _buildSummaryCard(
               title: "Working Area",
               details: [
-                provider.location.isEmpty
+                provider.selectedLocationName.isEmpty
                     ? "Location not selected"
-                    : provider.location,
-                "${provider.workingRadius.toInt()} km radius",
-                "Location is not saved to Firebase yet",
+                    : provider.selectedLocationName,
+                provider.serviceRadiusKm == null
+                    ? "Service radius not selected"
+                    : "${provider.serviceRadiusKm!.toInt()} km radius",
+                provider.baseLocation == null
+                    ? "Current location not captured"
+                    : "Current location captured",
               ],
             ),
 
             _buildSummaryCard(
               title: "Verification Documents",
               details: [
-                provider.nationalIdFront.isEmpty
+                provider.nationalIdFrontPath == null
                     ? "National ID front not selected"
-                    : "National ID front selected (not uploaded)",
-                provider.nationalIdBack.isEmpty
+                    : "National ID front ready for secure upload",
+                provider.nationalIdBackPath == null
                     ? "National ID back not selected"
-                    : "National ID back selected (not uploaded)",
+                    : "National ID back ready for secure upload",
               ],
             ),
 
