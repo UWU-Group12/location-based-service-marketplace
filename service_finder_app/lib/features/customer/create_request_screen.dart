@@ -40,23 +40,16 @@ class _CreateRequestScreenState
   final descriptionController =
       TextEditingController();
 
-
   final locationController =
       TextEditingController();
 
-
-
   bool isEnhancing = false;
-
 
   String? selectedDate;
 
   String? selectedTime;
 
-
-
   Future<void> _enhanceDescription() async {
-
 
     if (descriptionController.text.trim().isEmpty) {
 
@@ -79,15 +72,11 @@ class _CreateRequestScreenState
 
     }
 
-
-
     setState(() {
 
       isEnhancing = true;
 
     });
-
-
 
     final improvedDescription =
         await _aiService.improveDescription(
@@ -351,14 +340,11 @@ class _CreateRequestScreenState
                     context:
                         context,
 
-
                     firstDate:
                         DateTime.now(),
 
-
                     lastDate:
                         DateTime(2030),
-
 
                     initialDate:
                         DateTime.now(),

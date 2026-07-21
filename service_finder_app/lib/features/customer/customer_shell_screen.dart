@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'customer_home_screen.dart';
 import 'customer_profile_screen.dart';
+import 'customer_requests_screen.dart';
 
 class CustomerShellScreen extends StatefulWidget {
   // Give a name only when using the development bypass.
@@ -152,17 +153,19 @@ class _CustomerShellScreenState extends State<CustomerShellScreen> {
     }
 
     final pages = <Widget>[
-      CustomerHomeScreen(userName: _userName, initials: _initials),
-      const _CustomerPlaceholderPage(
-        icon: Icons.receipt_long_outlined,
-        title: 'Requests',
-        message: 'Your service requests will appear here.',
+      CustomerHomeScreen(
+        userName: _userName,
+        initials: _initials,
       ),
+
+      const CustomerRequestsScreen(),
+
       const _CustomerPlaceholderPage(
         icon: Icons.notifications_outlined,
         title: 'Notifications',
         message: 'Your notifications will appear here.',
       ),
+
       const CustomerProfileScreen(),
     ];
 
