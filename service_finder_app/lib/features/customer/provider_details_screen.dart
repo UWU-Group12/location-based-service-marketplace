@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../core/app_colors.dart';
 import '../../models/provider_model.dart';
+import '../../widgets/provider_profile_image.dart';
 import 'create_request_screen.dart';
 
 class ProviderDetailsScreen extends StatelessWidget {
   final ProviderModel provider;
 
-  const ProviderDetailsScreen({
-    super.key,
-    required this.provider,
-  });
+  const ProviderDetailsScreen({super.key, required this.provider});
 
   @override
   Widget build(BuildContext context) {
@@ -26,23 +24,11 @@ class ProviderDetailsScreen extends StatelessWidget {
 
       body: Stack(
         children: [
-
           SingleChildScrollView(
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-
-                CircleAvatar(
-                  radius: 45,
-                  backgroundColor: Colors.grey.shade300,
-                  child: Text(
-                    provider.displayName.substring(0, 1),
-                    style: const TextStyle(
-                      fontSize: 30,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
+                ProviderProfileImage(provider: provider, radius: 45),
 
                 const SizedBox(height: 16),
 
@@ -56,9 +42,7 @@ class ProviderDetailsScreen extends StatelessWidget {
 
                 Text(
                   provider.categoryIds[0],
-                  style: textTheme.bodyLarge?.copyWith(
-                    color: Colors.grey,
-                  ),
+                  style: textTheme.bodyLarge?.copyWith(color: Colors.grey),
                 ),
 
                 const SizedBox(height: 20),
@@ -66,7 +50,6 @@ class ProviderDetailsScreen extends StatelessWidget {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-
                     _infoCard(
                       Icons.star,
                       provider.ratingAverage.toString(),
@@ -84,7 +67,6 @@ class ProviderDetailsScreen extends StatelessWidget {
                       provider.locationId ?? 'N/A',
                       'Location',
                     ),
-
                   ],
                 ),
 
@@ -92,10 +74,7 @@ class ProviderDetailsScreen extends StatelessWidget {
 
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    'About',
-                    style: textTheme.titleLarge,
-                  ),
+                  child: Text('About', style: textTheme.titleLarge),
                 ),
 
                 const SizedBox(height: 10),
@@ -108,10 +87,7 @@ class ProviderDetailsScreen extends StatelessWidget {
 
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Services Offered',
-                    style: textTheme.titleLarge,
-                  ),
+                  child: Text('Services Offered', style: textTheme.titleLarge),
                 ),
 
                 const SizedBox(height: 10),
@@ -124,10 +100,7 @@ class ProviderDetailsScreen extends StatelessWidget {
 
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Verification',
-                    style: textTheme.titleLarge,
-                  ),
+                  child: Text('Verification', style: textTheme.titleLarge),
                 ),
 
                 const SizedBox(height: 10),
@@ -150,11 +123,9 @@ class ProviderDetailsScreen extends StatelessWidget {
 
                 // Space for floating button
                 const SizedBox(height: 100),
-
               ],
             ),
           ),
-
 
           // Floating button only
           Positioned(
@@ -163,58 +134,38 @@ class ProviderDetailsScreen extends StatelessWidget {
             right: 20,
             child: ElevatedButton(
               onPressed: () {
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CreateRequestScreen(
-                        provider: provider,
-                      ),
-                    ),
-                  );
-
-                },
-              child: const Text(
-                'Request Service',
-              ),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => CreateRequestScreen(provider: provider),
+                  ),
+                );
+              },
+              child: const Text('Request Service'),
             ),
           ),
-
         ],
       ),
     );
   }
 
-
-  Widget _infoCard(
-    IconData icon,
-    String value,
-    String label,
-  ) {
+  Widget _infoCard(IconData icon, String value, String label) {
     return Column(
       children: [
         Icon(icon),
         const SizedBox(height: 6),
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
         Text(label),
       ],
     );
   }
-
 
   Widget _serviceChip(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Chip(
-          label: Text(title),
-        ),
+        child: Chip(label: Text(title)),
       ),
     );
   }

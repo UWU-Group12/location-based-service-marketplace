@@ -1,10 +1,58 @@
 rules_version = '2';
 
-// Craft rules based on data in your Firestore database
-// allow write: if firestore.get(
-//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
 service firebase.storage {
   match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(providerId) {
+      return signedIn() && request.auth.uid == providerId;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function verificationCanBeUploaded(providerId) {
+      return !firestore.exists(
+          /databases/(default)/documents/providerVerifications/$(providerId)
+        )
+        || firestore.get(
+          /databases/(default)/documents/providerVerifications/$(providerId)
+        ).data.status == 'pending';
+    }
+
+    match /providers/{providerId}/{fileName} {
+      allow read: if signedIn();
+
+      allow create, update: if
+        isOwner(providerId)
+        && request.resource.size > 0
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      allow delete: if isOwner(providerId) || isAdmin();
+    }
+
+    match /verification/{providerId}/{fileName} {
+      allow read: if isOwner(providerId) || isAdmin();
+
+      allow create, update: if
+        isOwner(providerId)
+        && verificationCanBeUploaded(providerId)
+        && request.resource.size > 0
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      allow delete: if
+        (
+          isOwner(providerId)
+          && verificationCanBeUploaded(providerId)
+        )
+        || isAdmin();
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

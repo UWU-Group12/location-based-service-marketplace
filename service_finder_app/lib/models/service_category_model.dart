@@ -17,24 +17,32 @@ class ServiceCategory {
     required this.sortOrder,
   });
 
-  factory ServiceCategory.fromFireBase(
+  factory ServiceCategory.fromFirestore(
     DocumentSnapshot<Map<String, dynamic>> document,
   ) {
     final data = document.data();
+    final categoryId = document.id;
 
     if (data == null) {
-      throw StateError("Category ID ${document.id} dosen't contain data");
+      throw StateError('Category $categoryId does not contain data.');
     }
 
-    final String iconPath = data['iconPath'] as String;
+    final name = data['name'];
+    if (name is! String || name.trim().isEmpty) {
+      throw FormatException('Category $categoryId has no valid name.');
+    }
 
     return ServiceCategory(
-      id: document.id,
-      name: data['name'] as String,
-      description: data['description'] as String,
-      iconPath: iconPath,
-      active: data['active'] as bool,
-      sortOrder: (data['sortOrder'] as num).toInt(),
+      id: categoryId,
+      name: name.trim(),
+      description: _optionalString(data['description']),
+      iconPath: _optionalString(data['iconPath']),
+      active: data['active'] as bool? ?? false,
+      sortOrder: (data['sortOrder'] as num?)?.toInt() ?? 0,
     );
+  }
+
+  static String _optionalString(dynamic value) {
+    return value is String ? value.trim() : '';
   }
 }

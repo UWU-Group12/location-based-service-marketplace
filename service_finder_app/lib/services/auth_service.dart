@@ -12,17 +12,6 @@ class AuthService {
   Stream<User?> get user => _auth.authStateChanges();
   User? get currentUser => _auth.currentUser;
   bool get hasAuthenticatedUser => _auth.currentUser != null;
-  bool get currentUserUsesGoogle {
-    final firebaseUser = _auth.currentUser;
-    if (firebaseUser == null) {
-      return false;
-    }
-
-    return firebaseUser.providerData.any(
-      (provider) => provider.providerId == 'google.com',
-    );
-  }
-
   Future<UserCredential> registerWithEmail(
     String email,
     String password,

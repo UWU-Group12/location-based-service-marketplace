@@ -27,11 +27,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
       if (!mounted) return;
 
       if (currentProfile != null) {
-        AppRouter.goToSignedInHome(
-          context,
-          currentProfile,
-          signedInWithGoogle: _authService.currentUserUsesGoogle,
-        );
+        AppRouter.goToSignedInHome(context, currentProfile);
         return;
       }
 
@@ -41,11 +37,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
         if (!mounted) return;
 
-        AppRouter.goToSignedInHome(
-          context,
-          newProfile,
-          signedInWithGoogle: _authService.currentUserUsesGoogle,
-        );
+        AppRouter.goToSignedInHome(context, newProfile);
         return;
       }
 

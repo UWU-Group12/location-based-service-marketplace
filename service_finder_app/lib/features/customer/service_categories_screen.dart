@@ -54,7 +54,13 @@ class _ServiceCategoriesScreenState extends State<ServiceCategoriesScreen> {
               return Card(
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
-                  onTap: (){ AppRouter.goToProviderListScreen(context,category.name);},
+                  onTap: () {
+                    AppRouter.goToProviderListScreen(
+                      context,
+                      categoryId: category.id,
+                      categoryName: category.name,
+                    );
+                  },
                   child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,

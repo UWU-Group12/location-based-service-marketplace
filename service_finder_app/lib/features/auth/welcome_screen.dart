@@ -49,11 +49,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
       if (!mounted) return;
 
-      AppRouter.goToSignedInHome(
-        context,
-        userProfile,
-        signedInWithGoogle: _authService.currentUserUsesGoogle,
-      );
+      AppRouter.goToSignedInHome(context, userProfile);
     } catch (error) {
       if (!mounted) {
         return;

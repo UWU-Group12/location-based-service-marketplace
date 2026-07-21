@@ -32,6 +32,112 @@ service cloud.firestore {
         && request.auth.token.admin == true;
     }
 
+    function isActiveLocation(locationId) {
+      return exists(
+          /databases/$(database)/documents/locations/$(locationId)
+        )
+        && get(
+          /databases/$(database)/documents/locations/$(locationId)
+        ).data.active == true;
+    }
+
+    function isValidProviderProfileCreate(providerId) {
+      return request.resource.data.keys().hasAll([
+          'providerId',
+          'displayName',
+          'categoryIds',
+          'experienceYears',
+          'workingDays',
+          'workingHours',
+          'baseLocation',
+          'locationId',
+          'serviceRadiusKm',
+          'availabilityStatus',
+          'verificationStatus',
+          'ratingAverage',
+          'reviewCount',
+          'completedJobCount',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.providerId == providerId
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.categoryIds is list
+        && request.resource.data.categoryIds.size() > 0
+        && request.resource.data.experienceYears is int
+        && request.resource.data.experienceYears >= 0
+        && request.resource.data.workingDays is list
+        && request.resource.data.workingDays.size() > 0
+        && request.resource.data.workingHours is string
+        && request.resource.data.workingHours.size() > 0
+        && request.resource.data.baseLocation is latlng
+        && request.resource.data.locationId is string
+        && request.resource.data.locationId.size() > 0
+        && isActiveLocation(request.resource.data.locationId)
+        && request.resource.data.serviceRadiusKm is number
+        && request.resource.data.serviceRadiusKm in [5, 10, 15, 20, 30]
+        && request.resource.data.availabilityStatus == 'unavailable'
+        && request.resource.data.verificationStatus == 'pending'
+        && request.resource.data.ratingAverage == 0
+        && request.resource.data.reviewCount == 0
+        && request.resource.data.completedJobCount == 0;
+    }
+
+    function isValidVerificationCreate(providerId) {
+      return request.resource.data.keys().hasAll([
+          'providerId',
+          'documentType',
+          'frontDocumentPath',
+          'backDocumentPath',
+          'certificatePaths',
+          'status',
+          'submittedAt'
+        ])
+        && request.resource.data.providerId == providerId
+        && request.resource.data.documentType == 'national_id'
+        && request.resource.data.frontDocumentPath is string
+        && request.resource.data.frontDocumentPath.size() > 0
+        && request.resource.data.backDocumentPath is string
+        && request.resource.data.backDocumentPath.size() > 0
+        && request.resource.data.certificatePaths is list
+        && request.resource.data.status == 'pending'
+        && request.resource.data.submittedAt == request.time
+        && request.resource.data.reviewedBy == null
+        && request.resource.data.reviewedAt == null
+        && request.resource.data.rejectionReason == null;
+    }
+
+    function isValidServiceRequestCreate() {
+      return request.resource.data.keys().hasAll([
+          'customerId',
+          'providerId',
+          'categoryId',
+          'title',
+          'description',
+          'serviceLocation',
+          'requestStatus',
+          'quotationStatus',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.providerId is string
+        && request.resource.data.providerId.size() > 0
+        && request.resource.data.categoryId is string
+        && request.resource.data.categoryId.size() > 0
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.description is string
+        && request.resource.data.description.size() > 0
+        && request.resource.data.serviceLocation is map
+        && request.resource.data.serviceLocation.point is latlng
+        && request.resource.data.serviceLocation.addressText is string
+        && request.resource.data.serviceLocation.addressText.size() > 0
+        && request.resource.data.requestStatus == 'submitted'
+        && request.resource.data.quotationStatus == 'pending'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+    }
     match /users/{userId} {
       allow create: if isOwner(userId);
 
@@ -66,9 +172,7 @@ service cloud.firestore {
       allow create: if
         isOwner(providerId)
         && isProvider()
-        && request.resource.data.verificationStatus == 'pending'
-        && request.resource.data.ratingAverage == 0
-        && request.resource.data.reviewCount == 0;
+        && isValidProviderProfileCreate(providerId);
 
       allow update: if isAdmin() ||
         (
@@ -80,18 +184,40 @@ service cloud.firestore {
               'profileImagePath',
               'bio',
               'categoryIds',
+              'experienceYears',
+              'workingDays',
+              'workingHours',
               'baseLocation',
-              'geohash',
               'locationId',
               'serviceRadiusKm',
               'availabilityStatus',
               'updatedAt'
             ])
+          && request.resource.data.experienceYears is int
+          && request.resource.data.experienceYears >= 0
+          && request.resource.data.workingDays is list
+          && request.resource.data.workingDays.size() > 0
+          && request.resource.data.workingHours is string
+          && request.resource.data.workingHours.size() > 0
+          && request.resource.data.baseLocation is latlng
+          && request.resource.data.locationId is string
+          && request.resource.data.locationId.size() > 0
+          && isActiveLocation(request.resource.data.locationId)
+          && request.resource.data.serviceRadiusKm is number
+          && request.resource.data.serviceRadiusKm in [5, 10, 15, 20, 30]
         );
     }
 
     match /providerVerifications/{providerId} {
-      allow create, read: if isOwner(providerId) || isAdmin();
+      allow create: if
+        (
+          isOwner(providerId)
+          && isProvider()
+          && isValidVerificationCreate(providerId)
+        )
+        || isAdmin();
+
+      allow read: if isOwner(providerId) || isAdmin();
       allow update, delete: if isAdmin();
     }
 
@@ -109,7 +235,7 @@ service cloud.firestore {
       allow create: if
         isCustomer()
         && request.resource.data.customerId == request.auth.uid
-        && request.resource.data.requestStatus == 'submitted';
+        && isValidServiceRequestCreate();
 
       allow read: if
         isAdmin()

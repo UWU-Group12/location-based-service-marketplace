@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/app_colors.dart';
 import '../models/provider_model.dart';
+import 'provider_profile_image.dart';
 
 class ProviderCard extends StatelessWidget {
   final ProviderModel provider;
@@ -12,9 +13,7 @@ class ProviderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final providerInitial = provider.displayName.isEmpty
-        ? '?'
-        : provider.displayName[0].toUpperCase();
+
     final serviceNames = provider.categoryIds.map(_formatId).join(', ');
 
     return InkWell(
@@ -30,17 +29,7 @@ class ProviderCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: AppColors.primary,
-              child: Text(
-                providerInitial,
-                style: textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
+            ProviderProfileImage(provider: provider, radius: 28),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
