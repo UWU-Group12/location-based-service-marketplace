@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_router.dart';
 import '../../models/provider_model.dart';
 import '../../models/service_request_model.dart';
 import '../../services/ai_service.dart';
@@ -130,7 +131,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Request created successfully.')),
       );
-      Navigator.pop(context);
+      AppRouter.goToCustomerDashboard(context);
     } catch (error) {
       debugPrint('Service request creation error: $error');
       if (!mounted) return;
