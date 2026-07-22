@@ -232,8 +232,12 @@ function ProviderVerificationsPage() {
                 : [];
 
               return (
-                <article className="verification-card" key={submission.id}>
-                  <div className="verification-heading">
+                <details
+                  className="verification-card"
+                  key={submission.id}
+                  open={selectedProviderId ? true : undefined}
+                >
+                  <summary className="verification-summary">
                     <div>
                       <span className="header-eyebrow">Provider submission</span>
                       <h3>{displayName}</h3>
@@ -243,123 +247,131 @@ function ProviderVerificationsPage() {
                           "No contact details"}
                       </p>
                     </div>
-                    <StatusBadge status={submission.status} />
-                  </div>
+                    <div className="verification-summary-meta">
+                      <span>{formatDate(submission.submittedAt)}</span>
+                      <StatusBadge status={submission.status} />
+                      <span className="verification-chevron" aria-hidden="true">
+                        Ã¢Å’â€ž
+                      </span>
+                    </div>
+                  </summary>
 
-                  <dl className="details-grid verification-details">
-                    <div><dt>Document type</dt><dd>{submission.documentType || "Not provided"}</dd></div>
-                    <div><dt>Submitted</dt><dd>{formatDate(submission.submittedAt)}</dd></div>
-                    <div><dt>Categories</dt><dd>{Array.isArray(profile.categoryIds) && profile.categoryIds.length > 0 ? profile.categoryIds.join(", ") : "Not selected"}</dd></div>
-                    <div><dt>Experience</dt><dd>{profile.experienceYears || 0} years</dd></div>
-                    <div><dt>Service area</dt><dd>{profile.locationId || "Not provided"}</dd></div>
-                    <div><dt>Account status</dt><dd><StatusBadge status={submission.user.accountStatus || "unknown"} /></dd></div>
-                  </dl>
+                  <div className="verification-body">
+                    <dl className="details-grid verification-details">
+                      <div><dt>Document type</dt><dd>{submission.documentType || "Not provided"}</dd></div>
+                      <div><dt>Submitted</dt><dd>{formatDate(submission.submittedAt)}</dd></div>
+                      <div><dt>Categories</dt><dd>{Array.isArray(profile.categoryIds) && profile.categoryIds.length > 0 ? profile.categoryIds.join(", ") : "Not selected"}</dd></div>
+                      <div><dt>Experience</dt><dd>{profile.experienceYears || 0} years</dd></div>
+                      <div><dt>Service area</dt><dd>{profile.locationId || "Not provided"}</dd></div>
+                      <div><dt>Account status</dt><dd><StatusBadge status={submission.user.accountStatus || "unknown"} /></dd></div>
+                    </dl>
 
-                  <div className="document-actions">
-                    <button
-                      type="button"
-                      className="button button-secondary"
-                      disabled={
-                        !submission.frontDocumentPath ||
-                        openingFile === `${submission.id}-front`
-                      }
-                      onClick={() =>
-                        openFile(
-                          submission.frontDocumentPath,
-                          `${submission.id}-front`,
-                        )
-                      }
-                    >
-                      {openingFile === `${submission.id}-front`
-                        ? "Opening..."
-                        : "Open NIC front"}
-                    </button>
-                    <button
-                      type="button"
-                      className="button button-secondary"
-                      disabled={
-                        !submission.backDocumentPath ||
-                        openingFile === `${submission.id}-back`
-                      }
-                      onClick={() =>
-                        openFile(
-                          submission.backDocumentPath,
-                          `${submission.id}-back`,
-                        )
-                      }
-                    >
-                      {openingFile === `${submission.id}-back`
-                        ? "Opening..."
-                        : "Open NIC back"}
-                    </button>
-                    {certificates.map((certificatePath, index) => {
-                      const fileKey = `${submission.id}-certificate-${index}`;
-                      return (
-                        <button
-                          type="button"
-                          className="button button-secondary"
-                          key={certificatePath}
-                          disabled={openingFile === fileKey}
-                          onClick={() => openFile(certificatePath, fileKey)}
-                        >
-                          {openingFile === fileKey
-                            ? "Opening..."
-                            : `Open certificate ${index + 1}`}
-                        </button>
-                      );
-                    })}
-                  </div>
+                    <div className="document-actions">
+                      <button
+                        type="button"
+                        className="button button-secondary"
+                        disabled={
+                          !submission.frontDocumentPath ||
+                          openingFile === `${submission.id}-front`
+                        }
+                        onClick={() =>
+                          openFile(
+                            submission.frontDocumentPath,
+                            `${submission.id}-front`,
+                          )
+                        }
+                      >
+                        {openingFile === `${submission.id}-front`
+                          ? "Opening..."
+                          : "Open NIC front"}
+                      </button>
+                      <button
+                        type="button"
+                        className="button button-secondary"
+                        disabled={
+                          !submission.backDocumentPath ||
+                          openingFile === `${submission.id}-back`
+                        }
+                        onClick={() =>
+                          openFile(
+                            submission.backDocumentPath,
+                            `${submission.id}-back`,
+                          )
+                        }
+                      >
+                        {openingFile === `${submission.id}-back`
+                          ? "Opening..."
+                          : "Open NIC back"}
+                      </button>
+                      {certificates.map((certificatePath, index) => {
+                        const fileKey = `${submission.id}-certificate-${index}`;
+                        return (
+                          <button
+                            type="button"
+                            className="button button-secondary"
+                            key={certificatePath}
+                            disabled={openingFile === fileKey}
+                            onClick={() => openFile(certificatePath, fileKey)}
+                          >
+                            {openingFile === fileKey
+                              ? "Opening..."
+                              : `Open certificate ${index + 1}`}
+                          </button>
+                        );
+                      })}
+                    </div>
 
-                  {submission.status === "rejected" &&
-                    submission.rejectionReason && (
-                      <div className="rejection-note">
-                        <strong>Rejection reason</strong>
-                        <p>{submission.rejectionReason}</p>
+                    {submission.status === "rejected" &&
+                      submission.rejectionReason && (
+                        <div className="rejection-note">
+                          <strong>Rejection reason</strong>
+                          <p>{submission.rejectionReason}</p>
+                        </div>
+                      )}
+
+                    {submission.status === "pending" && (
+                      <div className="review-panel">
+                        <label className="form-field">
+                          <span>Rejection reason</span>
+                          <textarea
+                            rows="3"
+                            value={rejectionReasons[submission.providerId] || ""}
+                            placeholder="Required only when rejecting"
+                            onChange={(event) =>
+                              setRejectionReasons((current) => ({
+                                ...current,
+                                [submission.providerId]: event.target.value,
+                              }))
+                            }
+                            disabled={isProcessing}
+                          />
+                        </label>
+                        <div className="action-group">
+                          <button
+                            type="button"
+                            className="button button-success"
+                            onClick={() =>
+                              requestDecision(submission, "verified")
+                            }
+                            disabled={isProcessing}
+                          >
+                            Approve
+                          </button>
+                          <button
+                            type="button"
+                            className="button button-danger"
+                            onClick={() =>
+                              requestDecision(submission, "rejected")
+                            }
+                            disabled={isProcessing}
+                          >
+                            Reject
+                          </button>
+                        </div>
                       </div>
                     )}
-
-                  {submission.status === "pending" && (
-                    <div className="review-panel">
-                      <label className="form-field">
-                        <span>Rejection reason</span>
-                        <textarea
-                          rows="3"
-                          value={rejectionReasons[submission.providerId] || ""}
-                          placeholder="Required only when rejecting"
-                          onChange={(event) =>
-                            setRejectionReasons((current) => ({
-                              ...current,
-                              [submission.providerId]: event.target.value,
-                            }))
-                          }
-                          disabled={isProcessing}
-                        />
-                      </label>
-                      <div className="action-group">
-                        <button
-                          type="button"
-                          className="button button-success"
-                          onClick={() =>
-                            requestDecision(submission, "verified")
-                          }
-                          disabled={isProcessing}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          type="button"
-                          className="button button-danger"
-                          onClick={() =>
-                            requestDecision(submission, "rejected")
-                          }
-                          disabled={isProcessing}
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </article>
+                  </div>
+                </details>
               );
             })}
           </div>

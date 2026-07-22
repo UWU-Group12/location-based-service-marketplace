@@ -1157,3 +1157,173 @@ button:disabled {
     margin-top: 40px;
   }
 }
+
+/* Keeps large data views contained on laptop-sized screens. */
+html,
+body,
+#root {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.admin-main,
+.page-content,
+.page-stack,
+.content-card {
+  min-width: 0;
+}
+
+.page-content {
+  width: min(1320px, 100%);
+  padding: 26px 28px 42px;
+}
+
+.content-card {
+  padding: 20px;
+}
+
+.table-scroll {
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+}
+
+.data-table {
+  min-width: 720px;
+}
+
+.provider-data-table {
+  min-width: 980px;
+}
+
+.data-table th,
+.data-table td {
+  padding: 13px 10px;
+}
+
+.verification-card {
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.verification-summary {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 15px 17px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.verification-summary::-webkit-details-marker {
+  display: none;
+}
+
+.verification-summary:hover {
+  background: #f8fafc;
+}
+
+.verification-summary > div:first-child {
+  min-width: 0;
+}
+
+.verification-summary h3 {
+  margin: 2px 0 0;
+  color: var(--navy);
+  font-size: 16px;
+}
+
+.verification-summary p {
+  margin: 3px 0 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.verification-summary-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.verification-chevron {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f1f5f9;
+  font-size: 17px;
+  transition: transform 150ms ease;
+}
+
+.verification-card[open] .verification-chevron {
+  transform: rotate(180deg);
+}
+
+.verification-body {
+  padding: 0 17px 17px;
+  border-top: 1px solid var(--border);
+}
+
+.verification-details,
+.document-actions {
+  margin-top: 14px;
+}
+
+.review-panel {
+  margin-top: 16px;
+  padding-top: 15px;
+}
+
+@media (max-width: 1280px) and (min-width: 1101px) {
+  .page-content {
+    padding-inline: 20px;
+  }
+
+  .content-card {
+    padding: 16px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding-inline: 8px;
+  }
+}
+
+@media (max-width: 720px) {
+  .page-content {
+    padding: 22px 16px 36px;
+  }
+
+  .content-card {
+    padding: 16px;
+  }
+
+  .verification-card {
+    padding: 0;
+  }
+
+  .verification-summary {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .verification-summary-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .verification-body {
+    padding: 0 14px 14px;
+  }
+}
