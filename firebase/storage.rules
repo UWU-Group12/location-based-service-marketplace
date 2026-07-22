@@ -35,7 +35,7 @@ service firebase.storage {
       allow delete: if isOwner(providerId) || isAdmin();
     }
 
-    match /verification/{providerId}/{fileName} {
+    match /verification/{providerId}/{filePath=**} {
       allow read: if isOwner(providerId) || isAdmin();
 
       allow create, update: if
@@ -43,7 +43,10 @@ service firebase.storage {
         && verificationCanBeUploaded(providerId)
         && request.resource.size > 0
         && request.resource.size < 10 * 1024 * 1024
-        && request.resource.contentType.matches('image/.*');
+        && (
+          request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'application/pdf'
+        );
 
       allow delete: if
         (

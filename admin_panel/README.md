@@ -1,16 +1,66 @@
-# React + Vite
+# Raw Administrator Panel
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A focused React and Vite administrator panel for the Raw university project.
 
-Currently, two official plugins are available:
+## Included routes
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- `/login`
+- `/dashboard`
+- `/customers`
+- `/providers`
+- `/provider-verifications`
+- `/categories`
 
-## React Compiler
+The app uses only the `users`, `providerProfiles`, `providerVerifications`, and `categories` Firestore collections.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Local setup
 
-## Expanding the ESLint configuration
+1. Install dependencies:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+   ```bash
+   npm install
+   ```
+
+2. Copy `.env.example` to `.env.local`.
+
+3. Add the Firebase web-app values from Firebase Console:
+
+   ```text
+   VITE_FIREBASE_API_KEY
+   VITE_FIREBASE_AUTH_DOMAIN
+   VITE_FIREBASE_PROJECT_ID
+   VITE_FIREBASE_STORAGE_BUCKET
+   VITE_FIREBASE_MESSAGING_SENDER_ID
+   VITE_FIREBASE_APP_ID
+   ```
+
+4. Start the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+These Firebase web values identify the Firebase project; never add service-account JSON, private keys, or Admin SDK credentials to this frontend.
+
+## Administrator access
+
+The login accepts Firebase email/password accounts only. The signed-in account must have this Firebase Authentication custom claim:
+
+```json
+{
+  "admin": true
+}
+```
+
+Set custom claims only from a trusted server environment, Cloud Function, or one-time administration script that is kept outside this React app. After adding a claim, sign out and sign in again so Firebase issues a refreshed ID token.
+
+Protected React routes improve the user experience, while the rules in `../firebase/firestore.rules` and `../firebase/storage.rules` enforce the real administrator permissions.
+
+## Checks
+
+```bash
+npm run lint
+npm run build
+```
+
+Deploy Firebase rules from the `firebase` directory only after reviewing them against the target Firebase project.
