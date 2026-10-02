@@ -165,8 +165,9 @@ class _ProviderShellScreenState extends State<ProviderShellScreen> {
     final pages = <Widget>[
       ProviderDashboardScreen(
         userName: _providerName,
+        isDemo: widget.debugUserName != null,
       ),
-      const ProviderRequestsScreen(), // 👈 Replaced placeholder with your screen!
+      const ProviderRequestsScreen(),
       const _ProviderPlaceholderPage(
         icon: Icons.work_outline,
         title: 'Jobs',

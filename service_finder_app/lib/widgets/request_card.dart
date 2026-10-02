@@ -6,11 +6,7 @@ class RequestCard extends StatelessWidget {
   final ServiceRequestModel request;
   final VoidCallback? onTap;
 
-  const RequestCard({
-    super.key,
-    required this.request,
-    this.onTap,
-  });
+  const RequestCard({super.key, required this.request, this.onTap});
 
   Color _statusColor() {
     switch (request.requestStatus) {
@@ -48,27 +44,22 @@ class RequestCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              request.title,
-              style: textTheme.titleMedium,
-            ),
+            Text(request.title, style: textTheme.titleMedium),
             const SizedBox(height: 6),
             Text(
               request.description,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: textTheme.bodyMedium?.copyWith(
-                color: Colors.grey,
-              ),
+              style: textTheme.bodyMedium?.copyWith(color: Colors.grey),
             ),
             const SizedBox(height: 12),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  request.addressText,
-                  style: textTheme.bodySmall,
+                Expanded(
+                  child: Text(request.addressText, style: textTheme.bodySmall),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,

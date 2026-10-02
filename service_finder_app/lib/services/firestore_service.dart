@@ -7,6 +7,27 @@ import '../models/service_request_model.dart';
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  Stream<List<ServiceRequestModel>> watchProviderRequests(String providerId) {
+    return _firestore
+        .collection('serviceRequests')
+        .where('providerId', isEqualTo: providerId)
+        .snapshots()
+        .map((snapshot) {
+          final requests = snapshot.docs
+              .map(
+                (doc) => ServiceRequestModel.fromFirestore(doc.id, doc.data()),
+              )
+              .toList();
+          requests.sort((a, b) {
+            final comparison = b.createdAt.compareTo(a.createdAt);
+            return comparison != 0
+                ? comparison
+                : a.requestId.compareTo(b.requestId);
+          });
+          return requests;
+        });
+  }
+
   Future<List<ServiceCategory>> getActiveCategories() async {
     final snapshot = await _firestore
         .collection('categories')
