@@ -66,19 +66,6 @@ class ProviderCard extends StatelessWidget {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        size: 18,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        provider.locationId == null
-                            ? 'Location not set'
-                            : _formatId(provider.locationId!),
-                        style: textTheme.bodySmall,
-                      ),
-                      const Spacer(),
                       const Icon(Icons.star, size: 18, color: Colors.amber),
                       const SizedBox(width: 4),
                       Text(

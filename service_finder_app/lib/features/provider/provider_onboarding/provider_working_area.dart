@@ -1,11 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:latlong2/latlong.dart';
+import '../location_picker_screen.dart';
 
 import '../../../core/app_colors.dart';
 import '../../../core/app_router.dart';
-import '../../../models/location_model.dart';
-import '../../../services/firestore_service.dart';
 import '../../../services/location_service.dart';
 import '../provider_onboarding_provider.dart';
 
@@ -19,21 +19,12 @@ class ProviderWorkingArea extends StatefulWidget {
 class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
   static const List<double> _radiusOptions = [5, 10, 15, 20, 30];
 
-  final FirestoreService _firestoreService = FirestoreService();
   final LocationService _locationService = LocationService();
 
-  late Future<List<SupportedLocation>> _locationsFuture;
-  String? _selectedLocationId;
   double? _selectedRadiusKm;
   GeoPoint? _currentLocation;
   bool _isGettingLocation = false;
   bool _initialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _locationsFuture = _firestoreService.getActiveLocations();
-  }
 
   @override
   void didChangeDependencies() {
@@ -45,23 +36,14 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
       context,
       listen: false,
     );
-    _selectedLocationId = onboarding.selectedLocationId.isEmpty
-        ? null
-        : onboarding.selectedLocationId;
     _selectedRadiusKm = onboarding.serviceRadiusKm;
     _currentLocation = onboarding.baseLocation;
     _initialized = true;
   }
 
-  void _reloadLocations() {
-    setState(() {
-      _locationsFuture = _firestoreService.getActiveLocations();
-    });
-  }
-
+  // 1. Live GPS Locator
   Future<void> _useCurrentLocation() async {
     if (_isGettingLocation) return;
-
     setState(() => _isGettingLocation = true);
 
     try {
@@ -74,14 +56,12 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
       );
     } on StateError catch (error) {
       if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message.toString())),
+      );
     } catch (error) {
       debugPrint('Provider location error: $error');
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Unable to get your location. Please try again.'),
@@ -94,36 +74,62 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
     }
   }
 
-  void _continue(List<SupportedLocation> locations) {
-    final locationId = _selectedLocationId;
+  // 2. Map Picker Locator
+  Future<void> _openMapPicker() async {
+    if (_isGettingLocation) return;
+    setState(() => _isGettingLocation = true);
+
+    try {
+      final currentPoint = await _locationService.getCurrentLocation();
+      final initialPos = LatLng(currentPoint.latitude, currentPoint.longitude);
+
+      if (!mounted) return;
+
+      final LatLng? picked = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LocationPickerScreen(initialLocation: initialPos),
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (picked != null) {
+        setState(() {
+          _currentLocation = GeoPoint(picked.latitude, picked.longitude);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location selected from map ✅')),
+        );
+      }
+    } catch (error) {
+      debugPrint('Provider map error: $error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open map. Please try again.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isGettingLocation = false);
+      }
+    }
+  }
+
+  void _continue() {
     final radiusKm = _selectedRadiusKm;
     final currentLocation = _currentLocation;
 
-    if (locationId == null) {
-      _showMessage('Please select a supported town.');
-      return;
-    }
     if (radiusKm == null) {
       _showMessage('Please select your service radius.');
       return;
     }
     if (currentLocation == null) {
-      _showMessage('Please use your current location before continuing.');
-      return;
-    }
-
-    final selectedLocation = locations.where(
-      (location) => location.id == locationId,
-    );
-    if (selectedLocation.isEmpty) {
-      _showMessage('The selected town is no longer available.');
+      _showMessage('Please select a location before continuing.');
       return;
     }
 
     Provider.of<ProviderOnboardingProvider>(context, listen: false).setLocation(
       baseLocation: currentLocation,
-      locationId: locationId,
-      locationName: selectedLocation.first.name,
       serviceRadiusKm: radiusKm,
     );
 
@@ -131,55 +137,13 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Widget _buildLocationForm(List<SupportedLocation> locations) {
-    if (locations.isEmpty) {
-      return Column(
-        children: [
-          const Text(
-            'No supported towns are available right now.',
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: _reloadLocations,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Reload'),
-          ),
-        ],
-      );
-    }
-
-    final selectedLocationExists = locations.any(
-      (location) => location.id == _selectedLocationId,
-    );
-
+  Widget _buildLocationForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DropdownButtonFormField<String>(
-          initialValue: selectedLocationExists ? _selectedLocationId : null,
-          decoration: const InputDecoration(
-            labelText: 'Supported town',
-            prefixIcon: Icon(Icons.location_city_outlined),
-          ),
-          items: locations
-              .map(
-                (location) => DropdownMenuItem(
-                  value: location.id,
-                  child: Text(location.name),
-                ),
-              )
-              .toList(),
-          onChanged: _isGettingLocation
-              ? null
-              : (value) => setState(() => _selectedLocationId = value),
-        ),
-        const SizedBox(height: 20),
         DropdownButtonFormField<double>(
           initialValue: _selectedRadiusKm,
           decoration: const InputDecoration(
@@ -189,43 +153,60 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
           items: _radiusOptions
               .map(
                 (radius) => DropdownMenuItem(
-                  value: radius,
-                  child: Text('${radius.toInt()} km'),
-                ),
-              )
+              value: radius,
+              child: Text('${radius.toInt()} km'),
+            ),
+          )
               .toList(),
           onChanged: _isGettingLocation
               ? null
               : (value) => setState(() => _selectedRadiusKm = value),
         ),
         const SizedBox(height: 24),
+
+        // 📍 Button 1: Live GPS
         OutlinedButton.icon(
           onPressed: _isGettingLocation ? null : _useCurrentLocation,
           icon: _isGettingLocation
               ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
               : const Icon(Icons.my_location),
           label: Text(
-            _isGettingLocation ? 'Getting Location...' : 'Use Current Location',
+            _isGettingLocation ? 'Getting Location...' : 'Use Live GPS Location',
           ),
         ),
+        const SizedBox(height: 12),
+
+        // 📍 Button 2: Map Picker
+        OutlinedButton.icon(
+          onPressed: _isGettingLocation ? null : _openMapPicker,
+          icon: const Icon(Icons.map, color: Colors.green),
+          label: const Text(
+            'Select Location on Map 🗺️',
+            style: TextStyle(color: Colors.green),
+          ),
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: Colors.green),
+          ),
+        ),
+
         if (_currentLocation != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.check_circle, color: Colors.green, size: 20),
               SizedBox(width: 8),
-              Text('Current location selected'),
+              Text('Location successfully saved! ✅'),
             ],
           ),
         ],
         const SizedBox(height: 28),
         ElevatedButton(
-          onPressed: _isGettingLocation ? null : () => _continue(locations),
+          onPressed: _isGettingLocation ? null : _continue,
           child: const Text('Continue'),
         ),
       ],
@@ -275,45 +256,14 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Select a supported town, choose how far you travel, and capture '
-              'your current location.',
+              'Choose how far you travel and capture your current location.',
               textAlign: TextAlign.center,
               style: textTheme.bodyLarge?.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 35),
-            FutureBuilder<List<SupportedLocation>>(
-              future: _locationsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  debugPrint('Supported locations error: ${snapshot.error}');
-                  return Column(
-                    children: [
-                      const Text(
-                        'Unable to load supported towns. Please try again.',
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: _reloadLocations,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Try Again'),
-                      ),
-                    ],
-                  );
-                }
-
-                return _buildLocationForm(snapshot.data ?? const []);
-              },
-            ),
+            _buildLocationForm(), // 👈 Directly calling the form with no FutureBuilder
             const SizedBox(height: 30),
           ],
         ),

@@ -1,6 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:latlong2/latlong.dart';
+
+// Adjust this path if your folders are structured differently!
+import '../provider/location_picker_screen.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/app_router.dart';
@@ -32,6 +36,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   bool _isGettingLocation = false;
   bool _isSubmitting = false;
   GeoPoint? _serviceLocation;
+  String? _detectedAddress; // 👈 Added to store and show the detected area
   String? selectedDate;
   String? selectedTime;
 
@@ -58,17 +63,28 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     }
   }
 
+  // 1. Live GPS Locator
   Future<void> _useCurrentLocation() async {
     if (_isGettingLocation) return;
-
     setState(() => _isGettingLocation = true);
 
     try {
       final location = await _locationService.getCurrentLocation();
+      final address = await _locationService.getAddressFromGeoPoint(location);
+
       if (!mounted) return;
 
-      setState(() => _serviceLocation = location);
-      _showMessage('Current location selected.');
+      setState(() {
+        _serviceLocation = location;
+        _detectedAddress = address ?? "Unknown Area";
+      });
+
+      // Auto-fill the address box for the customer
+      if (address != null) {
+        locationController.text = address;
+      }
+
+      _showMessage('Current location detected ✅');
     } on StateError catch (error) {
       if (!mounted) return;
       _showMessage(error.message.toString());
@@ -83,6 +99,53 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     }
   }
 
+  // 2. Map Picker Locator
+  Future<void> _openMapPicker() async {
+    if (_isGettingLocation) return;
+    setState(() => _isGettingLocation = true);
+
+    try {
+      final currentPoint = await _locationService.getCurrentLocation();
+      final initialPos = LatLng(currentPoint.latitude, currentPoint.longitude);
+
+      if (!mounted) return;
+
+      final LatLng? picked = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LocationPickerScreen(initialLocation: initialPos),
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (picked != null) {
+        final newPoint = GeoPoint(picked.latitude, picked.longitude);
+        final address = await _locationService.getAddressFromGeoPoint(newPoint);
+
+        setState(() {
+          _serviceLocation = newPoint;
+          _detectedAddress = address ?? "Unknown Area";
+        });
+
+        // Auto-fill the address box for the customer
+        if (address != null) {
+          locationController.text = address;
+        }
+
+        _showMessage('Location selected from map ✅');
+      }
+    } catch (error) {
+      debugPrint('Service map error: $error');
+      if (!mounted) return;
+      _showMessage('Unable to open map. Please try again.');
+    } finally {
+      if (mounted) {
+        setState(() => _isGettingLocation = false);
+      }
+    }
+  }
+
   Future<void> _submitRequest() async {
     if (_isSubmitting || _isGettingLocation) return;
 
@@ -90,7 +153,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
 
     final serviceLocation = _serviceLocation;
     if (serviceLocation == null) {
-      _showMessage('Please use your current location before submitting.');
+      _showMessage('Please select your location before submitting.');
       return;
     }
 
@@ -145,9 +208,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -173,7 +234,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(widget.provider.displayName, style: textTheme.titleLarge),
               Text(
@@ -217,10 +278,10 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                       : _enhanceDescription,
                   icon: isEnhancing
                       ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                       : const Icon(Icons.auto_awesome),
                   label: Text(
                     isEnhancing ? 'Enhancing...' : 'Enhance Description',
@@ -234,38 +295,91 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
+
+              // 📍 Visual Display Box for Selected Location
+              if (_detectedAddress != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.location_on, color: AppColors.primary, size: 28),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Selected Location',
+                              style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _detectedAddress!,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.check_circle, color: Colors.green, size: 24),
+                    ],
+                  ),
+                ),
+              ],
+
+              // 📍 Button 1: Live GPS
               OutlinedButton.icon(
                 onPressed: _isGettingLocation || _isSubmitting
                     ? null
                     : _useCurrentLocation,
                 icon: _isGettingLocation
                     ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
                     : const Icon(Icons.my_location),
                 label: Text(
-                  _isGettingLocation
-                      ? 'Getting Location...'
-                      : 'Use Current Location',
+                  _isGettingLocation ? 'Detecting Location...' : 'Use Live GPS Location',
                 ),
               ),
-              if (_serviceLocation != null) ...[
-                const SizedBox(height: 8),
-                const Text(
-                  'Current location selected',
+
+              const SizedBox(height: 12),
+
+              // 📍 Button 2: Map Picker
+              OutlinedButton.icon(
+                onPressed: _isGettingLocation || _isSubmitting
+                    ? null
+                    : _openMapPicker,
+                icon: const Icon(Icons.map, color: Colors.green),
+                label: const Text(
+                  'Select Location on Map 🗺️',
                   style: TextStyle(color: Colors.green),
                 ),
-              ],
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.green),
+                ),
+              ),
+
               const SizedBox(height: 16),
+
+              // 📍 Address Text Field (Auto-fills, but customer can edit if needed)
               TextFormField(
                 controller: locationController,
                 decoration: const InputDecoration(
                   labelText: 'Address Description',
                   hintText: 'Near Badulla Hospital, Badulla',
-                  prefixIcon: Icon(Icons.location_on_outlined),
+                  prefixIcon: Icon(Icons.location_city_outlined),
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
@@ -282,20 +396,20 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                 onTap: _isSubmitting
                     ? null
                     : () async {
-                        final date = await showDatePicker(
-                          context: context,
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime(2030),
-                          initialDate: DateTime.now(),
-                        );
+                  final date = await showDatePicker(
+                    context: context,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime(2030),
+                    initialDate: DateTime.now(),
+                  );
 
-                        if (date != null && mounted) {
-                          setState(() {
-                            selectedDate =
-                                '${date.day}/${date.month}/${date.year}';
-                          });
-                        }
-                      },
+                  if (date != null && mounted) {
+                    setState(() {
+                      selectedDate =
+                      '${date.day}/${date.month}/${date.year}';
+                    });
+                  }
+                },
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -304,34 +418,31 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                 onTap: _isSubmitting
                     ? null
                     : () async {
-                        final time = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay.now(),
-                        );
+                  final time = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.now(),
+                  );
 
-                        if (time != null && mounted) {
-                          setState(() => selectedTime = time.format(context));
-                        }
-                      },
+                  if (time != null && mounted) {
+                    setState(() => selectedTime = time.format(context));
+                  }
+                },
               ),
               const SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isSubmitting || _isGettingLocation
-                      ? null
-                      : _submitRequest,
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('Submit Request'),
-                ),
+              ElevatedButton(
+                onPressed: _isSubmitting || _isGettingLocation
+                    ? null
+                    : _submitRequest,
+                child: _isSubmitting
+                    ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+                    : const Text('Submit Request'),
               ),
             ],
           ),

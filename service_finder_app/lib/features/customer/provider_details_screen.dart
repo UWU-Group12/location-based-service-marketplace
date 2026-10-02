@@ -61,12 +61,6 @@ class ProviderDetailsScreen extends StatelessWidget {
                       '${provider.completedJobCount} jobs',
                       'Experience',
                     ),
-
-                    _infoCard(
-                      Icons.location_on_outlined,
-                      provider.locationId ?? 'N/A',
-                      'Location',
-                    ),
                   ],
                 ),
 

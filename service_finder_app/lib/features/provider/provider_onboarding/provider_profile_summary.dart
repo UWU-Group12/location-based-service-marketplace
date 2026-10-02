@@ -28,9 +28,7 @@ class _ProviderProfileSummaryState extends State<ProviderProfileSummary> {
       listen: false,
     );
 
-    if (onboarding.baseLocation == null ||
-        onboarding.selectedLocationId.isEmpty ||
-        onboarding.serviceRadiusKm == null) {
+    if (onboarding.baseLocation == null || onboarding.serviceRadiusKm == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please complete your working area before submitting.'),
@@ -51,7 +49,6 @@ class _ProviderProfileSummaryState extends State<ProviderProfileSummary> {
         workingDays: onboarding.workingDays,
         workingHours: onboarding.workingHours,
         baseLocation: onboarding.baseLocation!,
-        locationId: onboarding.selectedLocationId,
         serviceRadiusKm: onboarding.serviceRadiusKm!,
         nationalIdFrontPath: onboarding.nationalIdFrontPath ?? '',
         nationalIdBackPath: onboarding.nationalIdBackPath ?? '',
@@ -247,9 +244,6 @@ class _ProviderProfileSummaryState extends State<ProviderProfileSummary> {
             _buildSummaryCard(
               title: "Working Area",
               details: [
-                provider.selectedLocationName.isEmpty
-                    ? "Location not selected"
-                    : provider.selectedLocationName,
                 provider.serviceRadiusKm == null
                     ? "Service radius not selected"
                     : "${provider.serviceRadiusKm!.toInt()} km radius",

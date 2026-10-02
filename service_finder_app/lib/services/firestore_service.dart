@@ -1,12 +1,32 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-import '../models/location_model.dart';
 import '../models/provider_model.dart';
 import '../models/service_category_model.dart';
 import '../models/service_request_model.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Stream<List<ServiceRequestModel>> watchProviderRequests(String providerId) {
+    return _firestore
+        .collection('serviceRequests')
+        .where('providerId', isEqualTo: providerId)
+        .snapshots()
+        .map((snapshot) {
+          final requests = snapshot.docs
+              .map(
+                (doc) => ServiceRequestModel.fromFirestore(doc.id, doc.data()),
+              )
+              .toList();
+          requests.sort((a, b) {
+            final comparison = b.createdAt.compareTo(a.createdAt);
+            return comparison != 0
+                ? comparison
+                : a.requestId.compareTo(b.requestId);
+          });
+          return requests;
+        });
+  }
 
   Future<List<ServiceCategory>> getActiveCategories() async {
     final snapshot = await _firestore
@@ -26,21 +46,6 @@ class FirestoreService {
     });
 
     return List.unmodifiable(categories);
-  }
-
-  Future<List<SupportedLocation>> getActiveLocations() async {
-    final snapshot = await _firestore
-        .collection('locations')
-        .where('active', isEqualTo: true)
-        .get();
-
-    final locations = snapshot.docs
-        .map(SupportedLocation.fromFirestore)
-        .where((location) => location.name.trim().isNotEmpty)
-        .toList();
-
-    locations.sort((first, second) => first.name.compareTo(second.name));
-    return List.unmodifiable(locations);
   }
 
   Future<List<ProviderModel>> getVerifiedAvailableProvidersByCategory(
@@ -64,12 +69,10 @@ class FirestoreService {
   Future<void> saveProviderLocationFields({
     required String providerId,
     required GeoPoint baseLocation,
-    required String locationId,
     required double serviceRadiusKm,
   }) async {
     await _firestore.collection('providerProfiles').doc(providerId).update({
       'baseLocation': baseLocation,
-      'locationId': locationId.trim(),
       'serviceRadiusKm': serviceRadiusKm,
       'updatedAt': FieldValue.serverTimestamp(),
     });

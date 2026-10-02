@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import 'provider_dashboard_screen.dart';
 import 'provider_profile_screen.dart';
+import 'provider_requests_screen.dart';
 
 class ProviderShellScreen extends StatefulWidget {
   // Give a name only when using the development bypass.
@@ -164,12 +165,9 @@ class _ProviderShellScreenState extends State<ProviderShellScreen> {
     final pages = <Widget>[
       ProviderDashboardScreen(
         userName: _providerName,
+        isDemo: widget.debugUserName != null,
       ),
-      const _ProviderPlaceholderPage(
-        icon: Icons.inbox_outlined,
-        title: 'Requests',
-        message: 'New customer requests will appear here.',
-      ),
+      const ProviderRequestsScreen(),
       const _ProviderPlaceholderPage(
         icon: Icons.work_outline,
         title: 'Jobs',
