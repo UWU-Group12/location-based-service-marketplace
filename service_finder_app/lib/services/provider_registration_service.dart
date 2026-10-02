@@ -75,7 +75,6 @@ class ProviderRegistrationService {
     required List<String> workingDays,
     required String workingHours,
     required GeoPoint baseLocation,
-    required String locationId,
     required double serviceRadiusKm,
     required String nationalIdFrontPath,
     required String nationalIdBackPath,
@@ -83,7 +82,6 @@ class ProviderRegistrationService {
     final cleanCategoryId = categoryId.trim();
     final cleanPhoneNumber = phoneNumber.trim();
     final cleanWorkingHours = workingHours.trim();
-    final cleanLocationId = locationId.trim();
     final cleanWorkingDays = workingDays
         .map((day) => day.trim())
         .where((day) => day.isNotEmpty)
@@ -100,9 +98,6 @@ class ProviderRegistrationService {
     }
     if (cleanWorkingDays.isEmpty || cleanWorkingHours.isEmpty) {
       throw StateError('Working days and hours are required.');
-    }
-    if (cleanLocationId.isEmpty) {
-      throw StateError('Please select a supported town.');
     }
     if (![5, 10, 15, 20, 30].contains(serviceRadiusKm)) {
       throw StateError('Please select a valid service radius.');
@@ -180,7 +175,6 @@ class ProviderRegistrationService {
       workingDays: cleanWorkingDays,
       workingHours: cleanWorkingHours,
       baseLocation: baseLocation,
-      locationId: cleanLocationId,
       serviceRadiusKm: serviceRadiusKm,
       availabilityStatus: 'unavailable',
       verificationStatus: 'pending',

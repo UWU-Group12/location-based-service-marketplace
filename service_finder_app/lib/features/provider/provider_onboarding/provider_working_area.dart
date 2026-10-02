@@ -4,8 +4,6 @@ import 'package:provider/provider.dart';
 
 import '../../../core/app_colors.dart';
 import '../../../core/app_router.dart';
-import '../../../models/location_model.dart';
-import '../../../services/firestore_service.dart';
 import '../../../services/location_service.dart';
 import '../provider_onboarding_provider.dart';
 
@@ -19,21 +17,12 @@ class ProviderWorkingArea extends StatefulWidget {
 class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
   static const List<double> _radiusOptions = [5, 10, 15, 20, 30];
 
-  final FirestoreService _firestoreService = FirestoreService();
   final LocationService _locationService = LocationService();
 
-  late Future<List<SupportedLocation>> _locationsFuture;
-  String? _selectedLocationId;
   double? _selectedRadiusKm;
   GeoPoint? _currentLocation;
   bool _isGettingLocation = false;
   bool _initialized = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _locationsFuture = _firestoreService.getActiveLocations();
-  }
 
   @override
   void didChangeDependencies() {
@@ -45,18 +34,9 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
       context,
       listen: false,
     );
-    _selectedLocationId = onboarding.selectedLocationId.isEmpty
-        ? null
-        : onboarding.selectedLocationId;
     _selectedRadiusKm = onboarding.serviceRadiusKm;
     _currentLocation = onboarding.baseLocation;
     _initialized = true;
-  }
-
-  void _reloadLocations() {
-    setState(() {
-      _locationsFuture = _firestoreService.getActiveLocations();
-    });
   }
 
   Future<void> _useCurrentLocation() async {
@@ -94,15 +74,10 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
     }
   }
 
-  void _continue(List<SupportedLocation> locations) {
-    final locationId = _selectedLocationId;
+  void _continue() {
     final radiusKm = _selectedRadiusKm;
     final currentLocation = _currentLocation;
 
-    if (locationId == null) {
-      _showMessage('Please select a supported town.');
-      return;
-    }
     if (radiusKm == null) {
       _showMessage('Please select your service radius.');
       return;
@@ -112,18 +87,8 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
       return;
     }
 
-    final selectedLocation = locations.where(
-      (location) => location.id == locationId,
-    );
-    if (selectedLocation.isEmpty) {
-      _showMessage('The selected town is no longer available.');
-      return;
-    }
-
     Provider.of<ProviderOnboardingProvider>(context, listen: false).setLocation(
       baseLocation: currentLocation,
-      locationId: locationId,
-      locationName: selectedLocation.first.name,
       serviceRadiusKm: radiusKm,
     );
 
@@ -136,50 +101,10 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Widget _buildLocationForm(List<SupportedLocation> locations) {
-    if (locations.isEmpty) {
-      return Column(
-        children: [
-          const Text(
-            'No supported towns are available right now.',
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: _reloadLocations,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Reload'),
-          ),
-        ],
-      );
-    }
-
-    final selectedLocationExists = locations.any(
-      (location) => location.id == _selectedLocationId,
-    );
-
+  Widget _buildLocationForm() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DropdownButtonFormField<String>(
-          initialValue: selectedLocationExists ? _selectedLocationId : null,
-          decoration: const InputDecoration(
-            labelText: 'Supported town',
-            prefixIcon: Icon(Icons.location_city_outlined),
-          ),
-          items: locations
-              .map(
-                (location) => DropdownMenuItem(
-                  value: location.id,
-                  child: Text(location.name),
-                ),
-              )
-              .toList(),
-          onChanged: _isGettingLocation
-              ? null
-              : (value) => setState(() => _selectedLocationId = value),
-        ),
-        const SizedBox(height: 20),
         DropdownButtonFormField<double>(
           initialValue: _selectedRadiusKm,
           decoration: const InputDecoration(
@@ -225,7 +150,7 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
         ],
         const SizedBox(height: 28),
         ElevatedButton(
-          onPressed: _isGettingLocation ? null : () => _continue(locations),
+          onPressed: _isGettingLocation ? null : _continue,
           child: const Text('Continue'),
         ),
       ],
@@ -275,45 +200,14 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
             ),
             const SizedBox(height: 12),
             Text(
-              'Select a supported town, choose how far you travel, and capture '
-              'your current location.',
+              'Choose how far you travel and capture your current location.',
               textAlign: TextAlign.center,
               style: textTheme.bodyLarge?.copyWith(
                 color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 35),
-            FutureBuilder<List<SupportedLocation>>(
-              future: _locationsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-
-                if (snapshot.hasError) {
-                  debugPrint('Supported locations error: ${snapshot.error}');
-                  return Column(
-                    children: [
-                      const Text(
-                        'Unable to load supported towns. Please try again.',
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 12),
-                      OutlinedButton.icon(
-                        onPressed: _reloadLocations,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('Try Again'),
-                      ),
-                    ],
-                  );
-                }
-
-                return _buildLocationForm(snapshot.data ?? const []);
-              },
-            ),
+            _buildLocationForm(),
             const SizedBox(height: 30),
           ],
         ),

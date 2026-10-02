@@ -32,15 +32,6 @@ service cloud.firestore {
         && request.auth.token.admin == true;
     }
 
-    function isActiveLocation(locationId) {
-      return exists(
-          /databases/$(database)/documents/locations/$(locationId)
-        )
-        && get(
-          /databases/$(database)/documents/locations/$(locationId)
-        ).data.active == true;
-    }
-
     function isValidProviderProfileCreate(providerId) {
       return request.resource.data.keys().hasAll([
           'providerId',
@@ -50,7 +41,6 @@ service cloud.firestore {
           'workingDays',
           'workingHours',
           'baseLocation',
-          'locationId',
           'serviceRadiusKm',
           'availabilityStatus',
           'verificationStatus',
@@ -72,9 +62,6 @@ service cloud.firestore {
         && request.resource.data.workingHours is string
         && request.resource.data.workingHours.size() > 0
         && request.resource.data.baseLocation is latlng
-        && request.resource.data.locationId is string
-        && request.resource.data.locationId.size() > 0
-        && isActiveLocation(request.resource.data.locationId)
         && request.resource.data.serviceRadiusKm is number
         && request.resource.data.serviceRadiusKm in [5, 10, 15, 20, 30]
         && request.resource.data.availabilityStatus == 'unavailable'
@@ -188,7 +175,6 @@ service cloud.firestore {
               'workingDays',
               'workingHours',
               'baseLocation',
-              'locationId',
               'serviceRadiusKm',
               'availabilityStatus',
               'updatedAt'
@@ -200,9 +186,6 @@ service cloud.firestore {
           && request.resource.data.workingHours is string
           && request.resource.data.workingHours.size() > 0
           && request.resource.data.baseLocation is latlng
-          && request.resource.data.locationId is string
-          && request.resource.data.locationId.size() > 0
-          && isActiveLocation(request.resource.data.locationId)
           && request.resource.data.serviceRadiusKm is number
           && request.resource.data.serviceRadiusKm in [5, 10, 15, 20, 30]
         );
@@ -222,11 +205,6 @@ service cloud.firestore {
     }
 
     match /categories/{categoryId} {
-      allow read: if signedIn();
-      allow write: if isAdmin();
-    }
-
-    match /locations/{locationId} {
       allow read: if signedIn();
       allow write: if isAdmin();
     }
