@@ -63,6 +63,8 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
       LatLng initialPos =
       LatLng(currentPoint.latitude, currentPoint.longitude);
 
+      if (!mounted) return; // 👈 Required check before Navigator.push
+
       final LatLng? picked = await Navigator.push(
         context,
         MaterialPageRoute(
