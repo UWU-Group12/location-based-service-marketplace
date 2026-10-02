@@ -7,12 +7,14 @@ import '../../services/auth_service.dart';
 import '../../services/location_service.dart';
 import 'location_picker_screen.dart';
 
+
 class ProviderProfileScreen extends StatefulWidget {
   const ProviderProfileScreen({super.key});
 
   @override
   State<ProviderProfileScreen> createState() => _ProviderProfileScreenState();
 }
+
 
 class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
   final AuthService _authService = AuthService();

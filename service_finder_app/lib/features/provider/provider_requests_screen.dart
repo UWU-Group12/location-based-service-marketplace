@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ProviderRequestsScreen extends StatelessWidget {
-  const ProviderRequestsScreen({Key? key}) : super(key: key);
+  const ProviderRequestsScreen({super.key}); // ✅ Fixed line
 
   @override
   Widget build(BuildContext context) {
@@ -9,12 +9,12 @@ class ProviderRequestsScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Requests'),
       ),
-      body: Center(
+      body: const Center(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: EdgeInsets.all(24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
+            children: [
               Icon(
                 Icons.inbox_outlined,
                 size: 60,
