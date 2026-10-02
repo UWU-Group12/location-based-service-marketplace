@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../core/app_colors.dart';
 
-import '../../services/ai_service.dart';
+import '../../core/app_colors.dart';
+import '../../core/app_router.dart';
 import '../../models/category_suggestion_model.dart';
+import '../../services/ai_service.dart';
 
 class AiCategoryScreen extends StatefulWidget {
   const AiCategoryScreen({super.key});
@@ -21,6 +22,37 @@ class _AiCategoryScreenState extends State<AiCategoryScreen> {
   CategorySuggestion? _categorySuggestion;
 
   bool _isLoading = false;
+
+  Future<void> _requestSuggestion() async {
+    if (_isLoading || _problemController.text.trim().isEmpty) return;
+
+    setState(() => _isLoading = true);
+
+    final result = await _aiService.suggestCategory(_problemController.text);
+    if (!mounted) return;
+
+    setState(() {
+      _categorySuggestion = result;
+      _isLoading = false;
+    });
+  }
+
+  void _openSuggestedCategory() {
+    final suggestion = _categorySuggestion;
+    if (suggestion == null) return;
+
+    final categoryId = suggestion.categoryId;
+    if (categoryId == null || categoryId.isEmpty) {
+      AppRouter.goToServiceCategoryScreen(context);
+      return;
+    }
+
+    AppRouter.goToProviderListScreen(
+      context,
+      categoryId: categoryId,
+      categoryName: suggestion.category,
+    );
+  }
 
   @override
   void dispose() {
@@ -183,25 +215,7 @@ class _AiCategoryScreenState extends State<AiCategoryScreen> {
 
             // Primary Action Button
             ElevatedButton(
-              onPressed: () async {
-                if (_problemController.text.trim().isEmpty) {
-                  return;
-                }
-
-                setState(() {
-                  _isLoading = true;
-                });
-
-                final result = await _aiService.suggestCategory(
-                  _problemController.text,
-                );
-
-                setState(() {
-                  _categorySuggestion = result;
-
-                  _isLoading = false;
-                });
-              },
+              onPressed: _isLoading ? null : _requestSuggestion,
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
@@ -266,6 +280,25 @@ class _AiCategoryScreenState extends State<AiCategoryScreen> {
                           _categorySuggestion!.reason,
                           style: textTheme.bodyMedium,
                         ),
+
+                        const SizedBox(height: 20),
+
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton.icon(
+                            onPressed: _openSuggestedCategory,
+                            icon: Icon(
+                              _categorySuggestion!.categoryId == null
+                                  ? Icons.grid_view_outlined
+                                  : Icons.people_outline,
+                            ),
+                            label: Text(
+                              _categorySuggestion!.categoryId == null
+                                  ? 'Browse Service Categories'
+                                  : 'View Available Providers',
+                            ),
+                          ),
+                        ),
                       ],
                     ),
             ),
@@ -285,7 +318,7 @@ class _AiCategoryScreenState extends State<AiCategoryScreen> {
                 border: Border.all(color: AppColors.border),
               ),
               child: Text(
-                "Matching service providers will appear here.",
+                "Use the suggestion button above to see matching service providers.",
                 style: textTheme.bodyMedium?.copyWith(
                   color: AppColors.textSecondary,
                   fontSize: 14,
