@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:latlong2/latlong.dart';
+import '../location_picker_screen.dart';
 
 import '../../../core/app_colors.dart';
 import '../../../core/app_router.dart';
@@ -39,9 +41,9 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
     _initialized = true;
   }
 
+  // 1. Live GPS Locator
   Future<void> _useCurrentLocation() async {
     if (_isGettingLocation) return;
-
     setState(() => _isGettingLocation = true);
 
     try {
@@ -54,18 +56,57 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
       );
     } on StateError catch (error) {
       if (!mounted) return;
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error.message.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message.toString())),
+      );
     } catch (error) {
       debugPrint('Provider location error: $error');
       if (!mounted) return;
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Unable to get your location. Please try again.'),
         ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isGettingLocation = false);
+      }
+    }
+  }
+
+  // 2. Map Picker Locator
+  Future<void> _openMapPicker() async {
+    if (_isGettingLocation) return;
+    setState(() => _isGettingLocation = true);
+
+    try {
+      final currentPoint = await _locationService.getCurrentLocation();
+      final initialPos = LatLng(currentPoint.latitude, currentPoint.longitude);
+
+      if (!mounted) return;
+
+      final LatLng? picked = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => LocationPickerScreen(initialLocation: initialPos),
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (picked != null) {
+        setState(() {
+          _currentLocation = GeoPoint(picked.latitude, picked.longitude);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location selected from map ✅')),
+        );
+      }
+    } catch (error) {
+      debugPrint('Provider map error: $error');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open map. Please try again.')),
       );
     } finally {
       if (mounted) {
@@ -83,7 +124,7 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
       return;
     }
     if (currentLocation == null) {
-      _showMessage('Please use your current location before continuing.');
+      _showMessage('Please select a location before continuing.');
       return;
     }
 
@@ -96,9 +137,7 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _buildLocationForm() {
@@ -114,37 +153,54 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
           items: _radiusOptions
               .map(
                 (radius) => DropdownMenuItem(
-                  value: radius,
-                  child: Text('${radius.toInt()} km'),
-                ),
-              )
+              value: radius,
+              child: Text('${radius.toInt()} km'),
+            ),
+          )
               .toList(),
           onChanged: _isGettingLocation
               ? null
               : (value) => setState(() => _selectedRadiusKm = value),
         ),
         const SizedBox(height: 24),
+
+        // 📍 Button 1: Live GPS
         OutlinedButton.icon(
           onPressed: _isGettingLocation ? null : _useCurrentLocation,
           icon: _isGettingLocation
               ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
               : const Icon(Icons.my_location),
           label: Text(
-            _isGettingLocation ? 'Getting Location...' : 'Use Current Location',
+            _isGettingLocation ? 'Getting Location...' : 'Use Live GPS Location',
           ),
         ),
+        const SizedBox(height: 12),
+
+        // 📍 Button 2: Map Picker
+        OutlinedButton.icon(
+          onPressed: _isGettingLocation ? null : _openMapPicker,
+          icon: const Icon(Icons.map, color: Colors.green),
+          label: const Text(
+            'Select Location on Map 🗺️',
+            style: TextStyle(color: Colors.green),
+          ),
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: Colors.green),
+          ),
+        ),
+
         if (_currentLocation != null) ...[
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           const Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(Icons.check_circle, color: Colors.green, size: 20),
               SizedBox(width: 8),
-              Text('Current location selected'),
+              Text('Location successfully saved! ✅'),
             ],
           ),
         ],
@@ -207,7 +263,7 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
               ),
             ),
             const SizedBox(height: 35),
-            _buildLocationForm(),
+            _buildLocationForm(), // 👈 Directly calling the form with no FutureBuilder
             const SizedBox(height: 30),
           ],
         ),
