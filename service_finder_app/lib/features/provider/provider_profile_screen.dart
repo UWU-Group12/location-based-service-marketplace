@@ -18,12 +18,9 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
   final AuthService _authService = AuthService();
 
   bool _isLoggingOut = false;
-
-  // 📍 Location states
   bool _showLocationOptions = false;
   String _locationStatus = "";
 
-  // 1. Automatic GPS Location
   Future<void> _testLocation() async {
     setState(() {
       _locationStatus = "Fetching GPS coordinates... ⏳";
@@ -45,18 +42,20 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
         });
       }
 
+      if (!mounted) return;
+
       setState(() {
         _locationStatus =
         "📍 Lat: ${point.latitude.toStringAsFixed(4)}, Lng: ${point.longitude.toStringAsFixed(4)}\n🏙️ City: $address\n✅ Saved to Firestore!";
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _locationStatus = "❌ Error: $e";
       });
     }
   }
 
-  // 2. Manual Map Pin Location
   Future<void> _openMapPicker() async {
     try {
       final locationService = LocationService();
@@ -71,6 +70,8 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
               LocationPickerScreen(initialLocation: initialPos),
         ),
       );
+
+      if (!mounted) return;
 
       if (picked != null) {
         final user = FirebaseAuth.instance.currentUser;
@@ -87,6 +88,8 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
             'updatedAt': FieldValue.serverTimestamp(),
           });
 
+          if (!mounted) return;
+
           setState(() {
             _locationStatus =
             "📍 Pin Selected!\nLat: ${picked.latitude.toStringAsFixed(4)}, Lng: ${picked.longitude.toStringAsFixed(4)}\n🏙️ City: $address\n✅ Saved to Firestore!";
@@ -94,6 +97,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
         }
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _locationStatus = "❌ Error: $e";
       });
@@ -130,8 +134,6 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
                     style: const TextStyle(fontSize: 18),
                   ),
                   const SizedBox(height: 24),
-
-                  // 📍 Toggle Location Options Button
                   ElevatedButton.icon(
                     onPressed: () {
                       setState(() {
@@ -143,8 +145,6 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
                         ? 'Hide Location Options'
                         : 'Change Location 📍'),
                   ),
-
-                  // 📍 Location Action Buttons (Visible on tap)
                   if (_showLocationOptions) ...[
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
@@ -172,7 +172,6 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
                       ),
                     ],
                   ],
-
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
                     onPressed: _isLoggingOut ? null : _logout,
