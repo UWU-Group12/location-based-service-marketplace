@@ -22,8 +22,6 @@ class ProviderOnboardingProvider extends ChangeNotifier {
 
   // Working location
   GeoPoint? baseLocation;
-  String selectedLocationId = '';
-  String selectedLocationName = '';
   double? serviceRadiusKm;
 
   // Local files are uploaded only when the provider confirms registration.
@@ -70,13 +68,9 @@ class ProviderOnboardingProvider extends ChangeNotifier {
 
   void setLocation({
     required GeoPoint baseLocation,
-    required String locationId,
-    required String locationName,
     required double serviceRadiusKm,
   }) {
     this.baseLocation = baseLocation;
-    selectedLocationId = locationId;
-    selectedLocationName = locationName;
     this.serviceRadiusKm = serviceRadiusKm;
     notifyListeners();
   }
@@ -102,8 +96,6 @@ class ProviderOnboardingProvider extends ChangeNotifier {
     workingDays = [];
     workingHours = '';
     baseLocation = null;
-    selectedLocationId = '';
-    selectedLocationName = '';
     serviceRadiusKm = null;
     nationalIdFrontPath = null;
     nationalIdBackPath = null;

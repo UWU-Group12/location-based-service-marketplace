@@ -11,7 +11,6 @@ class ProviderModel {
   final String workingHours;
   final GeoPoint? baseLocation;
   final String? geohash;
-  final String? locationId;
   final double? serviceRadiusKm;
   final String availabilityStatus;
   final String verificationStatus;
@@ -32,7 +31,6 @@ class ProviderModel {
     this.workingHours = '',
     this.baseLocation,
     this.geohash,
-    this.locationId,
     this.serviceRadiusKm,
     required this.availabilityStatus,
     required this.verificationStatus,
@@ -55,7 +53,6 @@ class ProviderModel {
       'workingHours': workingHours,
       if (baseLocation != null) 'baseLocation': baseLocation,
       if (geohash != null) 'geohash': geohash,
-      if (locationId != null) 'locationId': locationId,
       if (serviceRadiusKm != null) 'serviceRadiusKm': serviceRadiusKm,
       'availabilityStatus': availabilityStatus,
       'verificationStatus': verificationStatus,
@@ -79,7 +76,6 @@ class ProviderModel {
       workingHours: data['workingHours'] as String? ?? '',
       baseLocation: data['baseLocation'] as GeoPoint?,
       geohash: data['geohash'] as String?,
-      locationId: data['locationId'] as String?,
       serviceRadiusKm: (data['serviceRadiusKm'] as num?)?.toDouble(),
       availabilityStatus: data['availabilityStatus'] ?? 'unavailable',
       verificationStatus: data['verificationStatus'] ?? 'not_submitted',

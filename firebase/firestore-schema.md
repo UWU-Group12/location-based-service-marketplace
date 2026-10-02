@@ -37,9 +37,6 @@ firestore
 ├── categories
 │   └── {categoryId}
 │
-├── locations
-│   └── {locationId}
-│
 ├── serviceRequests
 │   └── {requestId}
 │       └── statusHistory
@@ -145,7 +142,6 @@ Stores provider information that customers are allowed to view and search.
   "workingDays": ["Mon", "Tue", "Wed", "Thu", "Fri"],
   "workingHours": "Full Day",
   "baseLocation": "GeoPoint",
-  "locationId": "badulla-town",
   "serviceRadiusKm": 20,
   "availabilityStatus": "available",
   "verificationStatus": "pending",
@@ -171,7 +167,6 @@ Stores provider information that customers are allowed to view and search.
 | `workingHours` | String | Yes | Selected working-hours period |
 | `baseLocation` | GeoPoint | Yes | Provider's captured working location |
 | `geohash` | String | No | Reserved for a future geohash search improvement |
-| `locationId` | String | Yes | Supported location reference |
 | `serviceRadiusKm` | Number | Yes | Maximum working distance: 5, 10, 15, 20, or 30 km |
 | `availabilityStatus` | String | Yes | Current availability |
 | `verificationStatus` | String | Yes | Provider verification state |
@@ -312,41 +307,7 @@ Only administrators should create, update, or deactivate categories.
 
 ---
 
-## 7. Locations Collection
-
-### Path
-
-```text
-locations/{locationId}
-```
-
-### Purpose
-
-Stores supported service locations managed by administrators.
-
-### Example
-
-```json
-{
-  "name": "Badulla",
-  "district": "Badulla",
-  "province": "Uva Province",
-  "active": true,
-}
-```
-
-### Fields
-
-| Field | Type | Required | Description |
-|---|---|---:|---|
-| `name` | String | Yes | Location name |
-| `district` | String | Yes | District name |
-| `province` | String | Yes | Province name |
-| `active` | Boolean | Yes | Whether location is supported |
-
----
-
-## 8. Service Requests Collection
+## 7. Service Requests Collection
 
 ### Path
 
@@ -429,7 +390,7 @@ The request status and quotation status should remain separate.
 
 ---
 
-## 9. Request Status History Subcollection
+## 8. Request Status History Subcollection
 
 ### Path
 
@@ -465,7 +426,7 @@ Stores each request status change for the tracking screen and audit history.
 
 ---
 
-## 10. Quotations Collection
+## 9. Quotations Collection
 
 ### Path
 
@@ -526,7 +487,7 @@ All monetary values must be stored as numbers, not formatted strings.
 
 ---
 
-## 11. Reviews Collection
+## 10. Reviews Collection
 
 ### Path
 
@@ -576,7 +537,7 @@ The provider's average rating and review count should be updated by trusted back
 
 ---
 
-## 12. Complaints Collection
+## 11. Complaints Collection
 
 ### Path
 
@@ -629,7 +590,7 @@ dismissed
 
 ---
 
-## 13. Notifications Subcollection
+## 12. Notifications Subcollection
 
 ### Path
 
@@ -667,7 +628,7 @@ complaint_updated
 
 ---
 
-## 14. Device Tokens Subcollection
+## 13. Device Tokens Subcollection
 
 ### Path
 
@@ -689,7 +650,7 @@ This supports Firebase Cloud Messaging notifications on multiple devices.
 
 ---
 
-## 15. Favourites Subcollection
+## 14. Favourites Subcollection
 
 ### Path
 
@@ -710,7 +671,7 @@ This feature is optional for the MVP.
 
 ---
 
-## 16. Firebase Storage Structure
+## 15. Firebase Storage Structure
 
 Uploaded files should be stored in Firebase Storage.
 
@@ -732,7 +693,7 @@ Firestore should store the Storage path or download URL, not the file itself.
 
 ---
 
-## 17. Main Queries
+## 16. Main Queries
 
 ### Customer Request History
 
@@ -763,11 +724,11 @@ FirebaseFirestore.instance
     .where('categoryIds', arrayContains: selectedCategoryId);
 ```
 
-For the current MVP, this query shows all verified and available providers in the selected category. Location-based filtering can be added later.
+For the current MVP, this query shows all verified and available providers in the selected category. Provider location is stored only as GPS (`baseLocation`) plus `serviceRadiusKm`; there is no `locationId`. Distance-based filtering (on device) and OpenStreetMap area names can be added later.
 
 ---
 
-## 18. Recommended Composite Indexes
+## 17. Recommended Composite Indexes
 
 ```text
 serviceRequests
@@ -795,7 +756,7 @@ Firestore may request additional indexes when new compound queries are added.
 
 ---
 
-## 19. Security Access Summary
+## 18. Security Access Summary
 
 | Collection | Customer | Provider | Admin |
 |---|---|---|---|
@@ -803,7 +764,6 @@ Firestore may request additional indexes when new compound queries are added.
 | `providerProfiles` | Read verified profiles | Manage own profile | Read and manage |
 | `providerVerifications` | No access | Own document | Read and manage |
 | `categories` | Read | Read | Manage |
-| `locations` | Read | Read | Manage |
 | `serviceRequests` | Own requests | Assigned requests | Read and manage |
 | `quotations` | Own quotations | Own quotations | Read and manage |
 | `reviews` | Create for completed jobs | Read related reviews | Moderate |
