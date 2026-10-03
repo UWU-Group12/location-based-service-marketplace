@@ -251,7 +251,7 @@ function ProviderVerificationsPage() {
                       <span>{formatDate(submission.submittedAt)}</span>
                       <StatusBadge status={submission.status} />
                       <span className="verification-chevron" aria-hidden="true">
-                        Ã¢Å’â€ž
+                        ▾
                       </span>
                     </div>
                   </summary>
