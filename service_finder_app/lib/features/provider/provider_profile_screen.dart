@@ -1,13 +1,15 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/app_router.dart';
-import '../../services/provider_profile_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
+import '../../services/location_service.dart';
+import '../../services/storage_service.dart';
 
 class ProviderProfileScreen extends StatefulWidget {
   const ProviderProfileScreen({super.key});
@@ -19,7 +21,10 @@ class ProviderProfileScreen extends StatefulWidget {
 typedef ProviderEditProfileScreen = ProviderProfileScreen;
 
 class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
-  final ProviderProfileService _profileService = ProviderProfileService();
+  final AuthService _authService = AuthService();
+  final FirestoreService _firestoreService = FirestoreService();
+  final StorageService _storageService = StorageService();
+  final LocationService _locationService = LocationService();
 
   final ImagePicker _imagePicker = ImagePicker();
 
@@ -75,39 +80,42 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
 
   Future<void> _loadProfile() async {
     try {
-      final profile = await _profileService.getProfile();
-      final user = FirebaseAuth.instance.currentUser;
+      final user = _authService.currentUser;
+      final userProfile = await _authService.getUserProfileForCurrentUser();
+      final profile = user == null
+          ? null
+          : await _firestoreService.getProviderProfile(user.uid);
+      final location = profile?.baseLocation;
+      final locationName = location == null
+          ? null
+          : await _locationService.getAddressFromGeoPoint(location);
 
       if (!mounted) return;
 
       if (profile != null) {
-        _nameController.text =
-            profile['displayName'] ?? user?.displayName ?? '';
+        _nameController.text = profile.displayName;
 
-        _phoneController.text =
-            profile['phoneNumber'] ?? user?.phoneNumber ?? '';
+        _phoneController.text = userProfile?.phoneNumber ?? '';
 
-        _bioController.text = profile['bio'] ?? '';
+        _bioController.text = profile.bio ?? '';
 
-        _locationNameController.text = profile['locationName'] ?? '';
+        _locationNameController.text = locationName ?? '';
 
-        _categoryId = profile['categoryId'];
+        _categoryId = profile.categoryIds.isEmpty
+            ? null
+            : profile.categoryIds.first;
 
-        _photoUrl = profile['photoUrl'];
+        _photoUrl = profile.profileImagePath;
 
-        _verificationStatus = profile['verificationStatus'] ?? 'pending';
+        _verificationStatus = profile.verificationStatus;
 
-        _availabilityStatus = profile['availabilityStatus'] ?? 'available';
+        _availabilityStatus = profile.availabilityStatus;
 
-        final radius = profile['serviceRadiusKm'];
-
-        if (radius is num) {
-          _serviceRadius = radius.toDouble();
+        if (profile.serviceRadiusKm != null) {
+          _serviceRadius = profile.serviceRadiusKm!;
         }
 
-        final location = profile['baseLocation'];
-
-        if (location is GeoPoint) {
+        if (location != null) {
           _latitude = location.latitude;
           _longitude = location.longitude;
         }
@@ -230,12 +238,14 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
     });
 
     try {
-      final position = await _profileService.getCurrentLocation();
+      final position = await _locationService.getCurrentLocation();
 
-      final locationName = await _profileService.getLocationName(
-        latitude: position.latitude,
-        longitude: position.longitude,
+      final locationName = await _locationService.getAddressFromGeoPoint(
+        position,
       );
+      if (locationName == null) {
+        throw StateError('Location name could not be found.');
+      }
 
       if (!mounted) return;
 
@@ -298,26 +308,36 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
     });
 
     try {
+      final providerId = _authService.currentUser?.uid;
+      if (providerId == null) {
+        throw StateError('No signed-in provider found.');
+      }
+
       String? photoStoragePath;
 
       if (_selectedImage != null) {
-        photoStoragePath = await _profileService.uploadProfileImage(
-          _selectedImage!,
+        photoStoragePath = await _storageService.uploadProfileImage(
+          file: _selectedImage!,
+          userFolder: 'providers/$providerId',
         );
-      } else {
-        photoStoragePath = _photoUrl;
       }
 
-      await _profileService.updateProfile(
-        fullName: _nameController.text,
+      await _firestoreService.updateProviderProfile(
+        providerId: providerId,
+        displayName: _nameController.text,
         phoneNumber: _phoneController.text,
         bio: _bioController.text,
         categoryId: _categoryId!,
-        locationName: _locationNameController.text,
+        baseLocation: GeoPoint(_latitude!, _longitude!),
         serviceRadiusKm: _serviceRadius,
-        latitude: _latitude!,
-        longitude: _longitude!,
-        photoStoragePath: photoStoragePath,
+        profileImagePath: photoStoragePath,
+      );
+
+      await _authService.updateAuthProfile(
+        displayName: _nameController.text,
+        photoUrl: photoStoragePath == null
+            ? null
+            : await _storageService.getDownloadUrl(photoStoragePath),
       );
 
       if (!mounted) return;
@@ -325,7 +345,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
       setState(() {
         _isSaving = false;
         _selectedImage = null;
-        _photoUrl = photoStoragePath;
+        _photoUrl = photoStoragePath ?? _photoUrl;
       });
 
       _showMessage('Profile updated successfully.');
@@ -375,7 +395,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
     }
 
     try {
-      await _profileService.signOut();
+      await _authService.signOut();
 
       if (!mounted) return;
 

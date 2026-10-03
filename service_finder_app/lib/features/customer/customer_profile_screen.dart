@@ -6,7 +6,9 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/app_colors.dart';
 import '../../core/app_router.dart';
 import '../../services/auth_service.dart';
-import '../../services/customer_profile_service.dart';
+import '../../services/firestore_service.dart';
+import '../../services/location_service.dart';
+import '../../services/storage_service.dart';
 
 class CustomerEditProfileScreen extends StatefulWidget {
   const CustomerEditProfileScreen({super.key});
@@ -31,7 +33,10 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
 }
 
 class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
-  final CustomerProfileService _profileService = CustomerProfileService();
+  final AuthService _authService = AuthService();
+  final FirestoreService _firestoreService = FirestoreService();
+  final StorageService _storageService = StorageService();
+  final LocationService _locationService = LocationService();
 
   final ImagePicker _imagePicker = ImagePicker();
 
@@ -71,9 +76,9 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
 
   Future<void> _loadProfile() async {
     try {
-      final profile = await _profileService.getProfile();
-      final savedPhoto = profile['photoUrl']?.toString().trim();
-      final authPhoto = _profileService.currentUser?.photoURL;
+      final profile = await _authService.getUserProfileForCurrentUser();
+      final savedPhoto = profile?.photoPath;
+      final authPhoto = _authService.currentUser?.photoURL;
       String? resolvedPhotoUrl;
 
       final photoUrl = savedPhoto == null || savedPhoto.isEmpty
@@ -81,7 +86,7 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
           : savedPhoto;
       if (photoUrl != null && photoUrl.trim().isNotEmpty) {
         try {
-          resolvedPhotoUrl = await _profileService.getProfileImageUrl(photoUrl);
+          resolvedPhotoUrl = await _storageService.getDownloadUrl(photoUrl);
         } catch (error) {
           debugPrint('Could not load customer profile photo: $error');
           resolvedPhotoUrl = authPhoto;
@@ -91,25 +96,15 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
       if (!mounted) return;
 
       setState(() {
-        _nameController.text = profile['displayName']?.toString() ?? '';
+        _nameController.text = profile?.displayName ?? '';
 
-        _phoneController.text = profile['phoneNumber']?.toString() ?? '';
+        _phoneController.text = profile?.phoneNumber ?? '';
 
-        _locationController.text = profile['locationName']?.toString() ?? '';
+        // TODO: customer location is not saved yet, so it loads empty.
         _emailController.text =
-            profile['email']?.toString() ??
-            _profileService.currentUser?.email ??
-            '';
+            profile?.email ?? _authService.currentUser?.email ?? '';
 
         _profileImageUrl = resolvedPhotoUrl;
-
-        _latitude = profile['latitude'] is num
-            ? (profile['latitude'] as num).toDouble()
-            : null;
-
-        _longitude = profile['longitude'] is num
-            ? (profile['longitude'] as num).toDouble()
-            : null;
 
         _isLoading = false;
       });
@@ -225,7 +220,7 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
     });
 
     try {
-      final position = await _profileService.getCurrentLocation();
+      final position = await _locationService.getCurrentLocation();
 
       if (!mounted) return;
 
@@ -262,21 +257,36 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
     });
 
     try {
+      final userId = _authService.currentUser?.uid;
+      if (userId == null) {
+        throw StateError('User is not signed in.');
+      }
+
       String? photoUrl = _profileImageUrl;
+      String? photoPath;
+      final clearPhoto = photoUrl == null && _selectedImage == null;
 
       // Upload new image if selected.
       if (_selectedImage != null) {
-        photoUrl = await _profileService.uploadProfileImage(_selectedImage!);
+        photoPath = await _storageService.uploadProfileImage(
+          file: _selectedImage!,
+          userFolder: 'users/$userId',
+        );
+        photoUrl = await _storageService.getDownloadUrl(photoPath);
       }
 
-      await _profileService.updateProfile(
-        name: _nameController.text,
-        locationName: _locationController.text,
-        latitude: _latitude,
-        longitude: _longitude,
+      await _firestoreService.updateCustomerProfile(
+        userId: userId,
+        displayName: _nameController.text,
         phoneNumber: _phoneController.text,
-        photoUrl: photoUrl,
-        clearPhoto: photoUrl == null && _selectedImage == null,
+        photoPath: photoPath,
+        clearPhoto: clearPhoto,
+      );
+
+      await _authService.updateAuthProfile(
+        displayName: _nameController.text,
+        photoUrl: photoPath == null ? null : photoUrl,
+        clearPhoto: clearPhoto,
       );
 
       if (!mounted) return;
@@ -329,7 +339,7 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
     if (shouldLogout != true) return;
 
     try {
-      await AuthService().signOut();
+      await _authService.signOut();
       if (!mounted) return;
 
       AppRouter.goToLoginAfterLogout(context);
@@ -427,9 +437,7 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
                     }
 
                     try {
-                      await _profileService.changePassword(
-                        newPassword: password,
-                      );
+                      await _authService.changePassword(password);
 
                       if (!mounted) return;
 

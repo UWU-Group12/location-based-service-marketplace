@@ -35,6 +35,18 @@ service firebase.storage {
       allow delete: if isOwner(providerId) || isAdmin();
     }
 
+    match /users/{userId}/{fileName} {
+      allow read: if signedIn();
+
+      allow create, update: if
+        isOwner(userId)
+        && request.resource.size > 0
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
     match /verification/{providerId}/{filePath=**} {
       allow read: if isOwner(providerId) || isAdmin();
 
