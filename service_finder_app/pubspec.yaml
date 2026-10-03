@@ -78,6 +78,7 @@ flutter:
     - assets/images/client.png
     - assets/images/provider.png
     - assets/images/provider_name.png
+    - assets/images/welcome.png
     - assets/onboardingsvg/provider_name.svg
     - assets/onboardingsvg/provider_contact.svg
     - assets/onboardingsvg/provider_password.svg
