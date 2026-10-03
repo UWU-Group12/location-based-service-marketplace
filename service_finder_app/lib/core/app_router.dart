@@ -19,12 +19,41 @@ import '../features/provider/provider_onboarding/provider_verification_documents
 import '../features/provider/provider_onboarding/provider_profile_summary.dart';
 import '../features/customer/provider_list_screen.dart';
 import '../models/user_model.dart';
+import '../models/service_request_model.dart';
+import '../features/provider/provider_request_details_screen.dart';
+import '../features/provider/create_quotation_screen.dart';
 
 import '../features/customer/service_categories_screen.dart';
 import '../features/provider/provider_shell_screen.dart';
 
 class AppRouter {
   AppRouter._();
+
+  static Future<bool> goToProviderRequestDetails(
+    BuildContext context, {
+    required String requestId,
+    String? quotationId,
+  }) async {
+    final result = await Navigator.of(context).push(
+      _buildRoute(
+        ProviderRequestDetailsScreen(
+          requestId: requestId,
+          quotationId: quotationId,
+        ),
+      ),
+    );
+    return result == true;
+  }
+
+  static Future<bool> goToCreateQuotation(
+    BuildContext context,
+    ServiceRequestModel request,
+  ) async {
+    final result = await Navigator.of(
+      context,
+    ).push(_buildRoute(CreateQuotationScreen(request: request)));
+    return result == true;
+  }
 
   static PageRouteBuilder<dynamic> _buildRoute(Widget page) {
     return PageRouteBuilder<dynamic>(

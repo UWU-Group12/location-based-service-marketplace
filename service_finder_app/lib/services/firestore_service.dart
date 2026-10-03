@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/provider_model.dart';
 import '../models/quotation_model.dart';
@@ -7,6 +8,35 @@ import '../models/service_request_model.dart';
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  Stream<ServiceRequestModel?> watchProviderRequest(
+    String requestId,
+    String providerId,
+  ) {
+    return _firestore
+        .collection('serviceRequests')
+        .doc(requestId)
+        .snapshots()
+        .map((doc) {
+          final data = doc.data();
+          if (data == null || data['providerId'] != providerId) return null;
+          return ServiceRequestModel.fromFirestore(doc.id, data);
+        });
+  }
+
+  Stream<List<QuotationModel>> watchProviderQuotations(String providerId) {
+    return _firestore
+        .collection('quotations')
+        .where('providerId', isEqualTo: providerId)
+        .snapshots()
+        .map((snapshot) {
+          final quotations = snapshot.docs
+              .map(QuotationModel.fromFirestore)
+              .toList();
+          quotations.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return quotations;
+        });
+  }
 
   Stream<List<ServiceRequestModel>> watchProviderRequests(String providerId) {
     return _firestore
@@ -133,9 +163,25 @@ class FirestoreService {
   }
 
   Future<String> createServiceRequest(ServiceRequestModel request) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.uid != request.customerId) {
+      throw StateError('Please sign in before creating a service request.');
+    }
+    // Save the name with the request; providers cannot read private user profiles.
+    final customer = await _firestore.collection('users').doc(user.uid).get();
+    final profileName = (customer.data()?['displayName'] as String?)?.trim();
+    final customerName = profileName != null && profileName.isNotEmpty
+        ? profileName
+        : user.displayName?.trim();
+    if (customerName == null || customerName.isEmpty) {
+      throw StateError(
+        'Please add your name to your profile before requesting a service.',
+      );
+    }
     final requestReference = _firestore.collection('serviceRequests').doc();
     final requestData = request.toFirestore();
 
+    requestData['customerName'] = customerName;
     requestData['createdAt'] = FieldValue.serverTimestamp();
     requestData['updatedAt'] = FieldValue.serverTimestamp();
 
@@ -169,25 +215,67 @@ class FirestoreService {
   }
 
   Future<void> sendQuotation(QuotationModel quotation) async {
+    final providerId = FirebaseAuth.instance.currentUser?.uid;
+    if (providerId == null || providerId != quotation.providerId) {
+      throw StateError('Please sign in as the assigned provider.');
+    }
+    final inspectionFee = quotation.inspectionFee ?? 0;
+    if (!quotation.serviceCharge.isFinite ||
+        quotation.serviceCharge <= 0 ||
+        !inspectionFee.isFinite ||
+        inspectionFee < 0 ||
+        !quotation.estimatedTotal.isFinite ||
+        (quotation.estimatedTotal - (quotation.serviceCharge + inspectionFee))
+                .abs() >
+            0.001) {
+      throw StateError('Enter valid service and inspection charges.');
+    }
+    if (quotation.availableAt != null &&
+        !quotation.availableAt!.isAfter(DateTime.now())) {
+      throw StateError('Please choose a future available date and time.');
+    }
     final quotationData = quotation.toFirestore();
     quotationData['status'] = 'sent';
     quotationData['createdAt'] = FieldValue.serverTimestamp();
     quotationData['updatedAt'] = FieldValue.serverTimestamp();
 
-    final batch = _firestore.batch();
-    batch.set(
-      _firestore.collection('quotations').doc(quotation.requestId),
-      quotationData,
-    );
-    batch.update(
-      _firestore.collection('serviceRequests').doc(quotation.requestId),
-      {
+    final requestRef = _firestore
+        .collection('serviceRequests')
+        .doc(quotation.requestId);
+    final quotationRef = _firestore
+        .collection('quotations')
+        .doc(quotation.requestId);
+    // Re-read both documents so a stale screen cannot overwrite a sent or
+    // accepted quotation or reopen a cancelled request.
+    await _firestore.runTransaction((transaction) async {
+      final requestDoc = await transaction.get(requestRef);
+      final quotationDoc = await transaction.get(quotationRef);
+      final requestData = requestDoc.data();
+      if (requestData == null) {
+        throw StateError('This request is no longer available.');
+      }
+      final request = ServiceRequestModel.fromFirestore(
+        requestDoc.id,
+        requestData,
+      );
+      final existingStatus = quotationDoc.data()?['status'];
+      if (request.providerId != providerId ||
+          request.customerId != quotation.customerId ||
+          !request.canReceiveQuotation ||
+          (quotationDoc.exists &&
+              existingStatus != 'rejected' &&
+              existingStatus != 'expired')) {
+        throw StateError(
+          'This request has changed or already has a quotation. Return to Request to view its latest status.',
+        );
+      }
+      transaction.set(quotationRef, quotationData);
+      transaction.update(requestRef, {
         'requestStatus': 'quotation_received',
         'quotationStatus': 'sent',
         'updatedAt': FieldValue.serverTimestamp(),
-      },
-    );
-    await batch.commit();
+      });
+    });
   }
 
   Future<void> acceptQuotation(QuotationModel quotation) async {

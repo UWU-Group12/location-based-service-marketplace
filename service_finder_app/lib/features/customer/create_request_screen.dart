@@ -195,6 +195,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         const SnackBar(content: Text('Request created successfully.')),
       );
       AppRouter.goToCustomerDashboard(context);
+    } on StateError catch (error) {
+      if (!mounted) return;
+      _showMessage(error.message.toString());
     } catch (error) {
       debugPrint('Service request creation error: $error');
       if (!mounted) return;
