@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/provider_model.dart';
+import '../models/quotation_model.dart';
 import '../models/service_category_model.dart';
 import '../models/service_request_model.dart';
 
@@ -140,5 +141,104 @@ class FirestoreService {
 
     await requestReference.set(requestData);
     return requestReference.id;
+  }
+
+  Stream<List<ServiceRequestModel>> watchCustomerRequests(String customerId) {
+    return _firestore
+        .collection('serviceRequests')
+        .where('customerId', isEqualTo: customerId)
+        .snapshots()
+        .map((snapshot) {
+          final requests = snapshot.docs
+              .map(
+                (doc) => ServiceRequestModel.fromFirestore(doc.id, doc.data()),
+              )
+              .toList();
+          requests.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return requests;
+        });
+  }
+
+  /// The quotation document ID is the request ID (one quotation per request).
+  Stream<QuotationModel?> watchQuotation(String requestId) {
+    return _firestore
+        .collection('quotations')
+        .doc(requestId)
+        .snapshots()
+        .map((doc) => doc.exists ? QuotationModel.fromFirestore(doc) : null);
+  }
+
+  Future<void> sendQuotation(QuotationModel quotation) async {
+    final quotationData = quotation.toFirestore();
+    quotationData['status'] = 'sent';
+    quotationData['createdAt'] = FieldValue.serverTimestamp();
+    quotationData['updatedAt'] = FieldValue.serverTimestamp();
+
+    final batch = _firestore.batch();
+    batch.set(
+      _firestore.collection('quotations').doc(quotation.requestId),
+      quotationData,
+    );
+    batch.update(
+      _firestore.collection('serviceRequests').doc(quotation.requestId),
+      {
+        'requestStatus': 'quotation_received',
+        'quotationStatus': 'sent',
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+    );
+    await batch.commit();
+  }
+
+  Future<void> acceptQuotation(QuotationModel quotation) async {
+    final batch = _firestore.batch();
+    batch.update(_firestore.collection('quotations').doc(quotation.requestId), {
+      'status': 'accepted',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    batch.update(
+      _firestore.collection('serviceRequests').doc(quotation.requestId),
+      {
+        'requestStatus': 'confirmed',
+        'quotationStatus': 'accepted',
+        'acceptedQuotationId': quotation.requestId,
+        'finalAmount': quotation.estimatedTotal,
+        'updatedAt': FieldValue.serverTimestamp(),
+      },
+    );
+    await batch.commit();
+  }
+
+  Future<void> rejectQuotation(String requestId) async {
+    final batch = _firestore.batch();
+    batch.update(_firestore.collection('quotations').doc(requestId), {
+      'status': 'rejected',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    batch.update(_firestore.collection('serviceRequests').doc(requestId), {
+      'requestStatus': 'cancelled',
+      'quotationStatus': 'rejected',
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+  }
+
+  Future<void> rejectRequest(String requestId) =>
+      _updateRequestStatus(requestId, 'provider_rejected');
+
+  Future<void> cancelRequest(String requestId) =>
+      _updateRequestStatus(requestId, 'cancelled');
+
+  Future<void> startJob(String requestId) =>
+      _updateRequestStatus(requestId, 'in_progress');
+
+  Future<void> completeJob(String requestId) =>
+      _updateRequestStatus(requestId, 'completed');
+
+  Future<void> _updateRequestStatus(String requestId, String status) {
+    return _firestore.collection('serviceRequests').doc(requestId).update({
+      'requestStatus': status,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 }
