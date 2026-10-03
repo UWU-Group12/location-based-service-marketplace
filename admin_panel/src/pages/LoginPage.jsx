@@ -4,7 +4,7 @@ import { useAuth } from "../auth/useAuth";
 import LoadingSpinner from "../components/LoadingSpinner";
 import MessageBanner from "../components/MessageBanner";
 import { getLoginErrorMessage } from "../services/authService";
-
+import myLogo from "../assets/my-logo.png";
 function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -53,19 +53,52 @@ function LoginPage() {
   }
 
   return (
-    <div className="login-page">
-      <div className="login-panel">
-        <div className="login-brand">
-          <span className="brand-mark">S</span>
-          <span>Raw</span>
-        </div>
+    
+    <div
+      className="login-page"
+      style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        minHeight: "100vh",
+        padding: "0 170px",
+        gap: "1px",
+        backgroundColor: "#ffffff",
+      }}
+    >
+      
+      <div
+        className="logo-section"
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          maxWidth: "250px",
+          gap: "10px",
+        }}
+      >
+        <img
+          src={myLogo}
+          alt="Logo"
+          style={{ height: "250px", width: "500px", display: "block" }}
+        />
+        <span
+          style={{
+            fontSize: "50px",
+            fontWeight: "bold",
+            color: "#8B0000",
+            letterSpacing: "4px",
+            textAlign: "center",
+            marginTop: "-5px",
+          }}
+        >
+          RAW
+        </span>
+      </div>
 
-        <div className="login-heading">
-          <span className="header-eyebrow">Administrator access</span>
-          <h1>Welcome back</h1>
-          <p>Sign in with an account that has the Firebase admin claim.</p>
-        </div>
-
+      
+      <div className="login-panel" style={{ width: "100%", maxWidth: "400px",transform: "translateY(-40px)" }}>
         <MessageBanner message={formError || accessError} type="error" />
 
         <form className="form-stack" onSubmit={handleSubmit} noValidate>
@@ -110,21 +143,6 @@ function LoginPage() {
             {isSubmitting ? "Signing in..." : "Sign in to admin panel"}
           </button>
         </form>
-
-        <p className="login-security-note">
-          Normal customer and provider accounts cannot access this panel.
-        </p>
-      </div>
-
-      <div className="login-decoration" aria-hidden="true">
-        <div>
-          <span>Secure administration</span>
-          <h2>Manage the marketplace with verified, real-time data.</h2>
-          <p>
-            Review providers, support users, and maintain service categories
-            from one focused workspace.
-          </p>
-        </div>
       </div>
     </div>
   );

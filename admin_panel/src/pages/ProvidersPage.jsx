@@ -281,11 +281,10 @@ function ProvidersPage() {
                           </Link>
                           <button
                             type="button"
-                            className={`button button-small ${
-                              provider.accountStatus === "active"
-                                ? "button-danger-soft"
-                                : "button-success-soft"
-                            }`}
+                            className={`button button-small ${provider.accountStatus === "active"
+                              ? "button-danger-soft"
+                              : "button-success-soft"
+                              }`}
                             onClick={() => requestStatusChange(provider)}
                           >
                             {provider.accountStatus === "active"
@@ -337,7 +336,7 @@ function ProvidersPage() {
               <div><dt>Rating</dt><dd>{Number(selectedProvider.profile.ratingAverage || 0).toFixed(1)} ({selectedProvider.profile.reviewCount || 0} reviews)</dd></div>
               <div><dt>Completed jobs</dt><dd>{selectedProvider.profile.completedJobCount || 0}</dd></div>
               <div><dt>Account status</dt><dd><StatusBadge status={selectedProvider.accountStatus} /></dd></div>
-              <div><dt>Service area</dt><dd>{selectedProvider.profile.locationId || "Not provided"}{selectedProvider.profile.serviceRadiusKm ? ` · ${selectedProvider.profile.serviceRadiusKm} km` : ""}</dd></div>
+              <div><dt>Service area</dt><dd>{selectedProvider.profile.serviceRadiusKm ? `${selectedProvider.profile.serviceRadiusKm} km radius` : "Not provided"}</dd></div>
             </dl>
           </div>
         </div>

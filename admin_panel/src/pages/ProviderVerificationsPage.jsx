@@ -100,17 +100,17 @@ function ProviderVerificationsPage() {
           return currentSubmissions.map((submission) =>
             submission.providerId === pendingDecision.submission.providerId
               ? {
-                  ...submission,
-                  status: pendingDecision.decision,
-                  rejectionReason:
-                    pendingDecision.decision === "rejected"
-                      ? pendingDecision.rejectionReason
-                      : null,
-                  profile: {
-                    ...submission.profile,
-                    verificationStatus: pendingDecision.decision,
-                  },
-                }
+                ...submission,
+                status: pendingDecision.decision,
+                rejectionReason:
+                  pendingDecision.decision === "rejected"
+                    ? pendingDecision.rejectionReason
+                    : null,
+                profile: {
+                  ...submission.profile,
+                  verificationStatus: pendingDecision.decision,
+                },
+              }
               : submission,
           );
         }
@@ -262,7 +262,7 @@ function ProviderVerificationsPage() {
                       <div><dt>Submitted</dt><dd>{formatDate(submission.submittedAt)}</dd></div>
                       <div><dt>Categories</dt><dd>{Array.isArray(profile.categoryIds) && profile.categoryIds.length > 0 ? profile.categoryIds.join(", ") : "Not selected"}</dd></div>
                       <div><dt>Experience</dt><dd>{profile.experienceYears || 0} years</dd></div>
-                      <div><dt>Service area</dt><dd>{profile.locationId || "Not provided"}</dd></div>
+                      <div><dt>Service area</dt><dd>{profile.serviceRadiusKm ? `${profile.serviceRadiusKm} km radius` : "Not provided"}</dd></div>
                       <div><dt>Account status</dt><dd><StatusBadge status={submission.user.accountStatus || "unknown"} /></dd></div>
                     </dl>
 
