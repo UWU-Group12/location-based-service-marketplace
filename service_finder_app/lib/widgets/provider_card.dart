@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/app_colors.dart';
 import '../models/provider_model.dart';
+import 'provider_location_text.dart';
 import 'provider_profile_image.dart';
 
 class ProviderCard extends StatelessWidget {
@@ -14,7 +15,7 @@ class ProviderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
 
-    final serviceNames = provider.categoryIds.map(_formatId).join(', ');
+    final serviceNames = provider.categoryNames.join(', ');
 
     return InkWell(
       borderRadius: BorderRadius.circular(24),
@@ -40,33 +41,20 @@ class ProviderCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           provider.displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
                           ),
                         ),
                       ),
-
-                      if (provider.verificationStatus == 'verified')
-                        const Icon(
-                          Icons.verified,
-                          color: Colors.blue,
-                          size: 20,
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    serviceNames,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, size: 18, color: Colors.amber),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.star,
+                        size: 18,
+                        color: AppColors.rating,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         provider.ratingAverage.toStringAsFixed(1),
@@ -74,7 +62,17 @@ class ProviderCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
+                  Text(
+                    serviceNames,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  ProviderLocationText(provider: provider),
                   Text(
                     '${provider.completedJobCount} Jobs Completed',
                     style: textTheme.bodySmall,
@@ -86,16 +84,5 @@ class ProviderCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatId(String value) {
-    return value
-        .split(RegExp('[-_]'))
-        .where((part) => part.isNotEmpty)
-        .map(
-          (part) =>
-              '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
-        )
-        .join(' ');
   }
 }

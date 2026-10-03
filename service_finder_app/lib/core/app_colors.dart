@@ -17,6 +17,7 @@ class AppColors {
   static const Color textPrimary = Colors.black;
   static const Color textSecondary = Colors.black54;
   static const Color hint = Colors.grey;
+  static const Color rating = Colors.amber;
 
   // Borders
   static const Color border = Colors.black12;

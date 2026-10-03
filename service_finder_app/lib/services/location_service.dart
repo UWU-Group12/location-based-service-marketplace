@@ -4,6 +4,8 @@ import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 
 class LocationService {
+  final Map<String, String> _addressCache = {};
+
   /// Fetches current GPS coordinates as a Firestore GeoPoint
   Future<GeoPoint> getCurrentLocation() async {
     try {
@@ -51,23 +53,41 @@ class LocationService {
 
   /// Converts a GeoPoint into a city/locality name (e.g., "Badulla, Sri Lanka")
   Future<String?> getAddressFromGeoPoint(GeoPoint geoPoint) async {
+    final cacheKey =
+        '${geoPoint.latitude.toStringAsFixed(4)},'
+        '${geoPoint.longitude.toStringAsFixed(4)}';
+
+    final cachedAddress = _addressCache[cacheKey];
+    if (cachedAddress != null) {
+      return cachedAddress;
+    }
+
     try {
-      // 1. Create the Geocoding instance (Required for v5.0.0+)
       final geocoding = Geocoding();
 
-      // 2. Call the method using the new instance
-      List<Placemark> placemarks = await geocoding.placemarkFromCoordinates(
+      final placemarks = await geocoding.placemarkFromCoordinates(
         geoPoint.latitude,
         geoPoint.longitude,
       );
 
-      if (placemarks.isNotEmpty) {
-        Placemark place = placemarks.first;
-        return "${place.locality ?? place.subAdministrativeArea}, ${place.country}";
+      if (placemarks.isEmpty) {
+        return null;
       }
+
+      final place = placemarks.first;
+      final locality = place.locality ?? place.subAdministrativeArea;
+
+      if (locality == null || locality.isEmpty) {
+        return null;
+      }
+
+      final address = '$locality, ${place.country}';
+      _addressCache[cacheKey] = address;
+
+      return address;
     } catch (error) {
       debugPrint('Address lookup error: $error');
+      return null;
     }
-    return null;
   }
 }

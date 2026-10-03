@@ -41,6 +41,20 @@ class ProviderModel {
     required this.updatedAt,
   });
 
+  List<String> get categoryNames =>
+      categoryIds.map(_prettifyCategoryId).toList(growable: false);
+
+  static String _prettifyCategoryId(String value) {
+    return value
+        .split(RegExp('[-_]'))
+        .where((part) => part.isNotEmpty)
+        .map(
+          (part) =>
+              '${part[0].toUpperCase()}${part.substring(1).toLowerCase()}',
+        )
+        .join(' ');
+  }
+
   Map<String, dynamic> toFirestore() {
     return {
       'providerId': providerId,

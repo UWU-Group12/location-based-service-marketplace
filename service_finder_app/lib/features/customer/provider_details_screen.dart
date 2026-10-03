@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/app_colors.dart';
 import '../../models/provider_model.dart';
+import '../../widgets/provider_location_text.dart';
 import '../../widgets/provider_profile_image.dart';
 import 'create_request_screen.dart';
 
@@ -12,6 +13,8 @@ class ProviderDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final categoryNames = provider.categoryNames;
+    final bio = provider.bio?.trim() ?? '';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -41,9 +44,13 @@ class ProviderDetailsScreen extends StatelessWidget {
                 const SizedBox(height: 6),
 
                 Text(
-                  provider.categoryIds[0],
+                  categoryNames.join(', '),
                   style: textTheme.bodyLarge?.copyWith(color: Colors.grey),
                 ),
+
+                const SizedBox(height: 4),
+
+                Center(child: ProviderLocationText(provider: provider)),
 
                 const SizedBox(height: 20),
 
@@ -73,22 +80,23 @@ class ProviderDetailsScreen extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                const Text(
-                  'This is a professional service provider with experience in residential and commercial work. More provider information will be loaded from Firebase in the future.',
+                Text(
+                  bio.isEmpty ? 'No description provided.' : bio,
+                  style: textTheme.bodyMedium,
                 ),
 
-                const SizedBox(height: 30),
+                if (categoryNames.isNotEmpty) ...[
+                  const SizedBox(height: 30),
 
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Services Offered', style: textTheme.titleLarge),
-                ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Services Offered', style: textTheme.titleLarge),
+                  ),
 
-                const SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-                _serviceChip(provider.categoryIds[0]),
-                _serviceChip('Repairs'),
-                _serviceChip('Installation'),
+                  ...categoryNames.map(_serviceChip),
+                ],
 
                 const SizedBox(height: 30),
 
