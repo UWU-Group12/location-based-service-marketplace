@@ -268,8 +268,8 @@ s
 .card-heading p,
 .verification-heading p {
   margin: 7px 0 0;
-  color: var(--muted);
-  font-size: 14px;
+  color: #64748b;
+  font-size: 15px;
   line-height: 1.55;
 }
 
@@ -303,14 +303,16 @@ s
 }
 
 .button-secondary {
-  border-color: #cbd5e1;
+  min-height: 36px;
+  padding: 0 16px;
+  border-color: #d6dee7;
   color: #334155;
-  background: #fff;
+  background: #f3f6f8;
 }
 
 .button-secondary:hover:not(:disabled) {
   border-color: #94a3b8;
-  background: #f8fafc;
+  background: #edf2f7;
 }
 
 .button-success {
@@ -351,14 +353,14 @@ s
 }
 
 .icon-button {
-  width: 36px;
-  height: 36px;
-  border: 0;
-  border-radius: 9px;
-  color: var(--muted);
-  background: #f1f5f9;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #d6dee7;
+  border-radius: 10px;
+  color: #475569;
+  background: #f3f6f8;
   cursor: pointer;
-  font-size: 22px;
+  font-size: 24px;
   line-height: 1;
 }
 
@@ -388,7 +390,10 @@ s
 }
 
 .card-heading h2 {
-  font-size: 21px;
+  color: #7a1f2e;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
 }
 
 .card-heading h3,
@@ -608,6 +613,30 @@ s
   flex-wrap: wrap;
 }
 
+.card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.form-field label {
+  color: #6b7280;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.form-field textarea {
+  min-height: 110px;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  color: var(--text);
+  background: #fff;
+  resize: vertical;
+}
+
 .status-badge {
   display: inline-flex;
   min-height: 26px;
@@ -812,17 +841,18 @@ s
 }
 
 .modal-card {
-  width: min(600px, 100%);
+  width: min(1120px, 100%);
   max-height: calc(100vh - 40px);
-  padding: 24px;
+  padding: 22px 20px 18px;
   overflow-y: auto;
-  border-radius: 16px;
-  background: #fff;
+  border: 1px solid #dbe4ee;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.98);
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.25);
 }
 
 .modal-wide {
-  width: min(860px, 100%);
+  width: min(1100px, 100%);
 }
 
 .confirm-dialog {
@@ -849,26 +879,32 @@ s
 
 .details-grid div {
   min-width: 0;
-  padding: 13px;
-  border-radius: 10px;
-  background: #f8fafc;
+  padding: 18px 16px 17px;
+  border: 1px solid #dfe7f1;
+  border-radius: 12px;
+  background: #f3f6fa;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.details-grid-full {
+  grid-column: 1 / -1;
 }
 
 .details-grid dt {
-  margin-bottom: 6px;
-  color: var(--muted);
+  margin-bottom: 8px;
+  color: #6b7280;
   font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .details-grid dd {
   margin: 0;
   overflow-wrap: anywhere;
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
+  color: #172033;
+  font-size: 16px;
+  font-weight: 700;
   line-height: 1.45;
 }
 
@@ -953,10 +989,82 @@ s
   font-weight: 800;
 }
 
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 95px;
+  min-height: 100vh;
+  padding: 40px 140px;
+  background: #f5f5f5;
+}
+
+.logo-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+}
+
+.logo-box {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 190px;
+  height: 190px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #8d0b0b 0%, #7a0000 100%);
+  box-shadow: 0 8px 18px rgba(79, 10, 10, 0.08);
+}
+
+.brand-logo {
+  display: block;
+  width: 74%;
+  height: 74%;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.logo-text {
+  margin-top: 20px;
+  color: #7a0000;
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+.login-panel {
+  width: min(100%, 420px);
+  margin-top: 8px;
+}
+
+.login-field {
+  margin-bottom: 8px;
+}
+
+.login-field span {
+  display: block;
+  margin-bottom: 8px;
+  color: #4b5563;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.form-field input,
+.password-field input {
+  min-height: 40px;
+  border: 1px solid #d6dce5;
+  border-radius: 8px;
+  background: #fff;
+}
+
 .login-button {
   width: 100%;
-  min-height: 46px;
-  margin-top: 4px;
+  min-height: 44px;
+  margin-top: 6px;
+  border-radius: 8px;
 }
 
 .login-security-note {
@@ -1059,7 +1167,18 @@ s
   }
 
   .login-page {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    gap: 40px;
+    padding: 40px 24px;
+  }
+
+  .logo-box {
+    width: 170px;
+    height: 170px;
+  }
+
+  .logo-text {
+    font-size: 44px;
   }
 
   .login-decoration {

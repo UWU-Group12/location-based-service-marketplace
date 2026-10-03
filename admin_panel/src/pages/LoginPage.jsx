@@ -58,11 +58,11 @@ function LoginPage() {
       className="login-page"
       style={{
         display: "flex",
-        justifyContent: "space-between",
+        justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        padding: "0 170px",
-        gap: "1px",
+        padding: "750px",
+        gap: "-500px",
         backgroundColor: "#ffffff",
       }}
     >
