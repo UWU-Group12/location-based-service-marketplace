@@ -1,6 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../core/app_router.dart';
 import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
+import '../../services/location_service.dart';
+import '../../services/storage_service.dart';
+
+class CustomerEditProfileScreen extends StatefulWidget {
+  const CustomerEditProfileScreen({super.key});
+
+  @override
+  State<CustomerEditProfileScreen> createState() =>
+      _CustomerEditProfileScreenState();
+}
 
 class CustomerProfileScreen extends StatefulWidget {
   const CustomerProfileScreen({super.key});
@@ -10,28 +21,125 @@ class CustomerProfileScreen extends StatefulWidget {
 }
 
 class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
+  @override
+  Widget build(BuildContext context) {
+    return const CustomerEditProfileScreen();
+  }
+}
+
+class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
   final AuthService _authService = AuthService();
+  final FirestoreService _firestoreService = FirestoreService();
+  final StorageService _storageService = StorageService();
+  final LocationService _locationService = LocationService();
+
+  final ImagePicker _imagePicker = ImagePicker();
+
+  final _formKey = GlobalKey<FormState>();
+
+  final TextEditingController _nameController = TextEditingController();
+
+  final TextEditingController _phoneController = TextEditingController();
+
+  final TextEditingController _locationController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+
+  String? _profileImageUrl;
+  File? _selectedImage;
 
   bool _isLoggingOut = false;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text("My Profile")),
-      body: StreamBuilder(
-        stream: _authService.user,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+  void dispose() {
+    _nameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _locationController.dispose();
+    super.dispose();
+  }
 
-          final user = snapshot.data;
+  Future<void> _loadProfile() async {
+    try {
+      final profile = await _authService.getUserProfileForCurrentUser();
+      final savedPhoto = profile?.photoPath;
+      final authPhoto = _authService.currentUser?.photoURL;
+      String? resolvedPhotoUrl;
 
-          if (user == null) {
-            return const Center(
-              child: Text('No user is currently signed in.'),
-            );
-          }
+      final photoUrl = savedPhoto == null || savedPhoto.isEmpty
+          ? authPhoto
+          : savedPhoto;
+      if (photoUrl != null && photoUrl.trim().isNotEmpty) {
+        try {
+          resolvedPhotoUrl = await _storageService.getDownloadUrl(photoUrl);
+        } catch (error) {
+          debugPrint('Could not load customer profile photo: $error');
+          resolvedPhotoUrl = authPhoto;
+        }
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _nameController.text = profile?.displayName ?? '';
+
+        _phoneController.text = profile?.phoneNumber ?? '';
+
+        // TODO: customer location is not saved yet, so it loads empty.
+        _emailController.text =
+            profile?.email ?? _authService.currentUser?.email ?? '';
+
+        _profileImageUrl = resolvedPhotoUrl;
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      _showMessage('Could not load your profile.', isError: true);
+    }
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 80,
+        maxWidth: 1000,
+        maxHeight: 1000,
+      );
+
+      if (image == null) return;
+
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+    } catch (e) {
+      _showMessage('Could not select image.', isError: true);
+    }
+  }
+
+  Future<void> _takePhoto() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+        maxWidth: 1000,
+        maxHeight: 1000,
+      );
+
+      if (image == null) return;
+
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+    } catch (e) {
+      _showMessage('Could not open camera.', isError: true);
+    }
+  }
 
           return Center(
             child: Column(
@@ -67,19 +175,82 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
     );
   }
 
-  Future<void> _logout() async {
+  Future<void> _useCurrentLocation() async {
+    setState(() {
+      _isGettingLocation = true;
+    });
+
+    try {
+      final position = await _locationService.getCurrentLocation();
+
+      if (!mounted) return;
+
+      setState(() {
+        _latitude = position.latitude;
+        _longitude = position.longitude;
+
+        _locationController.text =
+            '${position.latitude.toStringAsFixed(6)}, '
+            '${position.longitude.toStringAsFixed(6)}';
+
+        _isGettingLocation = false;
+      });
+
+      _showMessage('Current location added.');
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isGettingLocation = false;
+      });
+
+      _showMessage(e.toString().replaceFirst('Bad state: ', ''), isError: true);
+    }
+  }
+
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
     setState(() {
       _isLoggingOut = true;
     });
 
     try {
-      await _authService.signOut();
-
-      if (!mounted) {
-        return;
+      final userId = _authService.currentUser?.uid;
+      if (userId == null) {
+        throw StateError('User is not signed in.');
       }
 
-      AppRouter.goToLoginAfterLogout(context);
+      String? photoUrl = _profileImageUrl;
+      String? photoPath;
+      final clearPhoto = photoUrl == null && _selectedImage == null;
+
+      // Upload new image if selected.
+      if (_selectedImage != null) {
+        photoPath = await _storageService.uploadProfileImage(
+          file: _selectedImage!,
+          userFolder: 'users/$userId',
+        );
+        photoUrl = await _storageService.getDownloadUrl(photoPath);
+      }
+
+      await _firestoreService.updateCustomerProfile(
+        userId: userId,
+        displayName: _nameController.text,
+        phoneNumber: _phoneController.text,
+        photoPath: photoPath,
+        clearPhoto: clearPhoto,
+      );
+
+      await _authService.updateAuthProfile(
+        displayName: _nameController.text,
+        photoUrl: photoPath == null ? null : photoUrl,
+        clearPhoto: clearPhoto,
+      );
+
+      if (!mounted) return;
 
     } catch (error) {
       debugPrint('Logout error: $error');
@@ -97,6 +268,359 @@ class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
           content: Text(
             'Unable to log out. Please try again.',
           ),
+        ],
+      ),
+    );
+
+    if (shouldLogout != true) return;
+
+    try {
+      await _authService.signOut();
+      if (!mounted) return;
+
+      AppRouter.goToLoginAfterLogout(context);
+    } catch (error) {
+      debugPrint('Customer logout failed: $error');
+      if (!mounted) return;
+
+      _showMessage('Could not log out. Please try again.', isError: true);
+    }
+  }
+
+  void _showChangePasswordDialog() {
+    final passwordController = TextEditingController();
+
+    final confirmController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        bool obscurePassword = true;
+        bool obscureConfirm = true;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Change Password'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: passwordController,
+                    obscureText: obscurePassword,
+                    decoration: InputDecoration(
+                      labelText: 'New password',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscurePassword
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
+                        onPressed: () {
+                          setDialogState(() {
+                            obscurePassword = !obscurePassword;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: confirmController,
+                    obscureText: obscureConfirm,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm password',
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscureConfirm
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                        ),
+                        onPressed: () {
+                          setDialogState(() {
+                            obscureConfirm = !obscureConfirm;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    final password = passwordController.text.trim();
+
+                    final confirm = confirmController.text.trim();
+
+                    if (password.length < 6) {
+                      _showMessage(
+                        'Password must contain at least 6 characters.',
+                        isError: true,
+                      );
+                      return;
+                    }
+
+                    if (password != confirm) {
+                      _showMessage('Passwords do not match.', isError: true);
+                      return;
+                    }
+
+                    try {
+                      await _authService.changePassword(password);
+
+                      if (!mounted) return;
+
+                      // ignore: use_build_context_synchronously
+                      Navigator.pop(context);
+
+                      // ignore: use_build_context_synchronously
+                      _showMessage('Password changed successfully.');
+                    } catch (e) {
+                      if (!mounted) return;
+
+                      // ignore: use_build_context_synchronously
+                      _showMessage('Could not change password.', isError: true);
+                    }
+                  },
+                  child: const Text('Update'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+      );
+  }
+
+  ImageProvider? _getProfileImage() {
+    if (_selectedImage != null) {
+      return FileImage(_selectedImage!);
+    }
+
+    if (_profileImageUrl != null && _profileImageUrl!.isNotEmpty) {
+      return NetworkImage(_profileImageUrl!);
+    }
+
+    return null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: const Text(
+          'Edit Profile',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        centerTitle: true,
+      ),
+
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 10, 20, 180),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildProfileHeader(),
+
+              const SizedBox(height: 32),
+
+              _buildSectionTitle('Personal Information'),
+
+              const SizedBox(height: 12),
+
+              _buildTextField(
+                controller: _nameController,
+                label: 'Full Name',
+                hint: 'Enter your full name',
+                icon: Icons.person_outline,
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter your name';
+                  }
+
+                  if (value.trim().length < 2) {
+                    return 'Name is too short';
+                  }
+
+                  return null;
+                },
+              ),
+
+              const SizedBox(height: 16),
+
+              _buildTextField(
+                controller: _emailController,
+                label: 'Email Address',
+                hint: 'Email',
+                icon: Icons.email_outlined,
+                enabled: false,
+              ),
+
+              const SizedBox(height: 16),
+
+              _buildTextField(
+                controller: _phoneController,
+                label: 'Phone Number',
+                hint: 'Enter your phone number',
+                icon: Icons.phone_outlined,
+                keyboardType: TextInputType.phone,
+              ),
+
+              const SizedBox(height: 28),
+
+              _buildSectionTitle('Service Location'),
+
+              const SizedBox(height: 12),
+
+              _buildLocationField(),
+
+              const SizedBox(height: 28),
+
+              _buildSectionTitle('Account Security'),
+
+              const SizedBox(height: 12),
+
+              _buildSecurityCard(),
+
+              const SizedBox(height: 28),
+
+              _buildLocationInfo(),
+            ],
+          ),
+        ),
+      ),
+
+      bottomSheet: _buildSaveButton(),
+    );
+  }
+
+  Widget _buildProfileHeader() {
+    return Center(
+      child: Column(
+        children: [
+          Stack(
+            children: [
+              Container(
+                width: 112,
+                height: 112,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.25),
+                    width: 4,
+                  ),
+                ),
+                child: CircleAvatar(
+                  radius: 54,
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.10),
+                  backgroundImage: _getProfileImage(),
+                  child: _getProfileImage() == null
+                      ? Icon(Icons.person, size: 55, color: AppColors.primary)
+                      : null,
+                ),
+              ),
+
+              Positioned(
+                right: 0,
+                bottom: 0,
+                child: InkWell(
+                  onTap: _showImageOptions,
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Theme.of(context).scaffoldBackgroundColor,
+                        width: 3,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt_outlined,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          Text(
+            'Change profile picture',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Text(
+      title,
+      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    bool enabled = true,
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      enabled: enabled,
+      keyboardType: keyboardType,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        prefixIcon: Icon(icon),
+        filled: true,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.15)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: AppColors.primary, width: 1.5),
         ),
       );
     }

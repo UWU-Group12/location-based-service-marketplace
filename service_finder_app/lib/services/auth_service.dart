@@ -70,6 +70,33 @@ class AuthService {
     await _googleSignIn.signOut();
   }
 
+  /// Keeps the Firebase Auth name/photo in sync with the Firestore profile.
+  Future<void> updateAuthProfile({
+    required String displayName,
+    String? photoUrl,
+    bool clearPhoto = false,
+  }) async {
+    final firebaseUser = _auth.currentUser;
+    if (firebaseUser == null) {
+      throw StateError('The authenticated user was not found.');
+    }
+
+    await firebaseUser.updateDisplayName(displayName.trim());
+
+    if (clearPhoto || photoUrl != null) {
+      await firebaseUser.updatePhotoURL(clearPhoto ? null : photoUrl);
+    }
+  }
+
+  Future<void> changePassword(String newPassword) async {
+    final firebaseUser = _auth.currentUser;
+    if (firebaseUser == null) {
+      throw StateError('The authenticated user was not found.');
+    }
+
+    await firebaseUser.updatePassword(newPassword);
+  }
+
   Future<UserModel?> getUserProfile(String userId) async {
     final document = await _firestore.collection('users').doc(userId).get();
 
