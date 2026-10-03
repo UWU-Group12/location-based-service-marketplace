@@ -29,7 +29,7 @@ class RequestStateView extends StatelessWidget {
   const RequestStateView({
     super.key,
     required this.title,
-    required this.message,
+    this.message = '',
     required this.icon,
     this.onRetry,
   });
@@ -48,14 +48,16 @@ class RequestStateView extends StatelessWidget {
             style: Theme.of(context).textTheme.titleLarge,
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 8),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-          ),
+          if (message.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
+            ),
+          ],
           if (onRetry != null)
             TextButton.icon(
               onPressed: onRetry,

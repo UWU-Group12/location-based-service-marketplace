@@ -52,15 +52,10 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen>
               'Jobs',
               style: Theme.of(
                 context,
-              ).textTheme.headlineMedium?.copyWith(color: AppColors.primary),
+              ).textTheme.headlineLarge?.copyWith(color: AppColors.primary),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Manage active work and view completed jobs.',
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.textSecondary),
-            ),
+            
             const SizedBox(height: 20),
             Container(
               decoration: BoxDecoration(
@@ -138,9 +133,6 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen>
     if (jobs.isEmpty) {
       return RequestStateView(
         title: finished ? 'No finished jobs yet' : 'No active jobs',
-        message: finished
-            ? 'Completed jobs will appear here for your records.'
-            : 'Jobs appear here when a customer accepts your quotation.',
         icon: finished ? Icons.task_alt : Icons.work_outline,
       );
     }

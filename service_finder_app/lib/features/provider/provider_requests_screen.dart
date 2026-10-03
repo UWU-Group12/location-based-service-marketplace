@@ -156,8 +156,6 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen>
                                   received.isEmpty
                                       ? const RequestStateView(
                                           title: 'No received requests',
-                                          message:
-                                              'New customer requests awaiting your quotation will appear here.',
                                           icon: Icons.inbox_outlined,
                                         )
                                       : ListView.builder(
@@ -176,8 +174,6 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen>
                                       ? const RequestStateView(
                                           title:
                                               'No quotations waiting for approval',
-                                          message:
-                                              'Quotations you send will appear here until their status changes.',
                                           icon: Icons.send_outlined,
                                         )
                                       : ListView.builder(
