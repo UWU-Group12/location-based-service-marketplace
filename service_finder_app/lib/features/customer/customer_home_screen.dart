@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:service_finder_app/core/app_router.dart';
-import '../../widgets/ai_problem_card.dart';
+
 import '../../core/app_colors.dart';
+import '../../core/app_router.dart';
+import '../../models/service_category_model.dart';
+import '../../services/firestore_service.dart';
+import '../../services/storage_service.dart';
+import '../../widgets/ai_problem_card.dart';
 import 'provider_listing_screen.dart';
-import '../../data/service_categories.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   final String userName;
@@ -19,8 +22,23 @@ class CustomerHomeScreen extends StatefulWidget {
 }
 
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
+  final FirestoreService _firestoreService = FirestoreService();
+  final StorageService _storageService = StorageService(); // 👈 Added Storage Service
   final TextEditingController _searchController = TextEditingController();
-  List<String> filteredServices = [];
+
+  late Future<List<ServiceCategory>> _categoriesFuture;
+  List<ServiceCategory> _allCategories = [];
+  List<ServiceCategory> filteredServices = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // Fetch categories once when screen loads
+    _categoriesFuture = _firestoreService.getActiveCategories().then((categories) {
+      _allCategories = categories;
+      return categories;
+    });
+  }
 
   void _searchServices(String value) {
     if (value.isEmpty) {
@@ -31,12 +49,47 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     }
 
     setState(() {
-      filteredServices = serviceCategories
+      filteredServices = _allCategories
           .where(
-            (service) => service.toLowerCase().contains(value.toLowerCase()),
-          )
+            (category) =>
+            category.name.toLowerCase().contains(value.toLowerCase()),
+      )
           .toList();
     });
+  }
+
+  // 👈 Helper using StorageService just like your View All screen!
+  Widget _buildCategoryIcon(String iconPath, {double size = 28}) {
+    if (iconPath.isEmpty) {
+      return Icon(Icons.home_repair_service, size: size, color: Colors.grey);
+    }
+
+    return FutureBuilder<String?>(
+      future: _storageService.getDownloadUrl(iconPath),
+      builder: (context, iconSnapshot) {
+        if (iconSnapshot.connectionState == ConnectionState.waiting) {
+          return SizedBox(
+            width: size,
+            height: size,
+            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          );
+        }
+
+        if (iconSnapshot.hasError || iconSnapshot.data == null) {
+          return Icon(Icons.home_repair_service, size: size, color: Colors.grey);
+        }
+
+        return Image.network(
+          iconSnapshot.data!,
+          width: size,
+          height: size,
+          fit: BoxFit.contain,
+          errorBuilder: (context, error, stackTrace) {
+            return Icon(Icons.home_repair_service, size: size, color: Colors.grey);
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -125,7 +178,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       const SizedBox(width: 15),
                       CircleAvatar(
                         radius: 24,
-                        backgroundColor: const Color(0xFFD2B48C), // Light brown
+                        backgroundColor: const Color(0xFFD2B48C),
                         child: Text(
                           widget.initials,
                           style: textTheme.labelLarge?.copyWith(
@@ -138,6 +191,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 ],
               ),
               const SizedBox(height: 25),
+
               // Search Bar
               Column(
                 children: [
@@ -152,7 +206,6 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       ),
                     ),
                   ),
-
                   if (filteredServices.isNotEmpty)
                     Container(
                       constraints: const BoxConstraints(maxHeight: 250),
@@ -164,22 +217,24 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                       ),
                       child: ListView(
                         shrinkWrap: true,
-                        children: filteredServices.map((service) {
+                        children: filteredServices.map((category) {
                           return ListTile(
-                            title: Text(service),
-                            leading: const Icon(Icons.search),
+                            title: Text(category.name),
+                            leading: SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: _buildCategoryIcon(category.iconPath, size: 24),
+                            ),
                             onTap: () {
-                              _searchController.text = service;
-
+                              _searchController.text = category.name;
                               setState(() {
                                 filteredServices = [];
                               });
-
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
                                   builder: (_) =>
-                                      ProviderListingScreen(service: service),
+                                      ProviderListingScreen(service: category.name),
                                 ),
                               );
                             },
@@ -194,6 +249,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               // AI Banner
               const AiProblemCard(),
               const SizedBox(height: 30),
+
               // Popular Services
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -214,42 +270,52 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 ],
               ),
               const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildServiceItem(
-                    context,
-                    Icons.build_outlined,
-                    'Plumbing',
-                    const Color(0xFFFDECEC),
-                    const Color(0xFFB71C1C),
-                  ),
 
-                  _buildServiceItem(
-                    context,
-                    Icons.bolt_outlined,
-                    'Electrical',
-                    const Color(0xFFE3F2FD),
-                    const Color(0xFF0D47A1),
-                  ),
+              // Dynamic Categories from Firestore
+              FutureBuilder<List<ServiceCategory>>(
+                future: _categoriesFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
 
-                  _buildServiceItem(
-                    context,
-                    Icons.gavel_outlined,
-                    'Carpentry',
-                    const Color(0xFFFFF3E0),
-                    const Color(0xFFE65100),
-                  ),
+                  if (snapshot.hasError || !snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Text('No popular services right now.');
+                  }
 
-                  _buildServiceItem(
-                    context,
-                    Icons.format_paint_outlined,
-                    'Painting',
-                    const Color(0xFFE8F5E9),
-                    const Color(0xFF1B5E20),
-                  ),
-                ],
+                  // Take only the first 4 categories for the home screen row
+                  final popularCategories = snapshot.data!.take(4).toList();
+
+                  // Using standard soft background colors to make the colorful illustrations pop
+                  final colorPairs = [
+                    {'bg': const Color(0xFFFDECEC)},
+                    {'bg': const Color(0xFFE3F2FD)},
+                    {'bg': const Color(0xFFFFF3E0)},
+                    {'bg': const Color(0xFFE8F5E9)},
+                  ];
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: List.generate(popularCategories.length, (index) {
+                      final category = popularCategories[index];
+                      final colors = colorPairs[index % colorPairs.length];
+
+                      return Expanded(
+                        child: _buildServiceItem(
+                          context,
+                          category,
+                          colors['bg']!,
+                        ),
+                      );
+                    }),
+                  );
+                },
               ),
+
               const SizedBox(height: 30),
               // Nearby Professionals
               Row(
@@ -281,7 +347,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 ],
               ),
               const SizedBox(height: 15),
-              // Professional Card
+              // Professional Card (Dummy Data - untouched)
               Container(
                 padding: const EdgeInsets.all(15),
                 decoration: BoxDecoration(
@@ -312,7 +378,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         'KS',
                         style: textTheme.titleMedium?.copyWith(
                           fontSize: 20,
-                          color: Color(0xFF455A64),
+                          color: const Color(0xFF455A64),
                         ),
                       ),
                     ),
@@ -353,7 +419,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                                     Text(
                                       'Available Today',
                                       style: textTheme.labelSmall?.copyWith(
-                                        color: Color(0xFF2E7D32),
+                                        color: const Color(0xFF2E7D32),
                                         fontSize: 11,
                                       ),
                                     ),
@@ -428,12 +494,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   }
 
   Widget _buildServiceItem(
-    BuildContext context,
-    IconData icon,
-    String label,
-    Color boxColor,
-    Color iconColor,
-  ) {
+      BuildContext context,
+      ServiceCategory category,
+      Color boxColor,
+      ) {
     final textTheme = Theme.of(context).textTheme;
 
     return GestureDetector(
@@ -441,7 +505,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ProviderListingScreen(service: label),
+            builder: (_) => ProviderListingScreen(service: category.name),
           ),
         );
       },
@@ -451,7 +515,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             height: 65,
             width: 65,
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: boxColor,
               borderRadius: BorderRadius.circular(15),
               boxShadow: [
                 BoxShadow(
@@ -461,18 +525,24 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 ),
               ],
             ),
-            child: Icon(
-              icon,
-              color: iconColor.withValues(alpha: 0.7),
-              size: 28,
+            child: Center(
+              // 👈 Uses the new _buildCategoryIcon which resolves the Storage Url!
+              child: _buildCategoryIcon(category.iconPath, size: 34),
             ),
           ),
           const SizedBox(height: 10),
-          Text(
-            label,
-            style: textTheme.bodySmall?.copyWith(
-              fontSize: 13,
-              color: Colors.black.withValues(alpha: 0.6),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4.0),
+            child: Text(
+              category.name,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodySmall?.copyWith(
+                fontSize: 12,
+                height: 1.1,
+                color: Colors.black.withValues(alpha: 0.7),
+              ),
             ),
           ),
         ],
