@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class ServiceRequestModel {
   final String requestId;
   final String customerId;
+  final String? customerName;
   final String providerId;
   final String categoryId;
   final String title;
@@ -16,10 +17,28 @@ class ServiceRequestModel {
   final double? finalAmount;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime? preferredDate;
+  final String? preferredTime;
+
+  bool get isActiveJob =>
+      quotationStatus == 'accepted' &&
+      (requestStatus == 'confirmed' || requestStatus == 'in_progress');
+
+  bool get isFinishedJob => requestStatus == 'completed';
+
+  bool get isAwaitingQuotationApproval =>
+      requestStatus == 'quotation_received' && quotationStatus == 'sent';
+
+  bool get canReceiveQuotation =>
+      requestStatus == 'submitted' &&
+      (quotationStatus == 'pending' ||
+          quotationStatus == 'rejected' ||
+          quotationStatus == 'expired');
 
   ServiceRequestModel({
     required this.requestId,
     required this.customerId,
+    this.customerName,
     required this.providerId,
     required this.categoryId,
     required this.title,
@@ -33,6 +52,8 @@ class ServiceRequestModel {
     this.finalAmount,
     required this.createdAt,
     required this.updatedAt,
+    this.preferredDate,
+    this.preferredTime,
   });
 
   factory ServiceRequestModel.fromFirestore(
@@ -44,6 +65,7 @@ class ServiceRequestModel {
     return ServiceRequestModel(
       requestId: docId,
       customerId: data['customerId'] as String? ?? '',
+      customerName: (data['customerName'] as String?)?.trim(),
       providerId: data['providerId'] as String? ?? '',
       categoryId: data['categoryId'] as String? ?? '',
       title: data['title'] as String? ?? '',
@@ -57,14 +79,24 @@ class ServiceRequestModel {
       quotationStatus: data['quotationStatus'] as String? ?? 'pending',
       acceptedQuotationId: data['acceptedQuotationId'] as String?,
       finalAmount: (data['finalAmount'] as num?)?.toDouble(),
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      createdAt:
+          (data['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      updatedAt:
+          (data['updatedAt'] as Timestamp?)?.toDate() ??
+          DateTime.fromMillisecondsSinceEpoch(0),
+      preferredDate: data['preferredDate'] is Timestamp
+          ? (data['preferredDate'] as Timestamp).toDate()
+          : DateTime.tryParse(data['preferredDate']?.toString() ?? ''),
+      preferredTime: data['preferredTime'] as String?,
     );
   }
 
   Map<String, dynamic> toFirestore() {
     return {
       'customerId': customerId,
+      if (customerName != null && customerName!.trim().isNotEmpty)
+        'customerName': customerName!.trim(),
       'providerId': providerId,
       'categoryId': categoryId,
       'title': title,

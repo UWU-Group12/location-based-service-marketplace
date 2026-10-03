@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'provider_dashboard_screen.dart';
 import 'provider_profile_screen.dart';
 import 'provider_requests_screen.dart';
+import 'provider_jobs_screen.dart';
 
 class ProviderShellScreen extends StatefulWidget {
   // Give a name only when using the development bypass.
@@ -165,13 +166,10 @@ class _ProviderShellScreenState extends State<ProviderShellScreen> {
     final pages = <Widget>[
       ProviderDashboardScreen(
         userName: _providerName,
+        isDemo: widget.debugUserName != null,
       ),
-      const ProviderRequestsScreen(), // 👈 Replaced placeholder with your screen!
-      const _ProviderPlaceholderPage(
-        icon: Icons.work_outline,
-        title: 'Jobs',
-        message: 'Confirmed and active jobs will appear here.',
-      ),
+      const ProviderRequestsScreen(),
+      const ProviderJobsScreen(),
       const ProviderProfileScreen(),
     ];
 
@@ -212,47 +210,6 @@ class _ProviderShellScreenState extends State<ProviderShellScreen> {
             label: 'Profile',
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _ProviderPlaceholderPage extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String message;
-
-  const _ProviderPlaceholderPage({
-    required this.icon,
-    required this.title,
-    required this.message,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: 56,
-                color: Colors.grey,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

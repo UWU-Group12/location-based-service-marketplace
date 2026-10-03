@@ -13,6 +13,11 @@ class StorageService {
       throw ArgumentError('The icon path is empty');
     }
 
+    // Already a download URL (e.g. Google account photo).
+    if (cleanPath.startsWith('https://') || cleanPath.startsWith('http://')) {
+      return cleanPath;
+    }
+
     try {
       debugPrint('Loading Storage file: $cleanPath');
 
@@ -27,6 +32,29 @@ class StorageService {
       debugPrint('Storage error message: ${error.message}');
       rethrow;
     }
+  }
+
+  /// Uploads `<userFolder>/profile.<ext>` and returns its Storage path.
+  Future<String> uploadProfileImage({
+    required File file,
+    required String userFolder,
+  }) {
+    final fileName = file.path.replaceAll(r'\', '/').split('/').last;
+    final separatorIndex = fileName.lastIndexOf('.');
+    var extension = separatorIndex == -1
+        ? 'jpg'
+        : fileName.substring(separatorIndex + 1).toLowerCase();
+    if (!const {'jpg', 'jpeg', 'png', 'webp'}.contains(extension)) {
+      extension = 'jpg';
+    }
+    final contentType = extension == 'jpg' ? 'image/jpeg' : 'image/$extension';
+
+    return uploadFile(
+      file: file,
+      storagePath: '$userFolder/profile.$extension',
+      contentType: contentType,
+      maximumFileSizeBytes: 5 * 1024 * 1024,
+    );
   }
 
   /// Uploads a file and returns its Firebase Storage path.

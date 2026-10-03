@@ -54,6 +54,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  
+  flutter_launcher_icons: ^0.14.4
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -82,6 +84,11 @@ flutter:
     - assets/onboardingsvg/provider_profile1.svg
     - assets/onboardingsvg/provider_service.svg
     - assets/onboardingsvg/provider_personal_details.svg
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icons/applogo2.png"
 
   # To add assets to your application, add an assets section, like this:
   # assets:

@@ -3,239 +3,93 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // Is the user logged in?
     function signedIn() {
       return request.auth != null;
     }
 
-    function isOwner(userId) {
+    // Is this the logged-in user's own document?
+    function isMe(userId) {
       return signedIn() && request.auth.uid == userId;
     }
 
-    function currentUser() {
-      return get(
-        /databases/$(database)/documents/users/$(request.auth.uid)
-      );
-    }
-
-    function isCustomer() {
-      return signedIn()
-        && currentUser().data.role == 'customer';
-    }
-
-    function isProvider() {
-      return signedIn()
-        && currentUser().data.role == 'provider';
-    }
-
+    // Admin = user with custom claim admin: true
     function isAdmin() {
-      return signedIn()
-        && request.auth.token.admin == true;
+      return signedIn() && request.auth.token.admin == true;
     }
 
-    function isValidProviderProfileCreate(providerId) {
-      return request.resource.data.keys().hasAll([
-          'providerId',
-          'displayName',
-          'categoryIds',
-          'experienceYears',
-          'workingDays',
-          'workingHours',
-          'baseLocation',
-          'serviceRadiusKm',
-          'availabilityStatus',
-          'verificationStatus',
-          'ratingAverage',
-          'reviewCount',
-          'completedJobCount',
-          'createdAt',
-          'updatedAt'
-        ])
-        && request.resource.data.providerId == providerId
-        && request.resource.data.displayName is string
-        && request.resource.data.displayName.size() > 0
-        && request.resource.data.categoryIds is list
-        && request.resource.data.categoryIds.size() > 0
-        && request.resource.data.experienceYears is int
-        && request.resource.data.experienceYears >= 0
-        && request.resource.data.workingDays is list
-        && request.resource.data.workingDays.size() > 0
-        && request.resource.data.workingHours is string
-        && request.resource.data.workingHours.size() > 0
-        && request.resource.data.baseLocation is latlng
-        && request.resource.data.serviceRadiusKm is number
-        && request.resource.data.serviceRadiusKm in [5, 10, 15, 20, 30]
-        && request.resource.data.availabilityStatus == 'unavailable'
-        && request.resource.data.verificationStatus == 'pending'
-        && request.resource.data.ratingAverage == 0
-        && request.resource.data.reviewCount == 0
-        && request.resource.data.completedJobCount == 0;
-    }
-
-    function isValidVerificationCreate(providerId) {
-      return request.resource.data.keys().hasAll([
-          'providerId',
-          'documentType',
-          'frontDocumentPath',
-          'backDocumentPath',
-          'certificatePaths',
-          'status',
-          'submittedAt'
-        ])
-        && request.resource.data.providerId == providerId
-        && request.resource.data.documentType == 'national_id'
-        && request.resource.data.frontDocumentPath is string
-        && request.resource.data.frontDocumentPath.size() > 0
-        && request.resource.data.backDocumentPath is string
-        && request.resource.data.backDocumentPath.size() > 0
-        && request.resource.data.certificatePaths is list
-        && request.resource.data.status == 'pending'
-        && request.resource.data.submittedAt == request.time
-        && request.resource.data.reviewedBy == null
-        && request.resource.data.reviewedAt == null
-        && request.resource.data.rejectionReason == null;
-    }
-
-    function isValidServiceRequestCreate() {
-      return request.resource.data.keys().hasAll([
-          'customerId',
-          'providerId',
-          'categoryId',
-          'title',
-          'description',
-          'serviceLocation',
-          'requestStatus',
-          'quotationStatus',
-          'createdAt',
-          'updatedAt'
-        ])
-        && request.resource.data.providerId is string
-        && request.resource.data.providerId.size() > 0
-        && request.resource.data.categoryId is string
-        && request.resource.data.categoryId.size() > 0
-        && request.resource.data.title is string
-        && request.resource.data.title.size() > 0
-        && request.resource.data.description is string
-        && request.resource.data.description.size() > 0
-        && request.resource.data.serviceLocation is map
-        && request.resource.data.serviceLocation.point is latlng
-        && request.resource.data.serviceLocation.addressText is string
-        && request.resource.data.serviceLocation.addressText.size() > 0
-        && request.resource.data.requestStatus == 'submitted'
-        && request.resource.data.quotationStatus == 'pending'
-        && request.resource.data.createdAt == request.time
-        && request.resource.data.updatedAt == request.time;
-    }
+    // ---------- USERS ----------
     match /users/{userId} {
-      allow create: if isOwner(userId);
+      allow read, create: if isMe(userId) || isAdmin();
 
-      allow read: if isOwner(userId) || isAdmin();
-
-      allow update: if isAdmin() ||
-        (
-          isOwner(userId) &&
-          request.resource.data.diff(resource.data)
-            .affectedKeys()
-            .hasOnly([
-              'displayName',
-              'phoneNumber',
-              'photoPath',
-              'profileCompleted',
-              'updatedAt'
-            ])
-        );
+      // User can edit own data, but cannot change own role
+      allow update: if isAdmin()
+        || (isMe(userId)
+            && request.resource.data.role == resource.data.role);
 
       allow delete: if isAdmin();
     }
 
+    // ---------- PROVIDER PROFILES ----------
     match /providerProfiles/{providerId} {
-      allow read: if
-        (
-          signedIn() &&
-          resource.data.verificationStatus == 'verified'
-        )
-        || isOwner(providerId)
-        || isAdmin();
+      allow read: if signedIn();
 
-      allow create: if
-        isOwner(providerId)
-        && isProvider()
-        && isValidProviderProfileCreate(providerId);
+      // New profile must start as 'pending'
+      allow create: if isMe(providerId)
+        && request.resource.data.verificationStatus == 'pending';
 
-      allow update: if isAdmin() ||
-        (
-          isOwner(providerId) &&
-          request.resource.data.diff(resource.data)
-            .affectedKeys()
-            .hasOnly([
-              'displayName',
-              'profileImagePath',
-              'bio',
-              'categoryIds',
-              'experienceYears',
-              'workingDays',
-              'workingHours',
-              'baseLocation',
-              'serviceRadiusKm',
-              'availabilityStatus',
-              'updatedAt'
-            ])
-          && request.resource.data.experienceYears is int
-          && request.resource.data.experienceYears >= 0
-          && request.resource.data.workingDays is list
-          && request.resource.data.workingDays.size() > 0
-          && request.resource.data.workingHours is string
-          && request.resource.data.workingHours.size() > 0
-          && request.resource.data.baseLocation is latlng
-          && request.resource.data.serviceRadiusKm is number
-          && request.resource.data.serviceRadiusKm in [5, 10, 15, 20, 30]
-        );
+      // Provider can edit own profile, but cannot verify himself
+      allow update: if isAdmin()
+        || (isMe(providerId)
+            && request.resource.data.verificationStatus
+               == resource.data.verificationStatus);
+
+      allow delete: if isAdmin();
     }
 
+    // ---------- PROVIDER VERIFICATIONS (ID documents) ----------
     match /providerVerifications/{providerId} {
-      allow create: if
-        (
-          isOwner(providerId)
-          && isProvider()
-          && isValidVerificationCreate(providerId)
-        )
-        || isAdmin();
-
-      allow read: if isOwner(providerId) || isAdmin();
+      allow read, create: if isMe(providerId) || isAdmin();
       allow update, delete: if isAdmin();
     }
 
+    // ---------- CATEGORIES ----------
     match /categories/{categoryId} {
       allow read: if signedIn();
       allow write: if isAdmin();
     }
 
+    // ---------- SERVICE REQUESTS ----------
     match /serviceRequests/{requestId} {
-      allow create: if
-        isCustomer()
-        && request.resource.data.customerId == request.auth.uid
-        && isValidServiceRequestCreate();
+      allow create: if signedIn()
+        && request.resource.data.customerId == request.auth.uid;
 
-      allow read: if
-        isAdmin()
+      // Only the customer and provider of this request
+      allow read, update: if isAdmin()
         || resource.data.customerId == request.auth.uid
         || resource.data.providerId == request.auth.uid;
 
-      // Sensitive state changes should use strict transition rules
-      // or trusted Cloud Functions.
-      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
+    // ---------- QUOTATIONS ----------
     match /quotations/{quotationId} {
-      allow read: if
-        isAdmin()
+      // resource == null lets the app listen before the quotation exists
+      allow read: if signedIn() && (
+        resource == null
+        || isAdmin()
+        || resource.data.customerId == request.auth.uid
+        || resource.data.providerId == request.auth.uid
+      );
+
+      allow create: if signedIn()
+        && request.resource.data.providerId == request.auth.uid;
+
+      allow update: if isAdmin()
         || resource.data.customerId == request.auth.uid
         || resource.data.providerId == request.auth.uid;
 
-      allow create: if
-        isProvider()
-        && request.resource.data.providerId == request.auth.uid;
-
-      allow update, delete: if isAdmin();
+      allow delete: if isAdmin();
     }
   }
 }
