@@ -5,20 +5,29 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_router.dart';
 import '../../models/service_category_model.dart';
+import '../../models/provider_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../../services/location_service.dart';
 import '../../services/storage_service.dart';
 
 class ProviderProfileScreen extends StatefulWidget {
-  const ProviderProfileScreen({super.key});
+  final bool _editing;
+  const ProviderProfileScreen({super.key}) : _editing = false;
+  const ProviderProfileScreen._edit() : _editing = true;
 
   @override
   State<ProviderProfileScreen> createState() => _ProviderProfileScreenState();
 }
 
-typedef ProviderEditProfileScreen = ProviderProfileScreen;
+class ProviderEditProfileScreen extends StatelessWidget {
+  const ProviderEditProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) => const ProviderProfileScreen._edit();
+}
 
 class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
   final AuthService _authService = AuthService();
@@ -39,15 +48,16 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
   File? _selectedImage;
 
   String? _photoUrl;
-  String? _categoryId;
+  List<String> _categoryIds = const [];
+  String? _loadError;
+  bool _profileExists = false;
 
   double _serviceRadius = 10;
 
   double? _latitude;
   double? _longitude;
 
-  String _verificationStatus = 'pending';
-  String _availabilityStatus = 'available';
+  Stream<ProviderModel?>? _profileStatusStream;
 
   bool _isLoading = true;
   bool _isSaving = false;
@@ -58,7 +68,15 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
   @override
   void initState() {
     super.initState();
+    _loadStatusStream();
     _loadProfile();
+  }
+
+  void _loadStatusStream() {
+    final uid = _authService.currentUser?.uid;
+    _profileStatusStream = uid == null
+        ? null
+        : _firestoreService.watchProviderProfile(uid);
   }
 
   @override
@@ -71,6 +89,10 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
   }
 
   Future<void> _loadProfile() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
     try {
       final user = _authService.currentUser;
       final userProfile = await _authService.getUserProfileForCurrentUser();
@@ -99,27 +121,22 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
       _categories = categories;
 
       if (profile != null) {
+        _profileExists = true;
         _nameController.text = profile.displayName;
 
         _phoneController.text = userProfile?.phoneNumber ?? '';
 
         _bioController.text = profile.bio ?? '';
 
-        _locationNameController.text = locationName ?? '';
+        _locationNameController.text =
+            locationName ??
+            (location == null
+                ? ''
+                : '${location.latitude}, ${location.longitude}');
 
-        final savedCategoryId = profile.categoryIds.isEmpty
-            ? null
-            : profile.categoryIds.first;
-        _categoryId =
-            categories.any((category) => category.id == savedCategoryId)
-            ? savedCategoryId
-            : null;
+        _categoryIds = profile.categoryIds;
 
         _photoUrl = photoUrl;
-
-        _verificationStatus = profile.verificationStatus;
-
-        _availabilityStatus = profile.availabilityStatus;
 
         if (profile.serviceRadiusKm != null) {
           _serviceRadius = profile.serviceRadiusKm!;
@@ -130,6 +147,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
           _longitude = location.longitude;
         }
       } else {
+        _profileExists = false;
         _nameController.text = user?.displayName ?? '';
 
         _phoneController.text = user?.phoneNumber ?? '';
@@ -145,6 +163,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
 
       setState(() {
         _isLoading = false;
+        _loadError = 'Could not load your profile.';
       });
 
       _showMessage('Could not load your profile.');
@@ -216,7 +235,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
       },
     );
 
-    if (source == null) return;
+    if (!mounted || source == null) return;
 
     final image = await _imagePicker.pickImage(
       source: source,
@@ -224,7 +243,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
       maxWidth: 1200,
     );
 
-    if (image == null) return;
+    if (!mounted || image == null) return;
 
     setState(() {
       _selectedImage = File(image.path);
@@ -256,9 +275,6 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
       final locationName = await _locationService.getAddressFromGeoPoint(
         position,
       );
-      if (locationName == null) {
-        throw StateError('Location name could not be found.');
-      }
 
       if (!mounted) return;
 
@@ -267,12 +283,13 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
 
         _longitude = position.longitude;
 
-        _locationNameController.text = locationName;
+        _locationNameController.text =
+            locationName ?? '${position.latitude}, ${position.longitude}';
 
         _isGettingLocation = false;
       });
 
-      _showMessage('Service location updated.');
+      _showMessage('Location selected. Save your profile to apply it.');
     } catch (e) {
       if (!mounted) return;
 
@@ -287,6 +304,9 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
   }
 
   Future<void> _saveProfile() async {
+    if (!widget._editing || _isSaving || _isGettingLocation || !_profileExists) {
+      return;
+    }
     FocusScope.of(context).unfocus();
 
     if (_nameController.text.trim().isEmpty) {
@@ -296,16 +316,6 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
 
     if (_phoneController.text.trim().isEmpty) {
       _showMessage('Please enter your phone number.');
-      return;
-    }
-
-    if (_categoryId == null) {
-      _showMessage('Please select your main service.');
-      return;
-    }
-
-    if (_locationNameController.text.trim().isEmpty) {
-      _showMessage('Please enter your service location.');
       return;
     }
 
@@ -340,7 +350,6 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
         displayName: _nameController.text,
         phoneNumber: _phoneController.text,
         bio: _bioController.text,
-        categoryId: _categoryId!,
         baseLocation: GeoPoint(_latitude!, _longitude!),
         serviceRadiusKm: _serviceRadius,
         profileImagePath: photoStoragePath,
@@ -363,7 +372,9 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
         _photoUrl = uploadedPhotoUrl ?? _photoUrl;
       });
 
-      _showMessage('Profile updated successfully.');
+      await WidgetsBinding.instance.endOfFrame;
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
 
@@ -430,27 +441,63 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
       );
   }
 
-  Widget _sectionHeader(String title, String subtitle) {
-    return Column(
+  Future<void> _editProfile() async {
+    final saved = await AppRouter.goToProviderEditProfile(context);
+    if (!mounted || saved != true) return;
+    await _loadProfile();
+    if (!mounted) return;
+    _showMessage('Profile updated successfully.');
+  }
+
+  Widget _sectionHeader(String title) => Text(
+    title,
+    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+      fontWeight: FontWeight.w800,
+      color: AppColors.primary,
+    ),
+  );
+
+  Widget _detailField(String label, String value, IconData icon) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(18),
+      border: Border.all(color: AppColors.border),
+    ),
+    child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-            color: AppColors.primary,
+        Icon(icon, color: AppColors.primary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                value.trim().isEmpty ? 'Not provided' : value,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          subtitle,
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
-        ),
       ],
-    );
-  }
+    ),
+  );
+
+  String get _categoryNames => _categoryIds
+      .map((id) {
+        final matches = _categories.where((category) => category.id == id);
+        return matches.isEmpty ? id : matches.first.name;
+      })
+      .join(', ');
 
   Widget _textField({
     required TextEditingController controller,
@@ -460,7 +507,9 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
     int maxLines = 1,
     TextInputType? keyboardType,
   }) {
+    if (!widget._editing) return _detailField(label, controller.text, icon);
     return TextField(
+      enabled: !_isSaving,
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
@@ -522,26 +571,27 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
                     : null,
               ),
             ),
-            Positioned(
-              right: 1,
-              bottom: 1,
-              child: Material(
-                color: AppColors.primary,
-                shape: const CircleBorder(),
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: _pickImage,
-                  child: const Padding(
-                    padding: EdgeInsets.all(11),
-                    child: Icon(
-                      Icons.camera_alt_outlined,
-                      color: Colors.white,
-                      size: 20,
+            if (widget._editing)
+              Positioned(
+                right: 1,
+                bottom: 1,
+                child: Material(
+                  color: AppColors.primary,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: _pickImage,
+                    child: const Padding(
+                      padding: EdgeInsets.all(11),
+                      child: Icon(
+                        Icons.camera_alt_outlined,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 14),
@@ -556,62 +606,100 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
   }
 
   Widget _statusCard() {
-    final isVerified = _verificationStatus == 'verified';
-
-    final isAvailable = _availabilityStatus == 'available';
-
     return Container(
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: Colors.grey.shade200),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _statusItem(
-              icon: Icons.verified_outlined,
-              title: 'Verification',
-              value: isVerified ? 'Verified' : 'Pending',
-              active: isVerified,
+      child: _profileStatusStream == null
+          ? const Text('Sign in to view your status.')
+          : StreamBuilder<ProviderModel?>(
+              key: ObjectKey(_profileStatusStream),
+              stream: _profileStatusStream,
+              builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return TextButton.icon(
+                    onPressed: () => setState(_loadStatusStream),
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Unable to load status. Try again'),
+                  );
+                }
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  );
+                }
+                final profile = snapshot.data;
+                if (profile == null) {
+                  return const Text('Profile status unavailable.');
+                }
+                final isVerified = profile.verificationStatus == 'verified';
+                final isAvailable = profile.availabilityStatus == 'available';
+                final verificationLabel = switch (profile.verificationStatus) {
+                  'verified' => 'Verified',
+                  'rejected' => 'Rejected',
+                  'not_submitted' => 'Not verified',
+                  _ => 'Pending',
+                };
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _statusItem(
+                        icon: Icons.verified_outlined,
+                        value: verificationLabel,
+                        color: isVerified
+                            ? AppColors.primary
+                            : AppColors.textSecondary,
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 28,
+                      color: Colors.grey.shade200,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _statusItem(
+                        icon: isAvailable
+                            ? Icons.check_circle_outline
+                            : Icons.cancel_outlined,
+                        value: isAvailable ? 'Available' : 'Not available',
+                        color: isAvailable
+                            ? Colors.green.shade700
+                            : Colors.red.shade700,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-          ),
-          Container(width: 1, height: 48, color: Colors.grey.shade200),
-          Expanded(
-            child: _statusItem(
-              icon: Icons.circle_outlined,
-              title: 'Availability',
-              value: isAvailable ? 'Available' : 'Unavailable',
-              active: isAvailable,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
   Widget _statusItem({
     required IconData icon,
-    required String title,
     required String value,
-    required bool active,
+    required Color color,
   }) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(icon, color: active ? AppColors.primary : Colors.grey),
-        const SizedBox(width: 10),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        Icon(icon, color: color, size: 22),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            value,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 2),
-            Text(value, style: const TextStyle(fontWeight: FontWeight.w700)),
-          ],
+          ),
         ),
       ],
     );
@@ -619,6 +707,13 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
 
   Widget _locationCard() {
     final hasLocation = _latitude != null && _longitude != null;
+    if (!widget._editing) {
+      return _detailField(
+        'Saved service location',
+        hasLocation ? _locationNameController.text : 'Not provided',
+        Icons.location_on_outlined,
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -651,15 +746,11 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
                     Text(
                       'Service location',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 20,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     SizedBox(height: 4),
-                    Text(
-                      'Customers can find you based on this area.',
-                      style: TextStyle(color: Colors.grey),
-                    ),
                   ],
                 ),
               ),
@@ -667,6 +758,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
           ),
           const SizedBox(height: 18),
           TextField(
+            readOnly: true,
             controller: _locationNameController,
             decoration: const InputDecoration(
               labelText: 'Location name',
@@ -741,59 +833,34 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
     );
   }
 
-  Widget _radiusCard() {
-    const values = [5.0, 10.0, 15.0, 20.0, 30.0];
-
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.radar_outlined, color: AppColors.primary),
-              const SizedBox(width: 10),
-              const Text(
-                'Service radius',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-              ),
-              const Spacer(),
-              Text(
-                '${_serviceRadius.toInt()} km',
-                style: TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: values.map((value) {
-              final selected = _serviceRadius == value;
-
-              return ChoiceChip(
-                label: Text('${value.toInt()} km'),
-                selected: selected,
-                onSelected: (_) {
-                  setState(() {
-                    _serviceRadius = value;
-                  });
-                },
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+  Future<void> _changeRadius() async {
+    final radius = await showDialog<double>(
+      context: context,
+      builder: (context) => _RadiusDialog(initialRadius: _serviceRadius),
     );
+    if (!mounted || radius == null) return;
+    setState(() => _serviceRadius = radius);
   }
+
+  Widget _radiusCard() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _detailField(
+        'Service radius',
+        '${_serviceRadius.toInt()} km',
+        Icons.radar_outlined,
+      ),
+      if (widget._editing)
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: _isSaving ? null : _changeRadius,
+            icon: const Icon(Icons.edit_outlined, size: 18),
+            label: const Text('Change radius'),
+          ),
+        ),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -804,149 +871,213 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text(
-          'Edit Profile',
-          style: TextStyle(fontWeight: FontWeight.w800),
+    if (_loadError != null) {
+      return Scaffold(
+        appBar: widget._editing
+            ? AppBar(title: const Text('Edit Profile'))
+            : null,
+        body: Center(
+          child: TextButton.icon(
+            onPressed: _loadProfile,
+            icon: const Icon(Icons.refresh),
+            label: Text('$_loadError Try again'),
+          ),
         ),
-        centerTitle: true,
-      ),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
-          children: [
-            _profileHeader(),
-
-            const SizedBox(height: 28),
-
-            _statusCard(),
-
-            const SizedBox(height: 30),
-
-            _sectionHeader(
-              'Personal information',
-              'Update the information customers see on your profile.',
-            ),
-
-            const SizedBox(height: 18),
-
-            _textField(
-              controller: _nameController,
-              label: 'Full name',
-              hint: 'Enter your full name',
-              icon: Icons.person_outline,
-            ),
-
-            const SizedBox(height: 14),
-
-            _textField(
-              controller: _phoneController,
-              label: 'Phone number',
-              hint: 'Enter your phone number',
-              icon: Icons.phone_outlined,
-              keyboardType: TextInputType.phone,
-            ),
-
-            const SizedBox(height: 14),
-
-            _textField(
-              controller: _bioController,
-              label: 'Professional bio',
-              hint: 'Tell customers about your experience',
-              icon: Icons.description_outlined,
-              maxLines: 4,
-            ),
-
-            const SizedBox(height: 30),
-
-            _sectionHeader(
-              'Professional details',
-              'Tell customers what service you provide.',
-            ),
-
-            const SizedBox(height: 18),
-
-            DropdownButtonFormField<String>(
-              initialValue: _categoryId,
-              decoration: const InputDecoration(
-                labelText: 'Main service',
-                prefixIcon: Icon(Icons.home_repair_service_outlined),
+      );
+    }
+    return PopScope(
+      canPop: !_isSaving,
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          automaticallyImplyLeading: widget._editing,
+          title: widget._editing ? const Text('Edit Profile') : null,
+          actions: [
+            if (!widget._editing && _profileExists)
+              TextButton.icon(
+                onPressed: _editProfile,
+                icon: const Icon(Icons.edit_outlined, size: 18),
+                label: const Text('Edit Profile'),
               ),
-              items: _categories.map((category) {
-                return DropdownMenuItem<String>(
-                  value: category.id,
-                  child: Text(category.name),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _categoryId = value;
-                });
-              },
-            ),
-
-            const SizedBox(height: 18),
-
-            _radiusCard(),
-
-            const SizedBox(height: 30),
-
-            _sectionHeader(
-              'Service area',
-              'Set where you normally provide your services.',
-            ),
-
-            const SizedBox(height: 18),
-
-            _locationCard(),
-
-            const SizedBox(height: 30),
-
-            SizedBox(
-              height: 54,
-              child: FilledButton(
-                onPressed: _isSaving ? null : _saveProfile,
-                child: _isSaving
-                    ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Text(
-                        'Save Changes',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            SizedBox(
-              height: 52,
-              child: OutlinedButton.icon(
-                onPressed: _isSaving ? null : _logout,
-                icon: const Icon(Icons.logout_outlined),
-                label: const Text(
-                  'Log Out',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.red.shade700,
-                  side: BorderSide(color: Colors.red.shade200),
-                ),
-              ),
-            ),
           ],
+        ),
+        body: SafeArea(
+          child: AbsorbPointer(
+            absorbing: _isSaving,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 40),
+              children: [
+                _profileHeader(),
+
+                const SizedBox(height: 28),
+
+                _statusCard(),
+
+                const SizedBox(height: 30),
+
+                _sectionHeader('Personal information'),
+
+                const SizedBox(height: 18),
+
+                _textField(
+                  controller: _nameController,
+                  label: 'Full name',
+                  hint: 'Enter your full name',
+                  icon: Icons.person_outline,
+                ),
+
+                const SizedBox(height: 14),
+
+                _textField(
+                  controller: _phoneController,
+                  label: 'Phone number',
+                  hint: 'Enter your phone number',
+                  icon: Icons.phone_outlined,
+                  keyboardType: TextInputType.phone,
+                ),
+
+                const SizedBox(height: 14),
+
+                _textField(
+                  controller: _bioController,
+                  label: 'Professional bio',
+                  hint: 'Tell customers about your experience',
+                  icon: Icons.description_outlined,
+                  maxLines: 4,
+                ),
+
+                const SizedBox(height: 30),
+
+                _sectionHeader('Professional details'),
+
+                const SizedBox(height: 18),
+
+                _detailField(
+                  'Service category',
+                  _categoryNames,
+                  Icons.home_repair_service_outlined,
+                ),
+
+                const SizedBox(height: 18),
+
+                _radiusCard(),
+
+                const SizedBox(height: 30),
+
+                _sectionHeader('Service area'),
+
+                const SizedBox(height: 18),
+
+                _locationCard(),
+
+                const SizedBox(height: 30),
+
+                if (widget._editing)
+                  SizedBox(
+                    height: 54,
+                    child: FilledButton(
+                      onPressed: _isSaving || _isGettingLocation
+                          ? null
+                          : _saveProfile,
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Save Changes',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                    ),
+                  ),
+
+                const SizedBox(height: 18),
+
+                if (!widget._editing)
+                  SizedBox(
+                    height: 52,
+                    child: OutlinedButton.icon(
+                      onPressed: _isSaving ? null : _logout,
+                      icon: const Icon(Icons.logout_outlined),
+                      label: const Text(
+                        'Log Out',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red.shade700,
+                        side: BorderSide(color: Colors.red.shade200),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
+}
+
+class _RadiusDialog extends StatefulWidget {
+  final double initialRadius;
+  const _RadiusDialog({required this.initialRadius});
+
+  @override
+  State<_RadiusDialog> createState() => _RadiusDialogState();
+}
+
+class _RadiusDialogState extends State<_RadiusDialog> {
+  late double _selected;
+  @override
+  void initState() {
+    super.initState();
+    _selected = widget.initialRadius;
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Change service radius'),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('Current radius: ${widget.initialRadius.toInt()} km'),
+        const SizedBox(height: 16),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [5.0, 10.0, 15.0, 20.0, 30.0]
+              .map(
+                (radius) => ChoiceChip(
+                  label: Text('${radius.toInt()} km'),
+                  selected: _selected == radius,
+                  onSelected: (_) => setState(() => _selected = radius),
+                ),
+              )
+              .toList(),
+        ),
+        const SizedBox(height: 16),
+        const Text(
+          'Confirm your radius, then save your profile to apply the change.',
+        ),
+      ],
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: () => Navigator.pop(context, _selected),
+        child: const Text('Confirm radius'),
+      ),
+    ],
+  );
 }
