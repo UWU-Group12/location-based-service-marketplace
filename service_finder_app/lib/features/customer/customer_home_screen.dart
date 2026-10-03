@@ -30,6 +30,11 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   List<ServiceCategory> _allCategories = [];
   List<ServiceCategory> filteredServices = [];
 
+  String get _firstName {
+    final firstName = widget.userName.trim().split(RegExp(r'\s+')).first;
+    return firstName.isEmpty ? 'User' : firstName;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -114,7 +119,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               const SizedBox(height: 20),
               // Header
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -127,63 +132,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         ),
                       ),
                       Text(
-                        widget.userName,
+                        _firstName,
                         style: textTheme.headlineMedium?.copyWith(
                           fontSize: 28,
                           color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
-                        child: Stack(
-                          children: [
-                            const Icon(
-                              Icons.notifications_none_outlined,
-                              size: 28,
-                              color: Colors.black,
-                            ),
-                            Positioned(
-                              right: 2,
-                              top: 2,
-                              child: Container(
-                                height: 8,
-                                width: 8,
-                                decoration: BoxDecoration(
-                                  color: darkRed,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.white,
-                                    width: 1.5,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 15),
-                      CircleAvatar(
-                        radius: 24,
-                        backgroundColor: const Color(0xFFD2B48C),
-                        child: Text(
-                          widget.initials,
-                          style: textTheme.labelLarge?.copyWith(
-                            color: Colors.white,
-                          ),
                         ),
                       ),
                     ],
@@ -233,8 +185,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) =>
-                                      ProviderListingScreen(service: category.name),
+                                  builder: (_) => ProviderListingScreen(
+                                    service: category.name,
+                                    categoryId: category.id,
+                                  ),
                                 ),
                               );
                             },
@@ -505,7 +459,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ProviderListingScreen(service: category.name),
+            builder: (_) => ProviderListingScreen(
+              service: category.name,
+              categoryId: category.id,
+            ),
           ),
         );
       },
