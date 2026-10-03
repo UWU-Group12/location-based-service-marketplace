@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -54,6 +55,7 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
 
   double? _latitude;
   double? _longitude;
+  String? _locationName;
 
   bool _isLoading = true;
   bool _isSaving = false;
@@ -214,28 +216,46 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
     );
   }
 
-  Future<void> _useCurrentLocation() async {
+  Future<void> _useCurrentLocation({bool fromMap = false}) async {
     setState(() {
       _isGettingLocation = true;
     });
 
     try {
-      final position = await _locationService.getCurrentLocation();
+      final position = fromMap
+          ? await _locationService.pickLocationOnMap(
+              context,
+              initial: _latitude == null || _longitude == null
+                  ? null
+                  : GeoPoint(_latitude!, _longitude!),
+            )
+          : await _locationService.getCurrentLocation();
+
+      if (position == null) {
+        if (mounted) setState(() => _isGettingLocation = false);
+        return;
+      }
+
+      final locationName = await _locationService.getAddressFromGeoPoint(
+        position,
+      );
 
       if (!mounted) return;
 
       setState(() {
         _latitude = position.latitude;
         _longitude = position.longitude;
+        _locationName = locationName;
 
         _locationController.text =
+            locationName ??
             '${position.latitude.toStringAsFixed(6)}, '
-            '${position.longitude.toStringAsFixed(6)}';
+                '${position.longitude.toStringAsFixed(6)}';
 
         _isGettingLocation = false;
       });
 
-      _showMessage('Current location added.');
+      _showMessage(fromMap ? 'Location selected from map.' : 'Current location added.');
     } catch (e) {
       if (!mounted) return;
 
@@ -734,6 +754,19 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
             ),
           ),
         ),
+
+        const SizedBox(height: 8),
+
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _isGettingLocation
+                ? null
+                : () => _useCurrentLocation(fromMap: true),
+            icon: const Icon(Icons.map_outlined),
+            label: const Text('Pick on Map'),
+          ),
+        ),
       ],
     );
   }
@@ -788,8 +821,9 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Lat: ${_latitude!.toStringAsFixed(6)}\n'
-                  'Lng: ${_longitude!.toStringAsFixed(6)}',
+                  _locationName ??
+                      'Lat: ${_latitude!.toStringAsFixed(6)}\n'
+                          'Lng: ${_longitude!.toStringAsFixed(6)}',
                   style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
                 ),
               ],

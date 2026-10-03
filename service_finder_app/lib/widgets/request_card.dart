@@ -51,6 +51,13 @@ class RequestCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(request.title, style: textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(
+              request.customerName == null || request.customerName!.isEmpty
+                  ? 'Name unavailable'
+                  : request.customerName!,
+              style: textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
             const SizedBox(height: 6),
             Text(
               request.description,

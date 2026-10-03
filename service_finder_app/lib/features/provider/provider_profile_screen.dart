@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/app_colors.dart';
-import '../../core/app_router.dart';
+import '../../models/service_category_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../../services/location_service.dart';
@@ -53,15 +53,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
   bool _isSaving = false;
   bool _isGettingLocation = false;
 
-  final List<Map<String, String>> _categories = const [
-    {'id': 'plumbing', 'name': 'Plumbing'},
-    {'id': 'electrical', 'name': 'Electrical'},
-    {'id': 'cleaning', 'name': 'Cleaning'},
-    {'id': 'carpentry', 'name': 'Carpentry'},
-    {'id': 'painting', 'name': 'Painting'},
-    {'id': 'ac_repair', 'name': 'AC Repair'},
-    {'id': 'appliance_repair', 'name': 'Appliance Repair'},
-  ];
+  List<ServiceCategory> _categories = const [];
 
   @override
   void initState() {
@@ -89,8 +81,22 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
       final locationName = location == null
           ? null
           : await _locationService.getAddressFromGeoPoint(location);
+      final categories = await _firestoreService.getActiveCategories();
+      final imagePath = profile?.profileImagePath?.trim();
+      String? photoUrl;
+      if (imagePath != null && imagePath.isNotEmpty) {
+        try {
+          photoUrl = imagePath.startsWith('http')
+              ? imagePath
+              : await _storageService.getDownloadUrl(imagePath);
+        } catch (_) {
+          photoUrl = null;
+        }
+      }
 
       if (!mounted) return;
+
+      _categories = categories;
 
       if (profile != null) {
         _nameController.text = profile.displayName;
@@ -101,11 +107,15 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
 
         _locationNameController.text = locationName ?? '';
 
-        _categoryId = profile.categoryIds.isEmpty
+        final savedCategoryId = profile.categoryIds.isEmpty
             ? null
             : profile.categoryIds.first;
+        _categoryId =
+            categories.any((category) => category.id == savedCategoryId)
+            ? savedCategoryId
+            : null;
 
-        _photoUrl = profile.profileImagePath;
+        _photoUrl = photoUrl;
 
         _verificationStatus = profile.verificationStatus;
 
@@ -178,15 +188,6 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
                     Navigator.pop(context, ImageSource.gallery);
                   },
                 ),
-
-                ListTile(
-                  leading: const Icon(Icons.edit_outlined),
-                  title: const Text('Edit Profile'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () {
-                    AppRouter.goToProviderEditProfile(context);
-                  },
-                ),
                 const SizedBox(height: 6),
                 ListTile(
                   shape: RoundedRectangleBorder(
@@ -230,7 +231,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
     });
   }
 
-  Future<void> _useCurrentLocation() async {
+  Future<void> _useCurrentLocation({bool fromMap = false}) async {
     FocusScope.of(context).unfocus();
 
     setState(() {
@@ -238,7 +239,19 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
     });
 
     try {
-      final position = await _locationService.getCurrentLocation();
+      final position = fromMap
+          ? await _locationService.pickLocationOnMap(
+              context,
+              initial: _latitude == null || _longitude == null
+                  ? null
+                  : GeoPoint(_latitude!, _longitude!),
+            )
+          : await _locationService.getCurrentLocation();
+
+      if (position == null) {
+        if (mounted) setState(() => _isGettingLocation = false);
+        return;
+      }
 
       final locationName = await _locationService.getAddressFromGeoPoint(
         position,
@@ -333,11 +346,13 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
         profileImagePath: photoStoragePath,
       );
 
+      final uploadedPhotoUrl = photoStoragePath == null
+          ? null
+          : await _storageService.getDownloadUrl(photoStoragePath);
+
       await _authService.updateAuthProfile(
         displayName: _nameController.text,
-        photoUrl: photoStoragePath == null
-            ? null
-            : await _storageService.getDownloadUrl(photoStoragePath),
+        photoUrl: uploadedPhotoUrl,
       );
 
       if (!mounted) return;
@@ -345,7 +360,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
       setState(() {
         _isSaving = false;
         _selectedImage = null;
-        _photoUrl = photoStoragePath ?? _photoUrl;
+        _photoUrl = uploadedPhotoUrl ?? _photoUrl;
       });
 
       _showMessage('Profile updated successfully.');
@@ -462,6 +477,8 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
 
     if (_selectedImage != null) {
       image = FileImage(_selectedImage!);
+    } else if (_photoUrl != null) {
+      image = NetworkImage(_photoUrl!);
     }
 
     final name = _nameController.text.trim();
@@ -677,6 +694,18 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: OutlinedButton.icon(
+              onPressed: _isGettingLocation
+                  ? null
+                  : () => _useCurrentLocation(fromMap: true),
+              icon: const Icon(Icons.map_outlined),
+              label: const Text('Pick on map'),
+            ),
+          ),
           if (hasLocation) ...[
             const SizedBox(height: 12),
             Container(
@@ -847,8 +876,8 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
               ),
               items: _categories.map((category) {
                 return DropdownMenuItem<String>(
-                  value: category['id'],
-                  child: Text(category['name']!),
+                  value: category.id,
+                  child: Text(category.name),
                 );
               }).toList(),
               onChanged: (value) {

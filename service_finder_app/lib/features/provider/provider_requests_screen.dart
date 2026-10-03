@@ -210,7 +210,7 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen>
                                                         top: 8,
                                                       ),
                                                   child: Text(
-                                                    '${request?.addressText ?? quote.requestId}\nRs. ${quote.estimatedTotal.toStringAsFixed(2)}\nWaiting for customer approval',
+                                                    '${request?.customerName ?? 'Name unavailable'}\n${request?.addressText ?? quote.requestId}\nRs. ${quote.estimatedTotal.toStringAsFixed(2)}\nWaiting for customer approval',
                                                   ),
                                                 ),
                                                 trailing: const Icon(

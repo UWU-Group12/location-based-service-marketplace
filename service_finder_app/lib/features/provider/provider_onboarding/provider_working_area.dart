@@ -1,8 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:latlong2/latlong.dart';
-import '../location_picker_screen.dart';
 
 import '../../../core/app_colors.dart';
 import '../../../core/app_router.dart';
@@ -23,6 +21,7 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
 
   double? _selectedRadiusKm;
   GeoPoint? _currentLocation;
+  String? _locationName;
   bool _isGettingLocation = false;
   bool _initialized = false;
 
@@ -39,6 +38,13 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
     _selectedRadiusKm = onboarding.serviceRadiusKm;
     _currentLocation = onboarding.baseLocation;
     _initialized = true;
+    if (_currentLocation != null) _loadLocationName(_currentLocation!);
+  }
+
+  Future<void> _loadLocationName(GeoPoint point) async {
+    final name = await _locationService.getAddressFromGeoPoint(point);
+    if (!mounted || point != _currentLocation) return;
+    setState(() => _locationName = name);
   }
 
   // 1. Live GPS Locator
@@ -50,7 +56,11 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
       final location = await _locationService.getCurrentLocation();
       if (!mounted) return;
 
-      setState(() => _currentLocation = location);
+      setState(() {
+        _currentLocation = location;
+        _locationName = null;
+      });
+      _loadLocationName(location);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Current location selected.')),
       );
@@ -80,24 +90,19 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
     setState(() => _isGettingLocation = true);
 
     try {
-      final currentPoint = await _locationService.getCurrentLocation();
-      final initialPos = LatLng(currentPoint.latitude, currentPoint.longitude);
-
-      if (!mounted) return;
-
-      final LatLng? picked = await Navigator.push(
+      final picked = await _locationService.pickLocationOnMap(
         context,
-        MaterialPageRoute(
-          builder: (context) => LocationPickerScreen(initialLocation: initialPos),
-        ),
+        initial: _currentLocation,
       );
 
       if (!mounted) return;
 
       if (picked != null) {
         setState(() {
-          _currentLocation = GeoPoint(picked.latitude, picked.longitude);
+          _currentLocation = picked;
+          _locationName = null;
         });
+        _loadLocationName(picked);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Location selected from map ✅')),
         );
@@ -195,12 +200,17 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
 
         if (_currentLocation != null) ...[
           const SizedBox(height: 16),
-          const Row(
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.check_circle, color: Colors.green, size: 20),
-              SizedBox(width: 8),
-              Text('Location successfully saved! ✅'),
+              const Icon(Icons.check_circle, color: Colors.green, size: 20),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  _locationName ?? 'Location successfully saved! ✅',
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
             ],
           ),
         ],
