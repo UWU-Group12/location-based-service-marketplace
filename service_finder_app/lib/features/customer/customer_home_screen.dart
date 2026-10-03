@@ -4,8 +4,6 @@ import '../../widgets/ai_problem_card.dart';
 import '../../core/app_colors.dart';
 import 'provider_listing_screen.dart';
 import '../../data/service_categories.dart';
-import 'customer_profile_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   final String userName;
@@ -23,26 +21,6 @@ class CustomerHomeScreen extends StatefulWidget {
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<String> filteredServices = [];
-  String? _profilePhotoUrl;
-  @override
-  void initState() {
-    super.initState();
-    _loadProfilePhoto();
-  }
-
-  Future<void> _loadProfilePhoto() async {
-    final user = FirebaseAuth.instance.currentUser;
-
-    if (user == null) return;
-
-    await user.reload();
-
-    if (!mounted) return;
-
-    setState(() {
-      _profilePhotoUrl = FirebaseAuth.instance.currentUser?.photoURL;
-    });
-  }
 
   void _searchServices(String value) {
     if (value.isEmpty) {
@@ -145,35 +123,14 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                         ),
                       ),
                       const SizedBox(width: 15),
-                      GestureDetector(
-                        onTap: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const CustomerProfileScreen(),
-                            ),
-                          );
-
-                          await _loadProfilePhoto();
-                        },
-                        child: CircleAvatar(
-                          radius: 24,
-                          backgroundColor: const Color(0xFFD2B48C),
-                          backgroundImage:
-                              _profilePhotoUrl != null &&
-                                  _profilePhotoUrl!.isNotEmpty
-                              ? NetworkImage(_profilePhotoUrl!)
-                              : null,
-                          child:
-                              _profilePhotoUrl == null ||
-                                  _profilePhotoUrl!.isEmpty
-                              ? Text(
-                                  widget.initials,
-                                  style: textTheme.labelLarge?.copyWith(
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : null,
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: const Color(0xFFD2B48C), // Light brown
+                        child: Text(
+                          widget.initials,
+                          style: textTheme.labelLarge?.copyWith(
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ],
