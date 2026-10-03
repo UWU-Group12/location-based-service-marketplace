@@ -131,6 +131,65 @@ class FirestoreService {
     await batch.commit();
   }
 
+  Future<ProviderModel?> getProviderProfile(String providerId) async {
+    final document = await _firestore
+        .collection('providerProfiles')
+        .doc(providerId)
+        .get();
+    final data = document.data();
+
+    return data == null ? null : ProviderModel.fromFirestore(document.id, data);
+  }
+
+  Future<void> updateCustomerProfile({
+    required String userId,
+    required String displayName,
+    required String phoneNumber,
+    String? photoPath,
+    bool clearPhoto = false,
+  }) async {
+    await _firestore.collection('users').doc(userId).update({
+      'displayName': displayName.trim(),
+      'phoneNumber': phoneNumber.trim(),
+      'photoPath': ?(clearPhoto ? FieldValue.delete() : photoPath),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> updateProviderProfile({
+    required String providerId,
+    required String displayName,
+    required String phoneNumber,
+    required String bio,
+    required String categoryId,
+    required GeoPoint baseLocation,
+    required double serviceRadiusKm,
+    String? profileImagePath,
+  }) async {
+    final providerReference = _firestore
+        .collection('providerProfiles')
+        .doc(providerId);
+    final userReference = _firestore.collection('users').doc(providerId);
+
+    final batch = _firestore.batch();
+    batch.update(providerReference, {
+      'displayName': displayName.trim(),
+      'bio': bio.trim(),
+      'categoryIds': [categoryId.trim()],
+      'baseLocation': baseLocation,
+      'serviceRadiusKm': serviceRadiusKm,
+      'profileImagePath': ?profileImagePath,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    batch.update(userReference, {
+      'displayName': displayName.trim(),
+      'phoneNumber': phoneNumber.trim(),
+      'photoPath': ?profileImagePath,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+  }
+
   Future<String> createServiceRequest(ServiceRequestModel request) async {
     final requestReference = _firestore.collection('serviceRequests').doc();
     final requestData = request.toFirestore();
