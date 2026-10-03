@@ -26,7 +26,6 @@ export async function getDashboardData() {
     collection(db, "categories"),
     where("active", "==", true),
   );
-
   const [
     customersCount,
     providersCount,

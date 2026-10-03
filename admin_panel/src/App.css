@@ -1,5 +1,5 @@
 :root {
-  --navy: #10233f;
+  --navy: #6d1515;
   --navy-light: #183454;
   --primary: #2563eb;
   --primary-dark: #1d4ed8;
@@ -44,8 +44,8 @@ button:disabled {
   width: var(--sidebar-width);
   padding: 28px 18px;
   overflow-y: auto;
-  color: #fff;
-  background: linear-gradient(180deg, var(--navy) 0%, #0a192d 100%);
+  color: #0e01019f;
+  background: linear-gradient(180deg, var(--navy) 0%, #1f163bd4 100%);
 }
 
 .sidebar-brand,
@@ -61,15 +61,17 @@ button:disabled {
 
 .brand-mark {
   display: inline-flex;
-  width: 38px;
-  height: 38px;
+  width: 56px;
+  height: 56px;
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  border-radius: 12px;
-  color: #fff;
-  background: linear-gradient(135deg, #3b82f6, #22c55e);
+  border-radius: 14px;
+  color: #ffffff;
+  background: #dc2626;
   font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.08em;
 }
 
 .sidebar-brand strong,
@@ -116,10 +118,10 @@ button:disabled {
 
 .sidebar-link.active {
   color: #fff;
-  background: rgba(59, 130, 246, 0.2);
-  box-shadow: inset 3px 0 #60a5fa;
+  background: rgba(169, 28, 85, 0.2);
+  
 }
-
+s
 .sidebar-icon {
   display: inline-flex;
   width: 24px;
@@ -396,7 +398,7 @@ button:disabled {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -465,6 +467,7 @@ button:disabled {
 .search-control input,
 .select-control select,
 .form-field input,
+.form-field select,
 .form-field textarea {
   width: 100%;
   border: 1px solid #cbd5e1;
@@ -476,6 +479,11 @@ button:disabled {
 .search-control input,
 .select-control select,
 .form-field input {
+  min-height: 42px;
+  padding: 9px 12px;
+}
+
+.form-field select {
   min-height: 42px;
   padding: 9px 12px;
 }
@@ -939,26 +947,10 @@ button:disabled {
 }
 
 .login-brand {
+  margin-bottom: 28px;
   color: var(--navy);
-  font-size: 19px;
+  font-size: 28px;
   font-weight: 800;
-}
-
-.login-heading {
-  margin: 52px 0 24px;
-}
-
-.login-heading h1 {
-  margin: 7px 0 0;
-  color: var(--navy);
-  font-size: 34px;
-}
-
-.login-heading p {
-  margin: 10px 0 0;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.55;
 }
 
 .login-button {
@@ -1262,7 +1254,11 @@ body,
   border-radius: 50%;
   background: #f1f5f9;
   font-size: 17px;
-  transition: transform 150ms ease;
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+
+.verification-summary:hover .verification-chevron {
+  background: #e2e8f0;
 }
 
 .verification-card[open] .verification-chevron {

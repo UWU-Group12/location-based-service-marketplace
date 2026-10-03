@@ -1,5 +1,5 @@
-import { NavLink } from "react-router-dom";
-
+  import { NavLink } from "react-router-dom";
+ import myNewLogo from '../assets/my-logo.png';
 const navigationItems = [
   { to: "/dashboard", label: "Dashboard", icon: "▦" },
   { to: "/customers", label: "Customers", icon: "👥" },
@@ -24,7 +24,8 @@ function AdminSidebar({ isOpen, onClose }) {
 
       <aside className={`sidebar ${isOpen ? "is-open" : ""}`}>
         <div className="sidebar-brand">
-          <span className="brand-mark">S</span>
+          <img src={myNewLogo} alt="Logo" className="brand-logo" style={{ width: "40px", height: "auto" }} />
+          
           <div>
             <strong>Raw</strong>
             <span>Admin Console</span>

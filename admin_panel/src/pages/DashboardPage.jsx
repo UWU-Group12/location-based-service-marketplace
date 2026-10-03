@@ -59,7 +59,7 @@ function DashboardPage() {
       <section className="page-intro">
         <div>
           <h2>Marketplace overview</h2>
-          <p>Current account, verification, and category totals from Firestore.</p>
+            <p>Current account, verification, and category totals from Firestore.</p>
         </div>
       </section>
 
