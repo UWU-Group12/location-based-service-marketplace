@@ -2,9 +2,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_router.dart';
+import '../../models/quotation_model.dart';
 import '../../models/service_request_model.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/request_card.dart';
+import 'request_widgets.dart';
 
 class ProviderRequestsScreen extends StatefulWidget {
   const ProviderRequestsScreen({super.key});
@@ -13,31 +16,48 @@ class ProviderRequestsScreen extends StatefulWidget {
   State<ProviderRequestsScreen> createState() => _ProviderRequestsScreenState();
 }
 
-class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
-  final FirestoreService _firestoreService = FirestoreService();
-  Stream<List<ServiceRequestModel>>? _requestsStream;
+class _ProviderRequestsScreenState extends State<ProviderRequestsScreen>
+    with SingleTickerProviderStateMixin {
+  final _service = FirestoreService();
+  late final TabController _tabs;
+  Stream<List<ServiceRequestModel>>? _requests;
+  Stream<List<QuotationModel>>? _quotations;
 
   @override
   void initState() {
     super.initState();
-    _loadRequests();
+    _tabs = TabController(length: 2, vsync: this);
+    _load();
   }
 
-  void _loadRequests() {
-    final providerId = FirebaseAuth.instance.currentUser?.uid;
-    _requestsStream = providerId == null
-        ? null
-        : _firestoreService.watchProviderRequests(providerId);
+  void _load() {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    _requests = uid == null ? null : _service.watchProviderRequests(uid);
+    _quotations = uid == null ? null : _service.watchProviderQuotations(uid);
   }
 
-  void _retry() {
-    setState(_loadRequests);
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
+  }
+
+  Future<void> _open(ServiceRequestModel request) async {
+    final sent = await AppRouter.goToProviderRequestDetails(
+      context,
+      requestId: request.requestId,
+    );
+    if (!mounted || !sent) return;
+    _tabs.animateTo(1);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Quotation sent. Waiting for customer approval.'),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -47,56 +67,171 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'My Requests',
-                style: textTheme.headlineMedium?.copyWith(
-                  color: AppColors.primary,
+                'Request',
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineLarge?.copyWith(color: AppColors.primary),
+              ),
+              const SizedBox(height: 8),
+              const SizedBox(height: 20),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.providerCard,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: TabBar(
+                  controller: _tabs,
+                  dividerColor: Colors.transparent,
+                  indicatorSize: TabBarIndicatorSize.tab,
+                  indicator: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  labelColor: Colors.white,
+                  unselectedLabelColor: AppColors.primary,
+                  tabs: const [
+                    Tab(text: 'Received'),
+                    Tab(text: 'Sent'),
+                  ],
                 ),
               ),
-              const SizedBox(height: 6),
-            
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
               Expanded(
-                child: _requestsStream == null
-                    ? _statusView(
-                        icon: Icons.person_outline,
+                child: _requests == null
+                    ? const RequestStateView(
                         title: 'Sign in to view requests',
-                        message:
-                            'You must be signed in as a provider to view your requests.',
-                        retry: true,
+                        message: 'Please sign in with your provider account.',
+                        icon: Icons.person_outline,
                       )
                     : StreamBuilder<List<ServiceRequestModel>>(
-                        key: ObjectKey(_requestsStream),
-                        stream: _requestsStream,
-                        builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            return _statusView(
-                              icon: Icons.error_outline,
-                              title: 'Unable to load requests',
-                              message:
-                                  'Please check your connection and try again.',
-                              retry: true,
-                            );
-                          }
-                          if (!snapshot.hasData) {
+                        key: ObjectKey(_requests),
+                        stream: _requests,
+                        builder: (context, requestsSnapshot) {
+                          if (requestsSnapshot.hasError) return _error();
+                          if (!requestsSnapshot.hasData) {
                             return const Center(
                               child: CircularProgressIndicator(),
                             );
                           }
-                          final requests = snapshot.data!;
-                          if (requests.isEmpty) {
-                            return _statusView(
-                              icon: Icons.assignment_outlined,
-                              title: 'No requests yet',
-                              message:
-                                  '',
-                            );
-                          }
-                          return ListView.builder(
-                            itemCount: requests.length,
-                            itemBuilder: (context, index) => RequestCard(
-                              key: ValueKey(requests[index].requestId),
-                              request: requests[index],
-                            ),
+                          return StreamBuilder<List<QuotationModel>>(
+                            key: ObjectKey(_quotations),
+                            stream: _quotations,
+                            builder: (context, quotationsSnapshot) {
+                              if (quotationsSnapshot.hasError) return _error();
+                              if (!quotationsSnapshot.hasData) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
+                              final quotations = quotationsSnapshot.data!;
+                              final requests = requestsSnapshot.data!;
+                              final received = requests
+                                  .where(
+                                    (request) =>
+                                        request.canReceiveQuotation &&
+                                        !quotations.any(
+                                          (quote) =>
+                                              quote.requestId ==
+                                                  request.requestId &&
+                                              quote.status == 'sent',
+                                        ),
+                                  )
+                                  .toList();
+                              final byId = {
+                                for (final request in requests)
+                                  request.requestId: request,
+                              };
+                              final sent = quotations
+                                  .where(
+                                    (quote) =>
+                                        quote.status == 'sent' &&
+                                        byId[quote.requestId]
+                                                ?.isAwaitingQuotationApproval ==
+                                            true,
+                                  )
+                                  .toList();
+                              return TabBarView(
+                                controller: _tabs,
+                                children: [
+                                  received.isEmpty
+                                      ? const RequestStateView(
+                                          title: 'No received requests',
+                                          icon: Icons.inbox_outlined,
+                                        )
+                                      : ListView.builder(
+                                          key: const PageStorageKey(
+                                            'received_requests',
+                                          ),
+                                          itemCount: received.length,
+                                          itemBuilder: (context, index) =>
+                                              RequestCard(
+                                                request: received[index],
+                                                onTap: () =>
+                                                    _open(received[index]),
+                                              ),
+                                        ),
+                                  sent.isEmpty
+                                      ? const RequestStateView(
+                                          title:
+                                              'No quotations waiting for approval',
+                                          icon: Icons.send_outlined,
+                                        )
+                                      : ListView.builder(
+                                          key: const PageStorageKey(
+                                            'sent_quotations',
+                                          ),
+                                          itemCount: sent.length,
+                                          itemBuilder: (context, index) {
+                                            final quote = sent[index];
+                                            final request =
+                                                byId[quote.requestId];
+                                            return Card(
+                                              margin: const EdgeInsets.only(
+                                                bottom: 16,
+                                              ),
+                                              color: Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                              child: ListTile(
+                                                contentPadding:
+                                                    const EdgeInsets.all(16),
+                                                title: Text(
+                                                  request?.title ??
+                                                      'Request unavailable',
+                                                  style: Theme.of(
+                                                    context,
+                                                  ).textTheme.titleMedium,
+                                                ),
+                                                subtitle: Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        top: 8,
+                                                      ),
+                                                  child: Text(
+                                                    '${request?.addressText ?? quote.requestId}\nRs. ${quote.estimatedTotal.toStringAsFixed(2)}\nWaiting for customer approval',
+                                                  ),
+                                                ),
+                                                trailing: const Icon(
+                                                  Icons.chevron_right,
+                                                  color: AppColors.primary,
+                                                ),
+                                                onTap: () =>
+                                                    AppRouter.goToProviderRequestDetails(
+                                                      context,
+                                                      requestId:
+                                                          quote.requestId,
+                                                      quotationId:
+                                                          quote.quotationId,
+                                                    ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                ],
+                              );
+                            },
                           );
                         },
                       ),
@@ -108,45 +243,10 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen> {
     );
   }
 
-  Widget _statusView({
-    required IconData icon,
-    required String title,
-    required String message,
-    bool retry = false,
-  }) {
-    final textTheme = Theme.of(context).textTheme;
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 70, color: AppColors.textSecondary),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              style: textTheme.titleLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              style: textTheme.bodyMedium?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            if (retry) ...[
-              const SizedBox(height: 20),
-              TextButton.icon(
-                onPressed: _retry,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Try Again'),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
+  Widget _error() => RequestStateView(
+    title: 'Unable to load requests',
+    message: 'Check your connection and try again.',
+    icon: Icons.error_outline,
+    onRetry: () => setState(_load),
+  );
 }

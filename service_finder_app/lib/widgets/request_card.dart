@@ -5,8 +5,14 @@ import '../models/service_request_model.dart';
 class RequestCard extends StatelessWidget {
   final ServiceRequestModel request;
   final VoidCallback? onTap;
+  final String? statusLabel;
 
-  const RequestCard({super.key, required this.request, this.onTap});
+  const RequestCard({
+    super.key,
+    required this.request,
+    this.onTap,
+    this.statusLabel,
+  });
 
   Color _statusColor() {
     switch (request.requestStatus) {
@@ -70,7 +76,7 @@ class RequestCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    request.requestStatus,
+                    statusLabel ?? request.requestStatus,
                     style: TextStyle(
                       color: _statusColor(),
                       fontSize: 12,
