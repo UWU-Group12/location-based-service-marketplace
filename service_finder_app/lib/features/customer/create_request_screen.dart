@@ -1,10 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:latlong2/latlong.dart';
-
-// Adjust this path if your folders are structured differently!
-import '../provider/location_picker_screen.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/app_router.dart';
@@ -105,23 +101,16 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     setState(() => _isGettingLocation = true);
 
     try {
-      final currentPoint = await _locationService.getCurrentLocation();
-      final initialPos = LatLng(currentPoint.latitude, currentPoint.longitude);
-
-      if (!mounted) return;
-
-      final LatLng? picked = await Navigator.push(
+      final newPoint = await _locationService.pickLocationOnMap(
         context,
-        MaterialPageRoute(
-          builder: (context) => LocationPickerScreen(initialLocation: initialPos),
-        ),
+        initial: _serviceLocation,
       );
 
       if (!mounted) return;
 
-      if (picked != null) {
-        final newPoint = GeoPoint(picked.latitude, picked.longitude);
+      if (newPoint != null) {
         final address = await _locationService.getAddressFromGeoPoint(newPoint);
+        if (!mounted) return;
 
         setState(() {
           _serviceLocation = newPoint;

@@ -1,10 +1,46 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:latlong2/latlong.dart';
+
+import '../features/provider/location_picker_screen.dart';
 
 class LocationService {
-  final Map<String, String> _addressCache = {};
+  // Shared across instances since screens create their own LocationService
+  static final Map<String, String> _addressCache = {};
+
+  // Used as the map start point when GPS is unavailable (Colombo)
+  static const GeoPoint _defaultMapCenter = GeoPoint(6.9271, 79.8612);
+
+  /// Opens the OpenStreetMap picker and returns the chosen point, or null
+  /// if the user backs out. Starts at [initial], else GPS, else Colombo.
+  Future<GeoPoint?> pickLocationOnMap(
+    BuildContext context, {
+    GeoPoint? initial,
+  }) async {
+    var start = initial;
+    if (start == null) {
+      try {
+        start = await getCurrentLocation();
+      } catch (_) {
+        start = _defaultMapCenter;
+      }
+    }
+
+    if (!context.mounted) return null;
+
+    final picked = await Navigator.of(context).push<LatLng>(
+      MaterialPageRoute(
+        builder: (_) => LocationPickerScreen(
+          initialLocation: LatLng(start!.latitude, start.longitude),
+        ),
+      ),
+    );
+
+    if (picked == null) return null;
+    return GeoPoint(picked.latitude, picked.longitude);
+  }
 
   /// Fetches current GPS coordinates as a Firestore GeoPoint
   Future<GeoPoint> getCurrentLocation() async {
