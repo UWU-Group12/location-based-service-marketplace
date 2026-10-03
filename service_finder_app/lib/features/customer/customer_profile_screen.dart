@@ -1,4 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+
+import '../../core/app_colors.dart';
 import '../../core/app_router.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
@@ -47,7 +52,18 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
   String? _profileImageUrl;
   File? _selectedImage;
 
-  bool _isLoggingOut = false;
+  double? _latitude;
+  double? _longitude;
+
+  bool _isLoading = true;
+  bool _isSaving = false;
+  bool _isGettingLocation = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
 
   @override
   void dispose() {
@@ -141,37 +157,60 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
     }
   }
 
-          return Center(
+  void _showImageOptions() {
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  user.email ?? 'No email',
-                  style: const TextStyle(
-                    fontSize: 18,
-                  ),
+                const Text(
+                  'Profile Picture',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: _isLoggingOut ? null : _logout,
-                  icon: _isLoggingOut
-                      ? const SizedBox(
-                    width: 26,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                    ),
-                  )
-                      : const Icon(Icons.logout),
-                  label: Text(
-                    _isLoggingOut ? 'Logging out...' : 'Logout',
-                  ),
+                const SizedBox(height: 20),
+
+                ListTile(
+                  leading: const Icon(Icons.photo_library_outlined),
+                  title: const Text('Choose from Gallery'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage();
+                  },
                 ),
+
+                ListTile(
+                  leading: const Icon(Icons.camera_alt_outlined),
+                  title: const Text('Take a Photo'),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _takePhoto();
+                  },
+                ),
+
+                if (_selectedImage != null ||
+                    (_profileImageUrl?.isNotEmpty ?? false))
+                  ListTile(
+                    leading: const Icon(Icons.delete_outline),
+                    title: const Text('Remove Photo'),
+                    onTap: () {
+                      Navigator.pop(context);
+
+                      setState(() {
+                        _selectedImage = null;
+                        _profileImageUrl = null;
+                      });
+                    },
+                  ),
               ],
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -214,7 +253,7 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
     }
 
     setState(() {
-      _isLoggingOut = true;
+      _isSaving = true;
     });
 
     try {
@@ -252,21 +291,46 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
 
       if (!mounted) return;
 
-    } catch (error) {
-      debugPrint('Logout error: $error');
-
-      if (!mounted) {
-        return;
-      }
-
       setState(() {
-        _isLoggingOut = false;
+        _profileImageUrl = photoUrl;
+        _selectedImage = null;
+        _isSaving = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Unable to log out. Please try again.',
+      _showMessage('Profile updated successfully.');
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSaving = false;
+      });
+
+      _showMessage(
+        'Could not update profile. Please try again.',
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _logout() async {
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text(
+          'Log out?',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+        content: const Text(
+          'Are you sure you want to log out of your account?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Log out'),
           ),
         ],
       ),
@@ -622,7 +686,177 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide(color: AppColors.primary, width: 1.5),
         ),
-      );
+      ),
+    );
+  }
+
+  Widget _buildLocationField() {
+    return Column(
+      children: [
+        TextFormField(
+          controller: _locationController,
+          maxLines: 2,
+          decoration: InputDecoration(
+            labelText: 'Service Location',
+            hintText: 'Enter your location or use GPS',
+            prefixIcon: const Icon(Icons.location_on_outlined),
+            filled: true,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide.none,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(
+                color: Colors.grey.withValues(alpha: 0.15),
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 10),
+
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _isGettingLocation ? null : _useCurrentLocation,
+            icon: _isGettingLocation
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.my_location),
+            label: Text(
+              _isGettingLocation
+                  ? 'Getting location...'
+                  : 'Use Current Location',
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSecurityCard() {
+    return Card(
+      elevation: 0,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(Icons.lock_outline, color: AppColors.primary),
+        ),
+        title: const Text(
+          'Password',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        subtitle: const Text('Update your account password'),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: _showChangePasswordDialog,
+      ),
+    );
+  }
+
+  Widget _buildLocationInfo() {
+    if (_latitude == null || _longitude == null) {
+      return const SizedBox.shrink();
     }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        color: AppColors.primary.withValues(alpha: 0.07),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.gps_fixed, color: AppColors.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'GPS Location Saved',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Lat: ${_latitude!.toStringAsFixed(6)}\n'
+                  'Lng: ${_longitude!.toStringAsFixed(6)}',
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return SafeArea(
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 12,
+              offset: const Offset(0, -3),
+              color: Colors.black.withValues(alpha: 0.06),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: FilledButton(
+                onPressed: _isSaving ? null : _saveProfile,
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Save Changes',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton.icon(
+                onPressed: _isSaving ? null : _logout,
+                icon: const Icon(Icons.logout_outlined),
+                label: const Text('Log Out'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.red.shade700,
+                  side: BorderSide(color: Colors.red.shade200),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

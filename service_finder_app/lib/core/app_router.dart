@@ -26,6 +26,7 @@ import '../features/provider/provider_job_details_screen.dart';
 
 import '../features/customer/service_categories_screen.dart';
 import '../features/provider/provider_shell_screen.dart';
+import '../features/provider/provider_profile_screen.dart';
 
 class AppRouter {
   AppRouter._();
@@ -108,6 +109,13 @@ class AppRouter {
     Navigator.of(context).pushAndRemoveUntil(
       _buildRoute(const BuildProfessionalProfile()),
       (route) => false,
+    );
+  }
+
+  static Future<bool?> goToProviderEditProfile(BuildContext context) {
+    return Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const ProviderEditProfileScreen()),
     );
   }
 
