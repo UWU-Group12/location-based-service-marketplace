@@ -1,134 +1,92 @@
 import 'package:flutter/material.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import '../../services/pref_service.dart';
-import '../../core/app_router.dart';
-import '../../core/app_colors.dart';
 
-class SplashScreen extends StatefulWidget {
+import '../../core/app_colors.dart';
+import '../../core/app_router.dart';
+import '../../services/pref_service.dart';
+
+class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
-  @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
+  Future<void> _getStarted(BuildContext context) async {
+    try {
+      await PrefService.setFirstLaunchComplete();
+      if (!context.mounted) return;
 
-class _SplashScreenState extends State<SplashScreen> {
-  final PageController _controller = PageController();
-  bool isLastPage = false;
+      AppRouter.goToWelcome(context);
+    } catch (error) {
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not continue. Please try again. ($error)'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        padding: const EdgeInsets.only(bottom: 80),
-        child: PageView(
-          controller: _controller,
-          onPageChanged: (index) {
-            setState(() => isLastPage = index == 2);
-          },
-          children: [
-            _buildPage(
-              color: AppColors.background,
-              image: 'https://i.pinimg.com/736x/83/e9/99/83e999fcb40750b2e2a777d8cc497810.jpg',
-              title: 'Find Top Services',
-              subtitle: 'Connect with reliable service providers in your local area easily.',
-            ),
-            _buildPage(
-              color: AppColors.background,
-              image: 'https://i.pinimg.com/736x/1e/e4/53/1ee453e7e6a44b0c78c11e65ba6a007c.jpg',
-              title: 'Offer Your Expertise',
-              subtitle: 'Are you a professional? Grow your business by reaching more clients.',
-            ),
-            _buildPage(
-              color: AppColors.background,
-              image: 'https://i.pinimg.com/736x/ab/3e/29/ab3e29bf3c5f217b86837b3660d4d7c4.jpg',
-              title: 'Secure & Reliable',
-              subtitle: 'Enjoy secure transactions and transparent service reviews.',
-            ),
-          ],
-        ),
-      ),
-      bottomSheet: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        height: 80,
-        color: AppColors.background,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            TextButton(
-              onPressed: () => _controller.jumpToPage(2),
-              child: Text('SKIP', style: TextStyle(color: AppColors.primary)),
-            ),
-            Center(
-              child: SmoothPageIndicator(
-                controller: _controller,
-                count: 3,
-                effect: WormEffect(
-                  spacing: 16,
-                  dotColor: AppColors.focusedBorder,
-                  activeDotColor: AppColors.primary,
-                ),
-                onDotClicked: (index) => _controller.animateToPage(
-                  index,
-                  duration: const Duration(milliseconds: 500),
-                  curve: Curves.easeIn,
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        height: constraints.maxHeight * 0.56,
+                        child: Image.asset(
+                          'assets/images/welcome.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                      Text(
+                        'Welcome to RAW',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.headlineLarge
+                            ?.copyWith(
+                              color: AppColors.textPrimary,
+                              fontSize: 38,
+                              fontWeight: FontWeight.w900,
+                            ),
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: FilledButton(
+                          onPressed: () => _getStarted(context),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                          ),
+                          child: const Text(
+                            'Get Started',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            isLastPage
-                ? TextButton(
-              onPressed: () async {
-                await PrefService.setFirstLaunchComplete();
-
-                if (!context.mounted) return;
-
-                AppRouter.goToWelcome(context);
-              },
-                    child: Text('DONE', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                  )
-                : TextButton(
-                    onPressed: () => _controller.nextPage(
-                      duration: const Duration(milliseconds: 500),
-                      curve: Curves.easeInOut,
-                    ),
-                    child: Text('NEXT', style: TextStyle(color: AppColors.primary)),
-                  ),
-          ],
+            );
+          },
         ),
-      ),
-    );
-  }
-
-  Widget _buildPage({
-    required Color color,
-    required String image,
-    required String title,
-    required String subtitle,
-  }) {
-    return Container(
-      color: color,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Image.network(image, width: 300),
-          const SizedBox(height: 64),
-          Text(
-            title,
-            style: TextStyle(
-              color: AppColors.primary,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 16),
-            ),
-          ),
-        ],
       ),
     );
   }
