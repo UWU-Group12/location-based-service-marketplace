@@ -317,8 +317,45 @@ class FirestoreService {
   Future<void> cancelRequest(String requestId) =>
       _updateRequestStatus(requestId, 'cancelled');
 
-  Future<void> startJob(String requestId) =>
-      _updateRequestStatus(requestId, 'in_progress');
+  Future<void> startJob(String requestId) async {
+    final providerId = FirebaseAuth.instance.currentUser?.uid;
+    if (providerId == null) {
+      throw StateError('Please sign in to start this job.');
+    }
+    final reference = _firestore.collection('serviceRequests').doc(requestId);
+    await _firestore.runTransaction((transaction) async {
+      final document = await transaction.get(reference);
+      final data = document.data();
+      if (data == null) throw StateError('This job is no longer available.');
+      final job = ServiceRequestModel.fromFirestore(document.id, data);
+      if (job.providerId != providerId ||
+          !job.isActiveJob ||
+          job.requestStatus != 'confirmed') {
+        throw StateError(
+          'This job has changed. Only a confirmed job assigned to you can be started.',
+        );
+      }
+      final quotation = await transaction.get(
+        _firestore
+            .collection('quotations')
+            .doc(job.acceptedQuotationId ?? requestId),
+      );
+      final quotationData = quotation.data();
+      if (quotationData == null ||
+          quotationData['status'] != 'accepted' ||
+          quotationData['requestId'] != requestId ||
+          quotationData['providerId'] != providerId ||
+          quotationData['customerId'] != job.customerId) {
+        throw StateError(
+          'The accepted quotation is unavailable. Please reload this job.',
+        );
+      }
+      transaction.update(reference, {
+        'requestStatus': 'in_progress',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
 
   Future<void> completeJob(String requestId) =>
       _updateRequestStatus(requestId, 'completed');

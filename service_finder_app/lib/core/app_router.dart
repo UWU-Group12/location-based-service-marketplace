@@ -22,12 +22,22 @@ import '../models/user_model.dart';
 import '../models/service_request_model.dart';
 import '../features/provider/provider_request_details_screen.dart';
 import '../features/provider/create_quotation_screen.dart';
+import '../features/provider/provider_job_details_screen.dart';
 
 import '../features/customer/service_categories_screen.dart';
 import '../features/provider/provider_shell_screen.dart';
 
 class AppRouter {
   AppRouter._();
+
+  static Future<void> goToProviderJobDetails(
+    BuildContext context,
+    String requestId,
+  ) async {
+    await Navigator.of(
+      context,
+    ).push(_buildRoute(ProviderJobDetailsScreen(requestId: requestId)));
+  }
 
   static Future<bool> goToProviderRequestDetails(
     BuildContext context, {

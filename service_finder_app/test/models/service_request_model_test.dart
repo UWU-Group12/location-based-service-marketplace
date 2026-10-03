@@ -3,6 +3,38 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:service_finder_app/models/service_request_model.dart';
 
 void main() {
+  test('accepted jobs move from Active to Finished only when completed', () {
+    ServiceRequestModel job(String status) => ServiceRequestModel.fromFirestore(
+      'job',
+      {'requestStatus': status, 'quotationStatus': 'accepted'},
+    );
+    for (final status in ['confirmed', 'in_progress']) {
+      expect(job(status).isActiveJob, isTrue);
+      expect(job(status).isFinishedJob, isFalse);
+    }
+    expect(job('completed').isActiveJob, isFalse);
+    expect(job('completed').isFinishedJob, isTrue);
+    for (final status in [
+      'submitted',
+      'quotation_received',
+      'cancelled',
+      'provider_rejected',
+    ]) {
+      expect(job(status).isActiveJob, isFalse);
+      expect(job(status).isFinishedJob, isFalse);
+    }
+  });
+
+  test('unaccepted quotations never appear as active jobs', () {
+    for (final status in ['pending', 'sent', 'rejected', 'expired']) {
+      final job = ServiceRequestModel.fromFirestore('job', {
+        'requestStatus': 'confirmed',
+        'quotationStatus': status,
+      });
+      expect(job.isActiveJob, isFalse);
+    }
+  });
+
   test(
     'reads and preserves the customer name without requiring it on old requests',
     () {

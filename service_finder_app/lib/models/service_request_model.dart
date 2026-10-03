@@ -20,6 +20,12 @@ class ServiceRequestModel {
   final DateTime? preferredDate;
   final String? preferredTime;
 
+  bool get isActiveJob =>
+      quotationStatus == 'accepted' &&
+      (requestStatus == 'confirmed' || requestStatus == 'in_progress');
+
+  bool get isFinishedJob => requestStatus == 'completed';
+
   bool get isAwaitingQuotationApproval =>
       requestStatus == 'quotation_received' && quotationStatus == 'sent';
 

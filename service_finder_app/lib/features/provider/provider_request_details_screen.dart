@@ -11,11 +11,13 @@ import 'request_widgets.dart';
 class ProviderRequestDetailsScreen extends StatefulWidget {
   final String requestId;
   final String? quotationId;
+  final bool isJob;
 
   const ProviderRequestDetailsScreen({
     super.key,
     required this.requestId,
     this.quotationId,
+    this.isJob = false,
   });
 
   @override
@@ -28,6 +30,8 @@ class _ProviderRequestDetailsScreenState
   final _service = FirestoreService();
   Stream<ServiceRequestModel?>? _request;
   Stream<QuotationModel?>? _quotation;
+  String? _watchedQuotationId;
+  bool _startingJob = false;
 
   @override
   void initState() {
@@ -41,6 +45,54 @@ class _ProviderRequestDetailsScreenState
         ? null
         : _service.watchProviderRequest(widget.requestId, uid);
     _quotation = uid == null ? null : _service.watchQuotation(widget.requestId);
+    _watchedQuotationId = widget.requestId;
+  }
+
+  Future<void> _startJob(ServiceRequestModel request) async {
+    if (_startingJob) return;
+    setState(() => _startingJob = true);
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Start this job?'),
+          content: const Text('The customer will see this job as in progress.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Start job'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted || confirmed != true) return;
+      await _service.startJob(request.requestId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Job started successfully.')),
+      );
+    } on StateError catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message.toString())));
+      }
+    } catch (error) {
+      debugPrint('Unable to start job: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to start job. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _startingJob = false);
+    }
   }
 
   Future<void> _createQuotation(ServiceRequestModel request) async {
@@ -53,7 +105,11 @@ class _ProviderRequestDetailsScreenState
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: Text(
-        widget.quotationId == null ? 'Request details' : 'Sent quotation',
+        widget.isJob
+            ? 'Job details'
+            : widget.quotationId == null
+            ? 'Request details'
+            : 'Sent quotation',
       ),
     ),
     body: _request == null
@@ -78,6 +134,23 @@ class _ProviderRequestDetailsScreenState
                       'This request no longer exists or is not assigned to you.',
                   icon: Icons.assignment_outlined,
                 );
+              }
+              if (widget.isJob &&
+                  !request.isActiveJob &&
+                  !request.isFinishedJob) {
+                return const RequestStateView(
+                  title: 'Job no longer active',
+                  message:
+                      'This request is no longer an active or completed job.',
+                  icon: Icons.work_off_outlined,
+                );
+              }
+              final quotationId = widget.isJob
+                  ? request.acceptedQuotationId ?? request.requestId
+                  : request.requestId;
+              if (_watchedQuotationId != quotationId) {
+                _watchedQuotationId = quotationId;
+                _quotation = _service.watchQuotation(quotationId);
               }
               return StreamBuilder<QuotationModel?>(
                 key: ObjectKey(_quotation),
@@ -107,6 +180,49 @@ class _ProviderRequestDetailsScreenState
                         style: Theme.of(context).textTheme.headlineSmall,
                       ),
                       const SizedBox(height: 16),
+                      if (widget.isJob)
+                        RequestDetailCard(
+                          title: 'Job status',
+                          children: [
+                            RequestDetailField(
+                              'Status',
+                              requestStatusLabel(request.requestStatus),
+                            ),
+                            if (request.isFinishedJob)
+                              const Text(
+                                'This job is completed and is kept in your history.',
+                              )
+                            else if (request.requestStatus == 'in_progress')
+                              const Text(
+                                'Work is in progress. This job moves to Finished when the customer marks it completed.',
+                              )
+                            else
+                              const Text(
+                                'The customer accepted your quotation. You can start the job when work begins.',
+                              ),
+                            if (request.requestStatus == 'confirmed' &&
+                                quote?.status == 'accepted') ...[
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                onPressed: _startingJob
+                                    ? null
+                                    : () => _startJob(request),
+                                icon: _startingJob
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                    : const Icon(Icons.play_arrow),
+                                label: Text(
+                                  _startingJob ? 'Starting...' : 'Start job',
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       RequestDetailCard(
                         title: 'Customer',
                         children: [
@@ -189,7 +305,9 @@ class _ProviderRequestDetailsScreenState
                       ),
                       if (quote != null)
                         RequestDetailCard(
-                          title: 'Quotation sent',
+                          title: widget.isJob
+                              ? 'Accepted quotation'
+                              : 'Quotation sent',
                           children: [
                             RequestDetailField(
                               'Approval status',
@@ -237,14 +355,16 @@ class _ProviderRequestDetailsScreenState
                             ),
                           ],
                         ),
-                      if (widget.quotationId != null && quote == null)
+                      if ((widget.isJob || widget.quotationId != null) &&
+                          quote == null)
                         const RequestDetailCard(
                           title: 'Quotation unavailable',
                           children: [
                             Text('This quotation is no longer available.'),
                           ],
                         ),
-                      if (request.canReceiveQuotation &&
+                      if (!widget.isJob &&
+                          request.canReceiveQuotation &&
                           !hasSentQuote &&
                           widget.quotationId == null)
                         ElevatedButton.icon(
