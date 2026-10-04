@@ -68,7 +68,7 @@ service firebase.storage {
         || isAdmin();
     }
 
-    match /categories/{categoryId}/{fileName} {
+    match /categories/{fileName} {
       allow read: if signedIn();
       allow write: if isAdmin();
     }

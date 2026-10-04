@@ -556,9 +556,11 @@ recomputes the provider aggregates.
 
 ### Who Can Read
 
-A review with `moderationStatus == 'visible'` is readable by anyone, including
-signed-out visitors, so ratings can be shown before sign-in. A review with any
-other moderation status is readable only by its author and by admins.
+Reading reviews requires a signed-in user. A review with
+`moderationStatus == 'visible'` is readable by any signed-in user. A review
+with any other moderation status is readable only by its author and by admins.
+Reading a review that does not exist yet is allowed, so the app can check
+whether a job has already been reviewed.
 
 ### Example
 
@@ -749,7 +751,7 @@ verification/{providerId}/certificates/{fileName}
 
 serviceRequests/{requestId}/{fileName}
 
-categories/{categoryId}/{fileName}
+categories/{fileName}
 ```
 
 Firestore should store the Storage path or download URL, not the file itself.

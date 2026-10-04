@@ -22,6 +22,24 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
 
   ProviderModel get provider => widget.provider;
 
+  // Shared by the rating card and the reviews list
+  late final Stream<List<ReviewModel>> _reviews = _reviewService
+      .watchProviderReviews(provider.providerId)
+      .asBroadcastStream();
+
+  // Same average as the recomputeProviderRating Cloud Function
+  String _ratingLabel(List<ReviewModel>? reviews) {
+    if (reviews == null) return provider.ratingAverage.toStringAsFixed(1);
+    if (reviews.isEmpty) return '0.0';
+    final total = reviews.fold<double>(0, (sum, review) => sum + review.rating);
+    return (total / reviews.length).toStringAsFixed(1);
+  }
+
+  String _reviewCountLabel(List<ReviewModel>? reviews) {
+    final count = reviews?.length ?? provider.reviewCount;
+    return count == 1 ? '1 review' : '$count reviews';
+  }
+
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
@@ -35,6 +53,7 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
         title: const Text('Provider Details'),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [_verificationBadge(), const SizedBox(width: 16)],
       ),
 
       body: Stack(
@@ -69,10 +88,19 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _infoCard(
-                      Icons.star,
-                      provider.ratingAverage.toString(),
-                      'Rating',
+                    StreamBuilder<List<ReviewModel>>(
+                      stream: _reviews,
+                      builder: (context, snapshot) {
+                        final reviews = snapshot.hasError
+                            ? null
+                            : snapshot.data;
+                        return _infoCard(
+                          Icons.star,
+                          _ratingLabel(reviews),
+                          _reviewCountLabel(reviews),
+                          iconColor: AppColors.rating,
+                        );
+                      },
                     ),
 
                     _infoCard(
@@ -123,9 +151,7 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
                 const SizedBox(height: 10),
 
                 StreamBuilder<List<ReviewModel>>(
-                  stream: _reviewService.watchProviderReviews(
-                    provider.providerId,
-                  ),
+                  stream: _reviews,
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
                       return const Text('Unable to load reviews.');
@@ -165,31 +191,6 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
                   },
                 ),
 
-                const SizedBox(height: 30),
-
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Verification', style: textTheme.titleLarge),
-                ),
-
-                const SizedBox(height: 10),
-
-                ListTile(
-                  leading: Icon(
-                    provider.verificationStatus == 'verified'
-                        ? Icons.verified
-                        : Icons.error_outline,
-                    color: provider.verificationStatus == 'verified'
-                        ? AppColors.success
-                        : AppColors.warning,
-                  ),
-                  title: Text(
-                    provider.verificationStatus == 'verified'
-                        ? 'Verified Provider'
-                        : 'Verification Pending',
-                  ),
-                ),
-
                 // Space for floating button
                 const SizedBox(height: 100),
               ],
@@ -213,10 +214,49 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
     );
   }
 
-  Widget _infoCard(IconData icon, String value, String label) {
+  Widget _verificationBadge() {
+    final isVerified = provider.verificationStatus == 'verified';
+    final color = isVerified ? AppColors.success : AppColors.warning;
+
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              isVerified ? Icons.verified : Icons.error_outline,
+              size: 14,
+              color: color,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              isVerified ? 'Verified' : 'Pending',
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _infoCard(
+    IconData icon,
+    String value,
+    String label, {
+    Color? iconColor,
+  }) {
     return Column(
       children: [
-        Icon(icon),
+        Icon(icon, color: iconColor),
         const SizedBox(height: 6),
         Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
         Text(label),

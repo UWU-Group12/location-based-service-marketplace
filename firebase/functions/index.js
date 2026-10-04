@@ -1,6 +1,10 @@
 const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { setGlobalOptions } = require("firebase-functions/v2");
 const { initializeApp } = require("firebase-admin/app");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
+
+// Same region as the Firestore database (firebase.json)
+setGlobalOptions({ region: "asia-south1" });
 
 initializeApp();
 
