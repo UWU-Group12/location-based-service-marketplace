@@ -205,6 +205,19 @@ class FirestoreService {
     return data == null ? null : ProviderModel.fromFirestore(document.id, data);
   }
 
+  Stream<ProviderModel?> watchProviderProfile(String providerId) {
+    return _firestore
+        .collection('providerProfiles')
+        .doc(providerId)
+        .snapshots()
+        .map((document) {
+          final data = document.data();
+          return data == null
+              ? null
+              : ProviderModel.fromFirestore(document.id, data);
+        });
+  }
+
   Future<void> updateCustomerProfile({
     required String userId,
     required String displayName,
@@ -225,11 +238,13 @@ class FirestoreService {
     required String displayName,
     required String phoneNumber,
     required String bio,
-    required String categoryId,
     required GeoPoint baseLocation,
     required double serviceRadiusKm,
     String? profileImagePath,
   }) async {
+    if (![5.0, 10.0, 15.0, 20.0, 30.0].contains(serviceRadiusKm)) {
+      throw ArgumentError('Select a supported service radius.');
+    }
     final providerReference = _firestore
         .collection('providerProfiles')
         .doc(providerId);
@@ -239,7 +254,6 @@ class FirestoreService {
     batch.update(providerReference, {
       'displayName': displayName.trim(),
       'bio': bio.trim(),
-      'categoryIds': [categoryId.trim()],
       'baseLocation': baseLocation,
       'serviceRadiusKm': serviceRadiusKm,
       'profileImagePath': ?profileImagePath,

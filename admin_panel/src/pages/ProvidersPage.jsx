@@ -8,6 +8,7 @@ import StatusBadge from "../components/StatusBadge";
 import {
   getProviders,
   updateProviderAccountStatus,
+  updateProviderDetails,
 } from "../services/providerService";
 import { getDataErrorMessage, getInitials } from "../utils/formatters";
 
@@ -17,6 +18,8 @@ function ProvidersPage() {
   const [verificationFilter, setVerificationFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [selectedProvider, setSelectedProvider] = useState(null);
+  const [isEditingProvider, setIsEditingProvider] = useState(false);
+  const [editProviderForm, setEditProviderForm] = useState(null);
   const [pendingAction, setPendingAction] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -123,6 +126,111 @@ function ProvidersPage() {
         getDataErrorMessage(
           error,
           "The provider account status could not be updated.",
+        ),
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
+  function openProviderEditForm() {
+    if (!selectedProvider) {
+      return;
+    }
+
+    setEditProviderForm({
+      displayName:
+        selectedProvider.displayName ||
+        selectedProvider.profile.displayName ||
+        "",
+      email: selectedProvider.email || "",
+      phoneNumber: selectedProvider.phoneNumber || "",
+      availabilityStatus:
+        selectedProvider.profile.availabilityStatus || "unavailable",
+      verificationStatus:
+        selectedProvider.profile.verificationStatus || "not_submitted",
+      experienceYears: selectedProvider.profile.experienceYears || 0,
+      workingHours: selectedProvider.profile.workingHours || "",
+      bio: selectedProvider.profile.bio || "",
+      accountStatus: selectedProvider.accountStatus || "active",
+      serviceRadiusKm: selectedProvider.profile.serviceRadiusKm || "",
+    });
+    setIsEditingProvider(true);
+  }
+
+  function handleEditProviderChange(field, value) {
+    setEditProviderForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
+  async function saveEditedProvider() {
+    if (!selectedProvider || !editProviderForm) {
+      return;
+    }
+
+    setIsProcessing(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      const normalizedProfile = {
+        availabilityStatus: editProviderForm.availabilityStatus,
+        verificationStatus: editProviderForm.verificationStatus,
+        experienceYears: Number(editProviderForm.experienceYears || 0),
+        workingHours: editProviderForm.workingHours.trim(),
+        bio: editProviderForm.bio.trim(),
+        serviceRadiusKm: Number(editProviderForm.serviceRadiusKm || 0),
+      };
+
+      await updateProviderDetails(selectedProvider.id, {
+        displayName: editProviderForm.displayName.trim(),
+        email: editProviderForm.email.trim(),
+        phoneNumber: editProviderForm.phoneNumber.trim(),
+        accountStatus: editProviderForm.accountStatus,
+        profile: normalizedProfile,
+      });
+
+      const updatedSelectedProvider = {
+        ...selectedProvider,
+        displayName: editProviderForm.displayName.trim(),
+        email: editProviderForm.email.trim(),
+        phoneNumber: editProviderForm.phoneNumber.trim(),
+        accountStatus: editProviderForm.accountStatus,
+        profile: {
+          ...selectedProvider.profile,
+          ...normalizedProfile,
+        },
+      };
+
+      setProviders((currentProviders) =>
+        currentProviders.map((provider) =>
+          provider.id === selectedProvider.id
+            ? {
+                ...provider,
+                displayName: editProviderForm.displayName.trim(),
+                email: editProviderForm.email.trim(),
+                phoneNumber: editProviderForm.phoneNumber.trim(),
+                accountStatus: editProviderForm.accountStatus,
+                profile: {
+                  ...provider.profile,
+                  ...normalizedProfile,
+                },
+              }
+            : provider,
+        ),
+      );
+      setSelectedProvider(updatedSelectedProvider);
+      setIsEditingProvider(false);
+      setEditProviderForm(null);
+      setSuccessMessage("Provider details were updated successfully.");
+    } catch (error) {
+      console.error("Provider details could not be updated:", error);
+      setErrorMessage(
+        getDataErrorMessage(
+          error,
+          "The provider details could not be updated.",
         ),
       );
     } finally {
@@ -281,11 +389,10 @@ function ProvidersPage() {
                           </Link>
                           <button
                             type="button"
-                            className={`button button-small ${
-                              provider.accountStatus === "active"
-                                ? "button-danger-soft"
-                                : "button-success-soft"
-                            }`}
+                            className={`button button-small ${provider.accountStatus === "active"
+                              ? "button-danger-soft"
+                              : "button-success-soft"
+                              }`}
                             onClick={() => requestStatusChange(provider)}
                           >
                             {provider.accountStatus === "active"
@@ -316,29 +423,206 @@ function ProvidersPage() {
                 <h2 id="provider-details-title">Provider details</h2>
                 <p>Account and public profile information.</p>
               </div>
-              <button
-                type="button"
-                className="icon-button"
-                aria-label="Close provider details"
-                onClick={() => setSelectedProvider(null)}
-              >
-                ×
-              </button>
+              <div className="card-header-actions">
+                {!isEditingProvider && (
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={openProviderEditForm}
+                  >
+                    Edit
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Close provider details"
+                  onClick={() => {
+                    setSelectedProvider(null);
+                    setIsEditingProvider(false);
+                    setEditProviderForm(null);
+                  }}
+                >
+                  ×
+                </button>
+              </div>
             </div>
-            <dl className="details-grid">
-              <div><dt>Name</dt><dd>{selectedProvider.displayName || selectedProvider.profile.displayName || "Not provided"}</dd></div>
-              <div><dt>Email</dt><dd>{selectedProvider.email || "Not provided"}</dd></div>
-              <div><dt>Phone</dt><dd>{selectedProvider.phoneNumber || "Not provided"}</dd></div>
-              <div><dt>Categories</dt><dd>{selectedProvider.categoryNames.join(", ") || "Not selected"}</dd></div>
-              <div><dt>Availability</dt><dd><StatusBadge status={selectedProvider.profile.availabilityStatus || "unavailable"} /></dd></div>
-              <div><dt>Verification</dt><dd><StatusBadge status={selectedProvider.profile.verificationStatus || "not_submitted"} /></dd></div>
-              <div><dt>Experience</dt><dd>{selectedProvider.profile.experienceYears || 0} years</dd></div>
-              <div><dt>Working hours</dt><dd>{selectedProvider.profile.workingHours || "Not provided"}</dd></div>
-              <div><dt>Rating</dt><dd>{Number(selectedProvider.profile.ratingAverage || 0).toFixed(1)} ({selectedProvider.profile.reviewCount || 0} reviews)</dd></div>
-              <div><dt>Completed jobs</dt><dd>{selectedProvider.profile.completedJobCount || 0}</dd></div>
-              <div><dt>Account status</dt><dd><StatusBadge status={selectedProvider.accountStatus} /></dd></div>
-              <div><dt>Service area</dt><dd>{selectedProvider.profile.locationId || "Not provided"}{selectedProvider.profile.serviceRadiusKm ? ` · ${selectedProvider.profile.serviceRadiusKm} km` : ""}</dd></div>
-            </dl>
+
+            {isEditingProvider && editProviderForm ? (
+              <div className="form-stack">
+                <div className="details-grid">
+                  <div className="form-field">
+                    <label htmlFor="provider-edit-name">Name</label>
+                    <input
+                      id="provider-edit-name"
+                      value={editProviderForm.displayName}
+                      onChange={(event) =>
+                        handleEditProviderChange("displayName", event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="provider-edit-email">Email</label>
+                    <input
+                      id="provider-edit-email"
+                      type="email"
+                      value={editProviderForm.email}
+                      onChange={(event) =>
+                        handleEditProviderChange("email", event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="provider-edit-phone">Phone</label>
+                    <input
+                      id="provider-edit-phone"
+                      value={editProviderForm.phoneNumber}
+                      onChange={(event) =>
+                        handleEditProviderChange("phoneNumber", event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="provider-edit-account-status">Account status</label>
+                    <select
+                      id="provider-edit-account-status"
+                      value={editProviderForm.accountStatus}
+                      onChange={(event) =>
+                        handleEditProviderChange("accountStatus", event.target.value)
+                      }
+                    >
+                      <option value="active">Active</option>
+                      <option value="suspended">Suspended</option>
+                      <option value="disabled">Disabled</option>
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="provider-edit-availability">Availability</label>
+                    <select
+                      id="provider-edit-availability"
+                      value={editProviderForm.availabilityStatus}
+                      onChange={(event) =>
+                        handleEditProviderChange(
+                          "availabilityStatus",
+                          event.target.value,
+                        )
+                      }
+                    >
+                      <option value="available">Available</option>
+                      <option value="busy">Busy</option>
+                      <option value="unavailable">Unavailable</option>
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="provider-edit-verification">Verification</label>
+                    <select
+                      id="provider-edit-verification"
+                      value={editProviderForm.verificationStatus}
+                      onChange={(event) =>
+                        handleEditProviderChange(
+                          "verificationStatus",
+                          event.target.value,
+                        )
+                      }
+                    >
+                      <option value="not_submitted">Not submitted</option>
+                      <option value="pending">Pending</option>
+                      <option value="verified">Verified</option>
+                      <option value="rejected">Rejected</option>
+                    </select>
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="provider-edit-experience">Experience (years)</label>
+                    <input
+                      id="provider-edit-experience"
+                      type="number"
+                      min="0"
+                      value={editProviderForm.experienceYears}
+                      onChange={(event) =>
+                        handleEditProviderChange(
+                          "experienceYears",
+                          event.target.value,
+                        )
+                      }
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="provider-edit-working-hours">Working hours</label>
+                    <input
+                      id="provider-edit-working-hours"
+                      value={editProviderForm.workingHours}
+                      onChange={(event) =>
+                        handleEditProviderChange("workingHours", event.target.value)
+                      }
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="provider-edit-radius">Service radius (km)</label>
+                    <input
+                      id="provider-edit-radius"
+                      type="number"
+                      min="0"
+                      value={editProviderForm.serviceRadiusKm}
+                      onChange={(event) =>
+                        handleEditProviderChange(
+                          "serviceRadiusKm",
+                          event.target.value,
+                        )
+                      }
+                    />
+                  </div>
+                  <div className="form-field details-grid-full">
+                    <label htmlFor="provider-edit-bio">Bio</label>
+                    <textarea
+                      id="provider-edit-bio"
+                      rows="4"
+                      value={editProviderForm.bio}
+                      onChange={(event) =>
+                        handleEditProviderChange("bio", event.target.value)
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-actions">
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={() => {
+                      setIsEditingProvider(false);
+                      setEditProviderForm(null);
+                    }}
+                    disabled={isProcessing}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="button button-primary"
+                    onClick={saveEditedProvider}
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? "Saving..." : "Save changes"}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <dl className="details-grid">
+                <div><dt>Name</dt><dd>{selectedProvider.displayName || selectedProvider.profile.displayName || "Not provided"}</dd></div>
+                <div><dt>Email</dt><dd>{selectedProvider.email || "Not provided"}</dd></div>
+                <div><dt>Phone</dt><dd>{selectedProvider.phoneNumber || "Not provided"}</dd></div>
+                <div><dt>Categories</dt><dd>{selectedProvider.categoryNames.join(", ") || "Not selected"}</dd></div>
+                <div><dt>Availability</dt><dd><StatusBadge status={selectedProvider.profile.availabilityStatus || "unavailable"} /></dd></div>
+                <div><dt>Verification</dt><dd><StatusBadge status={selectedProvider.profile.verificationStatus || "not_submitted"} /></dd></div>
+                <div><dt>Experience</dt><dd>{selectedProvider.profile.experienceYears || 0} years</dd></div>
+                <div><dt>Working hours</dt><dd>{selectedProvider.profile.workingHours || "Not provided"}</dd></div>
+                <div><dt>Rating</dt><dd>{Number(selectedProvider.profile.ratingAverage || 0).toFixed(1)} ({selectedProvider.profile.reviewCount || 0} reviews)</dd></div>
+                <div><dt>Completed jobs</dt><dd>{selectedProvider.profile.completedJobCount || 0}</dd></div>
+                <div><dt>Account status</dt><dd><StatusBadge status={selectedProvider.accountStatus} /></dd></div>
+                <div><dt>Service area</dt><dd>{selectedProvider.profile.serviceRadiusKm ? `${selectedProvider.profile.serviceRadiusKm} km radius` : "Not provided"}</dd></div>
+                <div className="details-grid-full"><dt>Bio</dt><dd>{selectedProvider.profile.bio || "Not provided"}</dd></div>
+              </dl>
+            )}
           </div>
         </div>
       )}

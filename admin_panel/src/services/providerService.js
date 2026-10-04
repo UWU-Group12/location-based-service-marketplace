@@ -1,9 +1,11 @@
 import {
   collection,
   doc,
+  getDoc,
   getDocs,
   query,
   serverTimestamp,
+  setDoc,
   updateDoc,
   where,
 } from "firebase/firestore";
@@ -71,4 +73,53 @@ export async function updateProviderAccountStatus(providerId, accountStatus) {
     accountStatus,
     updatedAt: serverTimestamp(),
   });
+}
+
+export async function updateProviderDetails(providerId, providerData) {
+  const userUpdates = {};
+  const profileUpdates = {};
+
+  if (providerData.displayName !== undefined) {
+    userUpdates.displayName = providerData.displayName;
+  }
+
+  if (providerData.email !== undefined) {
+    userUpdates.email = providerData.email;
+  }
+
+  if (providerData.phoneNumber !== undefined) {
+    userUpdates.phoneNumber = providerData.phoneNumber;
+  }
+
+  if (providerData.accountStatus !== undefined) {
+    if (!validAccountStatuses.includes(providerData.accountStatus)) {
+      throw new Error("Invalid account status.");
+    }
+    userUpdates.accountStatus = providerData.accountStatus;
+  }
+
+  if (providerData.profile) {
+    Object.assign(profileUpdates, providerData.profile);
+  }
+
+  if (Object.keys(userUpdates).length > 0) {
+    userUpdates.updatedAt = serverTimestamp();
+    await updateDoc(doc(db, "users", providerId), userUpdates);
+  }
+
+  if (Object.keys(profileUpdates).length > 0) {
+    const profileRef = doc(db, "providerProfiles", providerId);
+    const profileSnapshot = await getDoc(profileRef);
+    const existingProfile = profileSnapshot.exists() ? profileSnapshot.data() : {};
+
+    await setDoc(
+      profileRef,
+      {
+        ...existingProfile,
+        ...profileUpdates,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+  }
 }
