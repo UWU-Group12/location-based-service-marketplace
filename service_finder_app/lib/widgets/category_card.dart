@@ -43,7 +43,7 @@ class CategoryCard extends StatelessWidget {
                     height: imageHeight(width),
                     child: DecoratedBox(
                       decoration: const BoxDecoration(color: Colors.white),
-                      child: _CategoryImage(category: category),
+                      child: CategoryImage(category: category),
                     ),
                   );
                 },
@@ -124,16 +124,16 @@ class CategoryCardRow extends StatelessWidget {
   }
 }
 
-class _CategoryImage extends StatefulWidget {
+class CategoryImage extends StatefulWidget {
   final ServiceCategory category;
 
-  const _CategoryImage({required this.category});
+  const CategoryImage({super.key, required this.category});
 
   @override
-  State<_CategoryImage> createState() => _CategoryImageState();
+  State<CategoryImage> createState() => _CategoryImageState();
 }
 
-class _CategoryImageState extends State<_CategoryImage> {
+class _CategoryImageState extends State<CategoryImage> {
   late Future<String?> _imageUrlFuture;
 
   @override
@@ -143,7 +143,7 @@ class _CategoryImageState extends State<_CategoryImage> {
   }
 
   @override
-  void didUpdateWidget(_CategoryImage oldWidget) {
+  void didUpdateWidget(CategoryImage oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.category.iconPath != widget.category.iconPath) {
       _imageUrlFuture = _loadImageUrl();
