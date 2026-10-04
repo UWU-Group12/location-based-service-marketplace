@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/app_colors.dart';
 import '../../core/widgets/floating_glass_navigation_bar.dart';
 
 import 'customer_home_screen.dart';
@@ -155,10 +156,7 @@ class _CustomerShellScreenState extends State<CustomerShellScreen> {
     }
 
     final pages = <Widget>[
-      CustomerHomeScreen(
-        userName: _userName,
-        initials: _initials,
-      ),
+      CustomerHomeScreen(userName: _userName, initials: _initials),
 
       const CustomerRequestsScreen(),
 
@@ -253,7 +251,7 @@ class _ShellErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 56, color: Colors.red),
+            const Icon(Icons.error_outline, size: 56, color: AppColors.error),
             const SizedBox(height: 16),
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 20),

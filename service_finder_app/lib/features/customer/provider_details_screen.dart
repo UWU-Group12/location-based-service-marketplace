@@ -1,14 +1,26 @@
 import 'package:flutter/material.dart';
 import '../../core/app_colors.dart';
+import '../../core/app_router.dart';
 import '../../models/provider_model.dart';
+import '../../models/review_model.dart';
+import '../../services/review_service.dart';
 import '../../widgets/provider_location_text.dart';
 import '../../widgets/provider_profile_image.dart';
-import 'create_request_screen.dart';
+import '../../widgets/review_tile.dart';
 
-class ProviderDetailsScreen extends StatelessWidget {
+class ProviderDetailsScreen extends StatefulWidget {
   final ProviderModel provider;
 
   const ProviderDetailsScreen({super.key, required this.provider});
+
+  @override
+  State<ProviderDetailsScreen> createState() => _ProviderDetailsScreenState();
+}
+
+class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
+  final ReviewService _reviewService = ReviewService();
+
+  ProviderModel get provider => widget.provider;
 
   @override
   Widget build(BuildContext context) {
@@ -90,13 +102,68 @@ class ProviderDetailsScreen extends StatelessWidget {
 
                   Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Services Offered', style: textTheme.titleLarge),
+                    child: Text(
+                      'Services Offered',
+                      style: textTheme.titleLarge,
+                    ),
                   ),
 
                   const SizedBox(height: 10),
 
                   ...categoryNames.map(_serviceChip),
                 ],
+
+                const SizedBox(height: 30),
+
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Reviews', style: textTheme.titleLarge),
+                ),
+
+                const SizedBox(height: 10),
+
+                StreamBuilder<List<ReviewModel>>(
+                  stream: _reviewService.watchProviderReviews(
+                    provider.providerId,
+                  ),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return const Text('Unable to load reviews.');
+                    }
+
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final reviews = snapshot.data!;
+
+                    if (reviews.isEmpty) {
+                      return Text(
+                        'No reviews yet.',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey,
+                        ),
+                      );
+                    }
+
+                    return Column(
+                      children: [
+                        for (final review in reviews.take(3))
+                          ReviewTile(review: review),
+                        if (reviews.length > 3)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              '${reviews.length - 3} more reviews',
+                              style: textTheme.bodySmall?.copyWith(
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
 
                 const SizedBox(height: 30),
 
@@ -113,8 +180,8 @@ class ProviderDetailsScreen extends StatelessWidget {
                         ? Icons.verified
                         : Icons.error_outline,
                     color: provider.verificationStatus == 'verified'
-                        ? Colors.green
-                        : Colors.orange,
+                        ? AppColors.success
+                        : AppColors.warning,
                   ),
                   title: Text(
                     provider.verificationStatus == 'verified'
@@ -136,12 +203,7 @@ class ProviderDetailsScreen extends StatelessWidget {
             right: 20,
             child: ElevatedButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => CreateRequestScreen(provider: provider),
-                  ),
-                );
+                AppRouter.goToCreateRequest(context, provider);
               },
               child: const Text('Request Service'),
             ),

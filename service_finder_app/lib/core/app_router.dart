@@ -7,6 +7,7 @@ import '../features/provider/provider_onboarding/provider_profile_name.dart';
 import '../features/auth/role_selection_screen.dart';
 import '../features/auth/welcome_screen.dart';
 import '../features/customer/customer_shell_screen.dart';
+import '../features/customer/customer_request_details_screen.dart';
 import '../features/provider/provider_dashboard_screen.dart';
 import '../features/provider/provider_onboarding/provider_profile_contact.dart';
 import '../features/provider/provider_onboarding/provider_profile_password.dart';
@@ -18,13 +19,19 @@ import '../features/provider/provider_onboarding/provider_working_area.dart';
 import '../features/provider/provider_onboarding/provider_verification_documents.dart';
 import '../features/provider/provider_onboarding/provider_profile_summary.dart';
 import '../features/customer/provider_list_screen.dart';
+import '../features/customer/create_request_screen.dart';
+import '../features/customer/ai_category_screen.dart';
+import '../features/customer/provider_listing_screen.dart';
+import '../features/customer/provider_details_screen.dart';
 import '../models/user_model.dart';
+import '../models/provider_model.dart';
 import '../models/service_request_model.dart';
 import '../features/provider/provider_request_details_screen.dart';
 import '../features/provider/create_quotation_screen.dart';
 import '../features/provider/provider_job_details_screen.dart';
 
 import '../features/customer/service_categories_screen.dart';
+import '../features/customer/rating_review_screen.dart';
 import '../features/provider/provider_shell_screen.dart';
 import '../features/provider/provider_profile_screen.dart';
 
@@ -66,8 +73,8 @@ class AppRouter {
     return result == true;
   }
 
-  static PageRouteBuilder<dynamic> _buildRoute(Widget page) {
-    return PageRouteBuilder<dynamic>(
+  static PageRouteBuilder<T> _buildRoute<T>(Widget page) {
+    return PageRouteBuilder<T>(
       pageBuilder: (context, animation, secondaryAnimation) => page,
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         return FadeTransition(opacity: animation, child: child);
@@ -179,6 +186,37 @@ class AppRouter {
     Navigator.of(context).push(_buildRoute(const DevBypassScreen()));
   }
 
+  static void goToCreateRequest(BuildContext context, ProviderModel provider) {
+    Navigator.of(
+      context,
+    ).push(_buildRoute(CreateRequestScreen(provider: provider)));
+  }
+
+  static void goToAiCategory(BuildContext context) {
+    Navigator.of(context).push(_buildRoute(const AiCategoryScreen()));
+  }
+
+  static void goToProviderListing(
+    BuildContext context, {
+    required String categoryId,
+    required String categoryName,
+  }) {
+    Navigator.of(context).push(
+      _buildRoute(
+        ProviderListingScreen(service: categoryName, categoryId: categoryId),
+      ),
+    );
+  }
+
+  static void goToProviderDetails(
+    BuildContext context,
+    ProviderModel provider,
+  ) {
+    Navigator.of(
+      context,
+    ).push(_buildRoute(ProviderDetailsScreen(provider: provider)));
+  }
+
   static void goToServiceCategoryScreen(BuildContext context) {
     Navigator.of(context).push(_buildRoute(const ServiceCategoriesScreen()));
   }
@@ -196,6 +234,30 @@ class AppRouter {
           categoryName: categoryName,
         ),
       ),
+    );
+  }
+
+  static Future<bool?> goToRatingReview(
+    BuildContext context,
+    String requestId,
+  ) {
+    return Navigator.of(context).push<bool>(
+      PageRouteBuilder<bool>(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            RatingReviewScreen(requestId: requestId),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
+  static Future<bool?> goToCustomerRequestDetails(
+    BuildContext context,
+    String requestId,
+  ) {
+    return Navigator.of(context).push<bool>(
+      _buildRoute(CustomerRequestDetailsScreen(requestId: requestId)),
     );
   }
 

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/quotation_model.dart';
 import '../../models/service_request_model.dart';
 import '../../services/firestore_service.dart';
-import 'request_widgets.dart';
+import '../../widgets/request_widgets.dart';
 
 class CreateQuotationScreen extends StatefulWidget {
   final ServiceRequestModel request;

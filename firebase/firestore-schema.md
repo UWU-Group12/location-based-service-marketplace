@@ -376,6 +376,53 @@ completed
 cancelled
 ```
 
+### Allowed Request Status Transitions
+
+Enforced in `firestore.rules` by `validRequestTransition`. Skipping a step is
+rejected, so a request cannot reach `completed` (and therefore cannot be
+reviewed) without the work actually progressing through the states.
+
+```text
+submitted         -> quotation_received | provider_rejected | cancelled
+quotation_received -> confirmed | cancelled
+confirmed         -> in_progress
+in_progress       -> completed | cancelled
+```
+
+A new request must be created with `requestStatus == 'submitted'`. Without
+that, a customer could create a request already `completed` and review it
+immediately, which is the forgery the transition graph exists to prevent.
+
+Only the customer may perform the `in_progress -> completed` transition, so a
+provider cannot unilaterally mark a job finished. Admin updates bypass the
+state machine entirely.
+
+Who may write which fields on a request:
+
+| Actor | Writable fields |
+| --- | --- |
+| Provider (assigned) | `requestStatus`, `quotationStatus`, `finalAmount`, `updatedAt` |
+| Customer (own) | `requestStatus`, `quotationStatus`, `acceptedQuotationId`, `updatedAt` |
+
+The provider is the only party that may write `finalAmount`. They record it on
+the request at the moment they send the quotation, so a price always originates
+from the provider and the customer can only decide whether to take it.
+
+Each side may also write `quotationStatus`, but only within its own part:
+
+| Actor | May write `quotationStatus` as |
+| --- | --- |
+| Provider | `sent` |
+| Customer | `accepted`, `rejected` |
+
+So a provider cannot accept their own price and start work the customer never
+agreed to, and a customer cannot fake a quote having arrived. Rejecting a
+quotation cancels the request, because a request only ever carries one quote.
+
+Neither party may change `customerId`, `providerId`, `categoryId`, `title`,
+`description`, `imagePaths`, `serviceLocation`, `addressText`, `customerName`,
+`createdAt`, or `preferredDate`.
+
 ### Quotation Status Values
 
 ```text
@@ -496,6 +543,22 @@ reviews/{requestId}
 ```
 
 Using the request ID as the review ID prevents multiple reviews for the same completed job.
+
+### Who Can Write
+
+Only the customer named on the request, and only once the request has reached
+`completed`, may create a review. `rating` must be between 1 and 5, and
+`createdAt` / `updatedAt` must equal `request.time`, so a client cannot
+backdate a review to make it look older than it is. Reviews are immutable
+afterwards: no customer, provider or admin may edit or delete one through the
+client SDK. Corrections are made by a trusted backend, which is also what
+recomputes the provider aggregates.
+
+### Who Can Read
+
+A review with `moderationStatus == 'visible'` is readable by anyone, including
+signed-out visitors, so ratings can be shown before sign-in. A review with any
+other moderation status is readable only by its author and by admins.
 
 ### Example
 

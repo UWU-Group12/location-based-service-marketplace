@@ -9,6 +9,21 @@ import '../models/service_request_model.dart';
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  Stream<ServiceRequestModel?> watchCustomerRequest(String requestId) {
+    final customerId = FirebaseAuth.instance.currentUser?.uid;
+    if (customerId == null) return const Stream<ServiceRequestModel?>.empty();
+
+    return _firestore
+        .collection('serviceRequests')
+        .doc(requestId)
+        .snapshots()
+        .map((doc) {
+          final data = doc.data();
+          if (data == null || data['customerId'] != customerId) return null;
+          return ServiceRequestModel.fromFirestore(doc.id, data);
+        });
+  }
+
   Stream<ServiceRequestModel?> watchProviderRequest(
     String requestId,
     String providerId,
@@ -77,6 +92,24 @@ class FirestoreService {
     });
 
     return List.unmodifiable(categories);
+  }
+
+  Stream<List<ProviderModel>> watchTopRatedAvailableProviders({int limit = 4}) {
+    return _firestore
+        .collection('providerProfiles')
+        .where('verificationStatus', isEqualTo: 'verified')
+        .where('availabilityStatus', isEqualTo: 'available')
+        .orderBy('ratingAverage', descending: true)
+        .limit(limit)
+        .snapshots()
+        .map(
+          (snapshot) => snapshot.docs
+              .map(
+                (document) =>
+                    ProviderModel.fromFirestore(document.id, document.data()),
+              )
+              .toList(growable: false),
+        );
   }
 
   Future<List<ProviderModel>> getVerifiedAvailableProvidersByCategory(
@@ -346,6 +379,9 @@ class FirestoreService {
       transaction.update(requestRef, {
         'requestStatus': 'quotation_received',
         'quotationStatus': 'sent',
+        // The provider is the one who sets the price. Recording it here means
+        // the customer can accept or reject it but never write it.
+        'finalAmount': quotation.estimatedTotal,
         'updatedAt': FieldValue.serverTimestamp(),
       });
     });
@@ -363,7 +399,6 @@ class FirestoreService {
         'requestStatus': 'confirmed',
         'quotationStatus': 'accepted',
         'acceptedQuotationId': quotation.requestId,
-        'finalAmount': quotation.estimatedTotal,
         'updatedAt': FieldValue.serverTimestamp(),
       },
     );
@@ -430,8 +465,31 @@ class FirestoreService {
     });
   }
 
-  Future<void> completeJob(String requestId) =>
-      _updateRequestStatus(requestId, 'completed');
+  Future<void> confirmJobDone(String requestId) async {
+    final customerId = FirebaseAuth.instance.currentUser?.uid;
+    if (customerId == null) {
+      throw StateError('Please sign in to confirm this job is done.');
+    }
+    final reference = _firestore.collection('serviceRequests').doc(requestId);
+    await _firestore.runTransaction((transaction) async {
+      final document = await transaction.get(reference);
+      final data = document.data();
+      if (data == null) {
+        throw StateError('This request is no longer available.');
+      }
+      final request = ServiceRequestModel.fromFirestore(document.id, data);
+      if (request.customerId != customerId ||
+          request.requestStatus != 'in_progress') {
+        throw StateError(
+          'This job has changed. Only a job in progress that you booked can be confirmed as done.',
+        );
+      }
+      transaction.update(reference, {
+        'requestStatus': 'completed',
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
+  }
 
   Future<void> _updateRequestStatus(String requestId, String status) {
     return _firestore.collection('serviceRequests').doc(requestId).update({

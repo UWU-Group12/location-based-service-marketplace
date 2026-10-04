@@ -6,7 +6,7 @@ import '../../core/app_router.dart';
 import '../../models/service_request_model.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/request_card.dart';
-import 'request_widgets.dart';
+import '../../widgets/request_widgets.dart';
 
 class ProviderJobsScreen extends StatefulWidget {
   const ProviderJobsScreen({super.key});

@@ -18,6 +18,57 @@ service cloud.firestore {
       return signedIn() && request.auth.token.admin == true;
     }
 
+    // Account role stored on the user document
+    function roleIs(role) {
+      return signedIn()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid))
+             .data.role == role;
+    }
+
+    // ---------- SERVICE REQUEST STATE MACHINE ----------
+    // Allowed status changes (see firestore-schema.md). No skipping steps.
+    function validRequestTransition(from, to) {
+      return (from == 'submitted'
+              && (to == 'quotation_received'
+                  || to == 'provider_rejected'
+                  || to == 'cancelled'))
+        || (from == 'quotation_received'
+            && (to == 'confirmed' || to == 'cancelled'))
+        || (from == 'confirmed' && to == 'in_progress')
+        || (from == 'in_progress' && (to == 'completed' || to == 'cancelled'));
+    }
+
+    // Fields a provider may change. Only the provider sets the price.
+    function providerRequestKeys() {
+      return ['requestStatus', 'quotationStatus', 'finalAmount', 'updatedAt'];
+    }
+
+    // Provider can only mark a quotation as 'sent', never accept it
+    function providerSendsQuotationOnly() {
+      return !request.resource.data.diff(resource.data)
+                .affectedKeys()
+                .hasAny(['quotationStatus'])
+        || request.resource.data.quotationStatus == 'sent';
+    }
+
+    // Fields a customer may change. No 'finalAmount', customer can't set the price.
+    function customerRequestKeys() {
+      return [
+        'requestStatus',
+        'quotationStatus',
+        'acceptedQuotationId',
+        'updatedAt'
+      ];
+    }
+
+    // Customer can only accept or reject a quotation
+    function customerDecidesQuotationOnly() {
+      return !request.resource.data.diff(resource.data)
+                .affectedKeys()
+                .hasAny(['quotationStatus'])
+        || request.resource.data.quotationStatus in ['accepted', 'rejected'];
+    }
+
     // ---------- USERS ----------
     match /users/{userId} {
       allow read, create: if isMe(userId) || isAdmin();
@@ -39,10 +90,26 @@ service cloud.firestore {
         && request.resource.data.verificationStatus == 'pending';
 
       // Provider can edit own profile, but cannot verify himself
+      // nor change ratingAverage / reviewCount / completedJobCount.
       allow update: if isAdmin()
         || (isMe(providerId)
             && request.resource.data.verificationStatus
-               == resource.data.verificationStatus);
+               == resource.data.verificationStatus
+            && request.resource.data.diff(resource.data)
+                 .affectedKeys()
+                 .hasOnly([
+                   'displayName',
+                   'profileImagePath',
+                   'bio',
+                   'categoryIds',
+                   'experienceYears',
+                   'workingDays',
+                   'workingHours',
+                   'baseLocation',
+                   'serviceRadiusKm',
+                   'availabilityStatus',
+                   'updatedAt'
+                 ]));
 
       allow delete: if isAdmin();
     }
@@ -61,13 +128,42 @@ service cloud.firestore {
 
     // ---------- SERVICE REQUESTS ----------
     match /serviceRequests/{requestId} {
+      // New request must start as 'submitted'
       allow create: if signedIn()
-        && request.resource.data.customerId == request.auth.uid;
+        && request.resource.data.customerId == request.auth.uid
+        && request.resource.data.requestStatus == 'submitted';
 
-      // Only the customer and provider of this request
-      allow read, update: if isAdmin()
+      allow read: if isAdmin()
         || resource.data.customerId == request.auth.uid
         || resource.data.providerId == request.auth.uid;
+
+      // Provider and customer can only move the request forward.
+      // Only the customer can mark it 'completed'.
+      allow update: if isAdmin()
+        || (roleIs('provider')
+            && resource.data.providerId == request.auth.uid
+            && request.resource.data.diff(resource.data)
+                 .affectedKeys()
+                 .hasOnly(providerRequestKeys())
+            && request.resource.data.requestStatus
+                 in ['quotation_received', 'provider_rejected', 'in_progress']
+            && validRequestTransition(
+                 resource.data.requestStatus,
+                 request.resource.data.requestStatus
+               )
+            && providerSendsQuotationOnly())
+        || (roleIs('customer')
+            && resource.data.customerId == request.auth.uid
+            && request.resource.data.diff(resource.data)
+                 .affectedKeys()
+                 .hasOnly(customerRequestKeys())
+            && request.resource.data.requestStatus
+                 in ['confirmed', 'cancelled', 'completed']
+            && validRequestTransition(
+                 resource.data.requestStatus,
+                 request.resource.data.requestStatus
+               )
+            && customerDecidesQuotationOnly());
 
       allow delete: if isAdmin();
     }
@@ -90,6 +186,35 @@ service cloud.firestore {
         || resource.data.providerId == request.auth.uid;
 
       allow delete: if isAdmin();
+    }
+
+    // ---------- REVIEWS ----------
+    // Document ID is the request ID, so one review per completed job.
+    match /reviews/{requestId} {
+      function reviewRequest() {
+        return get(/databases/$(database)/documents/serviceRequests/$(requestId));
+      }
+
+      // Only the customer of a completed request, with server timestamps
+      allow create: if roleIs('customer')
+        && request.resource.data.requestId == requestId
+        && request.resource.data.customerId == request.auth.uid
+        && reviewRequest().data.customerId == request.auth.uid
+        && reviewRequest().data.providerId
+             == request.resource.data.providerId
+        && reviewRequest().data.requestStatus == 'completed'
+        && request.resource.data.rating is number
+        && request.resource.data.rating >= 1
+        && request.resource.data.rating <= 5
+        && request.resource.data.moderationStatus == 'visible'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow read: if isAdmin()
+        || resource.data.moderationStatus == 'visible'
+        || resource.data.customerId == request.auth.uid;
+
+      allow update, delete: if isAdmin();
     }
   }
 }

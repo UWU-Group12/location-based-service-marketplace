@@ -66,7 +66,7 @@ class LocationService {
       if (permission == LocationPermission.deniedForever) {
         throw StateError(
           'Location permission is permanently denied. Enable it in your '
-              'device settings.',
+          'device settings.',
         );
       }
 

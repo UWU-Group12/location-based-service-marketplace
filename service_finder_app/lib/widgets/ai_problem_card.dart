@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../core/app_colors.dart';
-import '../features/customer/ai_category_screen.dart';
+import '../core/app_router.dart';
 
 class AiProblemCard extends StatefulWidget {
   const AiProblemCard({super.key});
@@ -34,10 +35,7 @@ class _AiProblemCardState extends State<AiProblemCard> {
           _isPressed = false;
         });
 
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AiCategoryScreen()),
-        );
+        AppRouter.goToAiCategory(context);
       },
 
       onTapCancel: () {
@@ -55,8 +53,8 @@ class _AiProblemCardState extends State<AiProblemCard> {
 
           decoration: BoxDecoration(
             color: _isPressed
-                ? const Color(0xFFF8DADA)
-                : const Color(0xFFFDECEC),
+                ? AppColors.categoryTintRosePressed
+                : AppColors.categoryTintRose,
 
             borderRadius: BorderRadius.circular(25),
 
@@ -99,7 +97,7 @@ class _AiProblemCardState extends State<AiProblemCard> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF4A1010),
+                        color: AppColors.onTintPrimary,
                       ),
                     ),
 
@@ -108,7 +106,10 @@ class _AiProblemCardState extends State<AiProblemCard> {
                     Text(
                       'Get an AI-assisted suggestion',
 
-                      style: TextStyle(fontSize: 14, color: Color(0x994A1010)),
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.onTintPrimaryMuted,
+                      ),
                     ),
                   ],
                 ),
