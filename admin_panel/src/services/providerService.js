@@ -9,9 +9,26 @@ import {
   updateDoc,
   where,
 } from "firebase/firestore";
-import { db } from "../firebase/firebaseConfig";
+import { ref, uploadBytes } from "firebase/storage";
+import { db, storage } from "../firebase/firebaseConfig";
 
 const validAccountStatuses = ["active", "suspended", "disabled"];
+
+export async function uploadProviderProfilePhoto(providerId, file) {
+  if (!file) {
+    return null;
+  }
+
+  const extension =
+    (file.name && file.name.includes("."))
+      ? file.name.split(".").pop() || "jpg"
+      : file.type?.split("/")[1] || "jpg";
+  const photoPath = `providers/${providerId}/profile.${extension}`;
+  const profileImageRef = ref(storage, photoPath);
+
+  await uploadBytes(profileImageRef, file);
+  return photoPath;
+}
 
 export async function getProviders() {
   const providersQuery = query(
@@ -64,6 +81,105 @@ export async function getProviders() {
     );
 }
 
+export async function createProvider(providerData) {
+  const displayName = (providerData.displayName || "").trim();
+  const email = (providerData.email || "").trim();
+
+  if (!displayName) {
+    throw new Error("Provider name is required.");
+  }
+
+  if (!email) {
+    throw new Error("Provider email is required.");
+  }
+
+  const userRef = doc(collection(db, "users"));
+  const providerId = userRef.id;
+  const categoryIds = Array.isArray(providerData.categoryIds)
+    ? providerData.categoryIds
+    : (providerData.categories || "")
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+  const photoPath = (providerData.photoPath || "").trim();
+
+  await setDoc(userRef, {
+    id: providerId,
+    displayName,
+    email,
+    phoneNumber: (providerData.phoneNumber || "").trim(),
+    role: "provider",
+    accountStatus: validAccountStatuses.includes(providerData.accountStatus)
+      ? providerData.accountStatus
+      : "active",
+    photoPath: photoPath || null,
+    profileCompleted: true,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
+  await setDoc(
+    doc(db, "providerProfiles", providerId),
+    {
+      providerId,
+      displayName,
+      bio: (providerData.bio || "").trim(),
+      profileImagePath: photoPath || providerData.profileImagePath || null,
+      categoryIds,
+      experienceYears: Number(providerData.experienceYears || 0),
+      workingDays: Array.isArray(providerData.workingDays)
+        ? providerData.workingDays
+        : ["Mon", "Tue", "Wed", "Thu", "Fri"],
+      workingHours: providerData.workingHours || "Full Day",
+      serviceRadiusKm: Number(providerData.serviceRadiusKm || 10),
+      availabilityStatus: providerData.availabilityStatus || "unavailable",
+      verificationStatus: providerData.verificationStatus || "not_submitted",
+      ratingAverage: 0,
+      reviewCount: 0,
+      completedJobCount: 0,
+      baseLocation: null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
+
+  return {
+    id: providerId,
+    displayName,
+    email,
+    phoneNumber: (providerData.phoneNumber || "").trim(),
+    role: "provider",
+    accountStatus: validAccountStatuses.includes(providerData.accountStatus)
+      ? providerData.accountStatus
+      : "active",
+    photoPath: photoPath || null,
+    profileCompleted: true,
+    profile: {
+      providerId,
+      displayName,
+      bio: (providerData.bio || "").trim(),
+      profileImagePath: photoPath || providerData.profileImagePath || null,
+      categoryIds,
+      experienceYears: Number(providerData.experienceYears || 0),
+      workingDays: Array.isArray(providerData.workingDays)
+        ? providerData.workingDays
+        : ["Mon", "Tue", "Wed", "Thu", "Fri"],
+      workingHours: providerData.workingHours || "Full Day",
+      serviceRadiusKm: Number(providerData.serviceRadiusKm || 10),
+      availabilityStatus: providerData.availabilityStatus || "unavailable",
+      verificationStatus: providerData.verificationStatus || "not_submitted",
+      ratingAverage: 0,
+      reviewCount: 0,
+      completedJobCount: 0,
+      baseLocation: null,
+    },
+    categoryIds,
+    categoryNames: categoryIds,
+  };
+}
+
 export async function updateProviderAccountStatus(providerId, accountStatus) {
   if (!validAccountStatuses.includes(accountStatus)) {
     throw new Error("Invalid account status.");
@@ -98,8 +214,16 @@ export async function updateProviderDetails(providerId, providerData) {
     userUpdates.accountStatus = providerData.accountStatus;
   }
 
+  if (providerData.photoPath !== undefined) {
+    userUpdates.photoPath = providerData.photoPath || null;
+  }
+
   if (providerData.profile) {
     Object.assign(profileUpdates, providerData.profile);
+  }
+
+  if (providerData.profileImagePath !== undefined) {
+    profileUpdates.profileImagePath = providerData.profileImagePath || null;
   }
 
   if (Object.keys(userUpdates).length > 0) {

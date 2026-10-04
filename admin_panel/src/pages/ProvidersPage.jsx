@@ -6,10 +6,13 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import MessageBanner from "../components/MessageBanner";
 import StatusBadge from "../components/StatusBadge";
 import {
+  createProvider,
   getProviders,
   updateProviderAccountStatus,
   updateProviderDetails,
+  uploadProviderProfilePhoto,
 } from "../services/providerService";
+import { getAuthorizedFileUrl } from "../services/storageService";
 import { getDataErrorMessage, getInitials } from "../utils/formatters";
 
 function ProvidersPage() {
@@ -18,8 +21,10 @@ function ProvidersPage() {
   const [verificationFilter, setVerificationFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [selectedProvider, setSelectedProvider] = useState(null);
+  const [isCreatingProvider, setIsCreatingProvider] = useState(false);
   const [isEditingProvider, setIsEditingProvider] = useState(false);
   const [editProviderForm, setEditProviderForm] = useState(null);
+  const [createProviderForm, setCreateProviderForm] = useState(null);
   const [pendingAction, setPendingAction] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -133,9 +138,45 @@ function ProvidersPage() {
     }
   }
 
-  function openProviderEditForm() {
+  function openCreateProviderForm() {
+    setCreateProviderForm({
+      displayName: "",
+      email: "",
+      phoneNumber: "",
+      categories: "",
+      availabilityStatus: "unavailable",
+      verificationStatus: "not_submitted",
+      experienceYears: 0,
+      workingHours: "",
+      bio: "",
+      accountStatus: "active",
+      serviceRadiusKm: 10,
+      photoPath: "",
+      photoPreview: "",
+      photoFile: null,
+    });
+    setIsCreatingProvider(true);
+  }
+
+  async function openProviderEditForm() {
     if (!selectedProvider) {
       return;
+    }
+
+    const existingPhotoPath =
+      selectedProvider.photoPath ||
+      selectedProvider.profile?.profileImagePath ||
+      selectedProvider.profile?.photoPath ||
+      "";
+
+    let photoPreview = "";
+
+    if (existingPhotoPath) {
+      try {
+        photoPreview = await getAuthorizedFileUrl(existingPhotoPath);
+      } catch (error) {
+        console.warn("Could not load provider photo preview:", error);
+      }
     }
 
     setEditProviderForm({
@@ -154,6 +195,9 @@ function ProvidersPage() {
       bio: selectedProvider.profile.bio || "",
       accountStatus: selectedProvider.accountStatus || "active",
       serviceRadiusKm: selectedProvider.profile.serviceRadiusKm || "",
+      photoPath: existingPhotoPath,
+      photoPreview,
+      photoFile: null,
     });
     setIsEditingProvider(true);
   }
@@ -163,6 +207,27 @@ function ProvidersPage() {
       ...current,
       [field]: value,
     }));
+  }
+
+  function handlePhotoSelection(event, formSetter) {
+    const selectedFile = event.target.files?.[0];
+
+    if (!selectedFile) {
+      return;
+    }
+
+    if (!selectedFile.type.startsWith("image/")) {
+      setErrorMessage("Please choose a valid image file for the provider photo.");
+      event.target.value = "";
+      return;
+    }
+
+    formSetter((current) => ({
+      ...current,
+      photoFile: selectedFile,
+      photoPreview: URL.createObjectURL(selectedFile),
+    }));
+    setErrorMessage("");
   }
 
   async function saveEditedProvider() {
@@ -184,13 +249,27 @@ function ProvidersPage() {
         serviceRadiusKm: Number(editProviderForm.serviceRadiusKm || 0),
       };
 
-      await updateProviderDetails(selectedProvider.id, {
+      const updatePayload = {
         displayName: editProviderForm.displayName.trim(),
         email: editProviderForm.email.trim(),
         phoneNumber: editProviderForm.phoneNumber.trim(),
         accountStatus: editProviderForm.accountStatus,
         profile: normalizedProfile,
-      });
+      };
+
+      if (editProviderForm.photoFile) {
+        const uploadedPhotoPath = await uploadProviderProfilePhoto(
+          selectedProvider.id,
+          editProviderForm.photoFile,
+        );
+
+        if (uploadedPhotoPath) {
+          updatePayload.photoPath = uploadedPhotoPath;
+          updatePayload.profile.profileImagePath = uploadedPhotoPath;
+        }
+      }
+
+      await updateProviderDetails(selectedProvider.id, updatePayload);
 
       const updatedSelectedProvider = {
         ...selectedProvider,
@@ -198,9 +277,15 @@ function ProvidersPage() {
         email: editProviderForm.email.trim(),
         phoneNumber: editProviderForm.phoneNumber.trim(),
         accountStatus: editProviderForm.accountStatus,
+        photoPath:
+          updatePayload.photoPath || selectedProvider.photoPath || "",
         profile: {
           ...selectedProvider.profile,
           ...normalizedProfile,
+          profileImagePath:
+            updatePayload.profile.profileImagePath ||
+            selectedProvider.profile?.profileImagePath ||
+            "",
         },
       };
 
@@ -213,9 +298,15 @@ function ProvidersPage() {
                 email: editProviderForm.email.trim(),
                 phoneNumber: editProviderForm.phoneNumber.trim(),
                 accountStatus: editProviderForm.accountStatus,
+                photoPath:
+                  updatePayload.photoPath || provider.photoPath || "",
                 profile: {
                   ...provider.profile,
                   ...normalizedProfile,
+                  profileImagePath:
+                    updatePayload.profile.profileImagePath ||
+                    provider.profile?.profileImagePath ||
+                    "",
                 },
               }
             : provider,
@@ -238,6 +329,73 @@ function ProvidersPage() {
     }
   }
 
+  async function saveNewProvider() {
+    if (!createProviderForm) {
+      return;
+    }
+
+    setIsProcessing(true);
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    try {
+      const categoryIds = createProviderForm.categories
+        .split(",")
+        .map((value) => value.trim())
+        .filter(Boolean);
+
+      const createdProvider = await createProvider({
+        displayName: createProviderForm.displayName.trim(),
+        email: createProviderForm.email.trim(),
+        phoneNumber: createProviderForm.phoneNumber.trim(),
+        categories: categoryIds.join(", "),
+        categoryIds,
+        availabilityStatus: createProviderForm.availabilityStatus,
+        verificationStatus: createProviderForm.verificationStatus,
+        experienceYears: Number(createProviderForm.experienceYears || 0),
+        workingHours: createProviderForm.workingHours.trim(),
+        bio: createProviderForm.bio.trim(),
+        accountStatus: createProviderForm.accountStatus,
+        serviceRadiusKm: Number(createProviderForm.serviceRadiusKm || 10),
+      });
+
+      if (createProviderForm.photoFile) {
+        const uploadedPhotoPath = await uploadProviderProfilePhoto(
+          createdProvider.id,
+          createProviderForm.photoFile,
+        );
+
+        if (uploadedPhotoPath) {
+          await updateProviderDetails(createdProvider.id, {
+            photoPath: uploadedPhotoPath,
+            profile: {
+              profileImagePath: uploadedPhotoPath,
+            },
+          });
+
+          createdProvider.photoPath = uploadedPhotoPath;
+          createdProvider.profile.profileImagePath = uploadedPhotoPath;
+        }
+      }
+
+      setProviders((currentProviders) => [createdProvider, ...currentProviders]);
+      setSelectedProvider(createdProvider);
+      setIsCreatingProvider(false);
+      setCreateProviderForm(null);
+      setSuccessMessage(`${createdProvider.displayName} was added successfully.`);
+    } catch (error) {
+      console.error("Provider could not be created:", error);
+      setErrorMessage(
+        getDataErrorMessage(
+          error,
+          "The provider could not be created.",
+        ),
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
   if (isLoading) {
     return <LoadingSpinner label="Loading providers..." />;
   }
@@ -251,6 +409,15 @@ function ProvidersPage() {
             Review provider profiles and manage account access. Verification
             decisions remain on the verification page.
           </p>
+        </div>
+        <div className="page-intro-actions">
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={openCreateProviderForm}
+          >
+            Add Provider
+          </button>
         </div>
       </section>
 
@@ -409,6 +576,253 @@ function ProvidersPage() {
           </div>
         )}
       </section>
+
+      {isCreatingProvider && createProviderForm && (
+        <div className="modal-backdrop" role="presentation">
+          <div
+            className="modal-card modal-wide"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="provider-create-title"
+          >
+            <div className="card-heading">
+              <div>
+                <h2 id="provider-create-title">Add provider</h2>
+                <p>Create a new provider account and profile.</p>
+              </div>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Close add provider form"
+                onClick={() => {
+                  setIsCreatingProvider(false);
+                  setCreateProviderForm(null);
+                }}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="form-stack">
+              <div className="details-grid">
+                <div className="form-field">
+                  <label htmlFor="provider-create-name">Name</label>
+                  <input
+                    id="provider-create-name"
+                    value={createProviderForm.displayName}
+                    onChange={(event) =>
+                      setCreateProviderForm((current) => ({
+                        ...current,
+                        displayName: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="provider-create-email">Email</label>
+                  <input
+                    id="provider-create-email"
+                    type="email"
+                    value={createProviderForm.email}
+                    onChange={(event) =>
+                      setCreateProviderForm((current) => ({
+                        ...current,
+                        email: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="provider-create-phone">Phone</label>
+                  <input
+                    id="provider-create-phone"
+                    value={createProviderForm.phoneNumber}
+                    onChange={(event) =>
+                      setCreateProviderForm((current) => ({
+                        ...current,
+                        phoneNumber: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="provider-create-categories">Categories</label>
+                  <input
+                    id="provider-create-categories"
+                    value={createProviderForm.categories}
+                    onChange={(event) =>
+                      setCreateProviderForm((current) => ({
+                        ...current,
+                        categories: event.target.value,
+                      }))
+                    }
+                    placeholder="electrician, plumbing"
+                  />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="provider-create-account-status">Account status</label>
+                  <select
+                    id="provider-create-account-status"
+                    value={createProviderForm.accountStatus}
+                    onChange={(event) =>
+                      setCreateProviderForm((current) => ({
+                        ...current,
+                        accountStatus: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="active">Active</option>
+                    <option value="suspended">Suspended</option>
+                    <option value="disabled">Disabled</option>
+                  </select>
+                </div>
+                <div className="form-field">
+                  <label htmlFor="provider-create-availability">Availability</label>
+                  <select
+                    id="provider-create-availability"
+                    value={createProviderForm.availabilityStatus}
+                    onChange={(event) =>
+                      setCreateProviderForm((current) => ({
+                        ...current,
+                        availabilityStatus: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="available">Available</option>
+                    <option value="busy">Busy</option>
+                    <option value="unavailable">Unavailable</option>
+                  </select>
+                </div>
+                <div className="form-field">
+                  <label htmlFor="provider-create-verification">Verification</label>
+                  <select
+                    id="provider-create-verification"
+                    value={createProviderForm.verificationStatus}
+                    onChange={(event) =>
+                      setCreateProviderForm((current) => ({
+                        ...current,
+                        verificationStatus: event.target.value,
+                      }))
+                    }
+                  >
+                    <option value="not_submitted">Not submitted</option>
+                    <option value="pending">Pending</option>
+                    <option value="verified">Verified</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+                <div className="form-field">
+                  <label htmlFor="provider-create-experience">Experience (years)</label>
+                  <input
+                    id="provider-create-experience"
+                    type="number"
+                    min="0"
+                    value={createProviderForm.experienceYears}
+                    onChange={(event) =>
+                      setCreateProviderForm((current) => ({
+                        ...current,
+                        experienceYears: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="provider-create-hours">Working hours</label>
+                  <input
+                    id="provider-create-hours"
+                    value={createProviderForm.workingHours}
+                    onChange={(event) =>
+                      setCreateProviderForm((current) => ({
+                        ...current,
+                        workingHours: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="provider-create-radius">Service radius (km)</label>
+                  <input
+                    id="provider-create-radius"
+                    type="number"
+                    min="0"
+                    value={createProviderForm.serviceRadiusKm}
+                    onChange={(event) =>
+                      setCreateProviderForm((current) => ({
+                        ...current,
+                        serviceRadiusKm: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div className="form-field details-grid-full">
+                  <label htmlFor="provider-create-bio">Bio</label>
+                  <textarea
+                    id="provider-create-bio"
+                    rows="4"
+                    value={createProviderForm.bio}
+                    onChange={(event) =>
+                      setCreateProviderForm((current) => ({
+                        ...current,
+                        bio: event.target.value,
+                      }))
+                    }
+                  />
+                </div>
+                <div className="form-field details-grid-full">
+                  <label>Profile photo</label>
+                  <div className="photo-upload-box">
+                    {createProviderForm.photoPreview ? (
+                      <img
+                        src={createProviderForm.photoPreview}
+                        alt="Provider preview"
+                        className="photo-preview"
+                      />
+                    ) : (
+                      <div className="photo-upload-placeholder">No image</div>
+                    )}
+                    <label className="photo-upload-label">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) =>
+                          handlePhotoSelection(event, setCreateProviderForm)
+                        }
+                      />
+                      <span>
+                        {createProviderForm.photoFile
+                          ? "Replace photo"
+                          : "Upload photo"}
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() => {
+                    setIsCreatingProvider(false);
+                    setCreateProviderForm(null);
+                  }}
+                  disabled={isProcessing}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="button button-primary"
+                  onClick={saveNewProvider}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? "Creating..." : "Create provider"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {selectedProvider && (
         <div className="modal-backdrop" role="presentation">
@@ -581,6 +995,34 @@ function ProvidersPage() {
                         handleEditProviderChange("bio", event.target.value)
                       }
                     />
+                  </div>
+                  <div className="form-field details-grid-full">
+                    <label>Profile photo</label>
+                    <div className="photo-upload-box">
+                      {editProviderForm.photoPreview ? (
+                        <img
+                          src={editProviderForm.photoPreview}
+                          alt="Provider preview"
+                          className="photo-preview"
+                        />
+                      ) : (
+                        <div className="photo-upload-placeholder">No image</div>
+                      )}
+                      <label className="photo-upload-label">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(event) =>
+                            handlePhotoSelection(event, setEditProviderForm)
+                          }
+                        />
+                        <span>
+                          {editProviderForm.photoFile
+                            ? "Replace photo"
+                            : "Upload photo"}
+                        </span>
+                      </label>
+                    </div>
                   </div>
                 </div>
 
