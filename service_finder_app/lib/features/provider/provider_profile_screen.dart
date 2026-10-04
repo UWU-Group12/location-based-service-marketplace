@@ -425,7 +425,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
 
       if (!mounted) return;
 
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      AppRouter.goToWelcomeAfterLogout(context);
     } catch (e) {
       if (!mounted) return;
 
