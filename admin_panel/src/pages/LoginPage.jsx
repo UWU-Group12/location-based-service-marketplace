@@ -70,18 +70,18 @@ function LoginPage() {
       <div
         className="logo-section"
         style={{
-          flex: 1,
+         
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          maxWidth: "250px",
+          Width: "fit-content",
           gap: "10px",
         }}
       >
         <img
           src={myLogo}
           alt="Logo"
-          style={{ height: "250px", width: "500px", display: "block" }}
+          style={{ height: "200px", width: "auto", display: "block"}}
         />
         <span
           style={{
@@ -98,7 +98,7 @@ function LoginPage() {
       </div>
 
       
-      <div className="login-panel" style={{ width: "100%", maxWidth: "400px",transform: "translateY(-40px)" }}>
+      <div className="login-panel" style={{ width: "350px", flexShrink: 0, transform: "translateY(-40px)",margin: "0", }}>
         <MessageBanner message={formError || accessError} type="error" />
 
         <form className="form-stack" onSubmit={handleSubmit} noValidate>
@@ -136,12 +136,21 @@ function LoginPage() {
           </label>
 
           <button
-            type="submit"
-            className="button button-primary login-button"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Signing in..." : "Sign in to admin panel"}
-          </button>
+  type="submit"
+  className="button button-primary login-button"
+  disabled={isSubmitting}
+  style={{
+    backgroundColor: "#000000",
+    color: "#ffffff",
+    height: "50px",
+     minHeight: "0",
+    fontSize: "16px",
+    padding: "0 10px",
+    border: "none",
+  }}
+>
+  {isSubmitting ? "Signing in..." : "Sign in to admin panel"}
+</button>
         </form>
       </div>
     </div>

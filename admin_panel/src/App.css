@@ -810,21 +810,21 @@ s
 }
 
 .password-field input {
-  padding-right: 68px;
+  padding-right: 72px;
 }
 
 .password-field button {
   position: absolute;
   top: 50%;
-  right: 7px;
-  min-width: 50px;
-  padding: 5px;
+  right: 10px;
+  min-width: 52px;
+  padding: 4px 8px;
   border: 0;
-  color: var(--primary);
+  color: #2563eb;
   background: transparent;
   cursor: pointer;
-  font-size: 12px;
-  font-weight: 800;
+  font-size: 13px;
+  font-weight: 700;
   transform: translateY(-50%);
 }
 
@@ -993,10 +993,10 @@ s
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 95px;
+  gap: 80px;
   min-height: 100vh;
-  padding: 40px 140px;
-  background: #f5f5f5;
+  padding: 40px 80px;
+  background: #f3f3f3;
 }
 
 .logo-section {
@@ -1004,40 +1004,41 @@ s
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-right: 8px;
+  min-width: 330px;
+  transform: translateY(-8px);
 }
 
 .logo-box {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 190px;
-  height: 190px;
+  width: 300px;
+  height: 300px;
   border-radius: 10px;
-  background: linear-gradient(180deg, #8d0b0b 0%, #7a0000 100%);
-  box-shadow: 0 8px 18px rgba(79, 10, 10, 0.08);
+  background: linear-gradient(180deg, #960d0d 0%, #7b0000 100%);
+  box-shadow: 0 12px 18px rgba(77, 10, 10, 0.04);
 }
 
 .brand-logo {
   display: block;
-  width: 74%;
-  height: 74%;
+  width: 76%;
+  height: 76%;
   object-fit: contain;
   filter: brightness(0) invert(1);
 }
 
 .logo-text {
-  margin-top: 20px;
+  margin-top: 30px;
   color: #7a0000;
-  font-size: 52px;
+  font-size: 64px;
   font-weight: 800;
   letter-spacing: 0.04em;
   line-height: 1;
 }
 
 .login-panel {
-  width: min(100%, 420px);
-  margin-top: 8px;
+  width: min(100%, 360px);
+  margin-top: 0;
 }
 
 .login-field {
@@ -1046,25 +1047,32 @@ s
 
 .login-field span {
   display: block;
-  margin-bottom: 8px;
-  color: #4b5563;
-  font-size: 12px;
+  margin-bottom: 10px;
+  color: #4a5562;
+  font-size: 15px;
   font-weight: 700;
+  line-height: 1.2;
 }
 
 .form-field input,
 .password-field input {
-  min-height: 40px;
-  border: 1px solid #d6dce5;
+  width: 100%;
+  min-height: 42px;
+  border: 1px solid #d4d9df;
   border-radius: 8px;
   background: #fff;
 }
 
 .login-button {
   width: 100%;
-  min-height: 44px;
-  margin-top: 6px;
+  min-height: 80px;
+  margin-top: 18px;
   border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
 }
 
 .login-security-note {
