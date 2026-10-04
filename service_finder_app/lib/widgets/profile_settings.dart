@@ -7,6 +7,7 @@ class ProfileSettingsView extends StatelessWidget {
   final String name;
   final String email;
   final String role;
+  final String? serviceCategories;
   final String? photoUrl;
   final VoidCallback onLogout;
   final List<Widget> accountRows;
@@ -17,6 +18,7 @@ class ProfileSettingsView extends StatelessWidget {
     required this.name,
     required this.email,
     required this.role,
+    this.serviceCategories,
     this.photoUrl,
     required this.onLogout,
     required this.accountRows,
@@ -71,14 +73,42 @@ class ProfileSettingsView extends StatelessWidget {
                   ),
                 ),
                 subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 5),
-                  child: Text(
-                    email.isEmpty ? role : '$email\n$role',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      height: 1.5,
-                    ),
-                  ),
+                  padding: const EdgeInsets.only(top: 3),
+                  child: serviceCategories == null
+                      ? Text(
+                          email.isEmpty ? role : '$email\n$role',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              serviceCategories!.trim().isEmpty
+                                  ? 'Category not provided'
+                                  : serviceCategories!,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                                height: 1.5,
+                              ),
+                            ),
+                            if (email.isNotEmpty) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                email,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                  height: 1.5,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                 ),
               ),
             ],

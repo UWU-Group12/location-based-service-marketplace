@@ -9,22 +9,85 @@ import '../../services/review_service.dart';
 import '../../widgets/request_card.dart';
 
 class CustomerRequestsScreen extends StatefulWidget {
-  const CustomerRequestsScreen({super.key});
+  final Stream<List<ServiceRequestModel>>? requestsStream;
+  final Stream<Set<String>>? reviewedRequestIdsStream;
+  final Future<String?> Function(String)? loadProviderName;
+  final Future<bool?> Function(String)? onRate;
+  final void Function(String)? onOpenRequest;
+
+  const CustomerRequestsScreen({
+    super.key,
+    this.requestsStream,
+    this.reviewedRequestIdsStream,
+    this.loadProviderName,
+    this.onRate,
+    this.onOpenRequest,
+  });
 
   @override
   State<CustomerRequestsScreen> createState() => _CustomerRequestsScreenState();
 }
 
 class _CustomerRequestsScreenState extends State<CustomerRequestsScreen> {
-  final FirestoreService _firestoreService = FirestoreService();
-  final ReviewService _reviewService = ReviewService();
+  late final FirestoreService _firestoreService = FirestoreService();
+  late final ReviewService _reviewService = ReviewService();
+  Stream<List<ServiceRequestModel>>? _requests;
+  Stream<Set<String>>? _reviews;
+  final _providerNames = <String, Future<String?>>{};
+  final _submittedReviews = <String>{};
+  final _ratingRequests = <String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    final customerId = widget.requestsStream == null
+        ? FirebaseAuth.instance.currentUser?.uid
+        : null;
+    _requests =
+        widget.requestsStream ??
+        (customerId == null
+            ? null
+            : _firestoreService.watchCustomerRequests(customerId));
+    _reviews =
+        widget.reviewedRequestIdsStream ??
+        (customerId == null
+            ? null
+            : _reviewService.watchReviewedRequestIds(customerId));
+  }
+
+  Future<String?> _providerName(String providerId) =>
+      _providerNames.putIfAbsent(providerId, () async {
+        if (providerId.trim().isEmpty) return null;
+        try {
+          return widget.loadProviderName != null
+              ? await widget.loadProviderName!(providerId)
+              : (await _firestoreService.getProviderProfile(
+                  providerId,
+                ))?.displayName;
+        } catch (_) {
+          return null;
+        }
+      });
+
+  Future<void> _rate(ServiceRequestModel request) async {
+    if (_ratingRequests.contains(request.requestId)) return;
+    _ratingRequests.add(request.requestId);
+    try {
+      final saved = widget.onRate != null
+          ? await widget.onRate!(request.requestId)
+          : await AppRouter.goToRatingReview(context, request.requestId);
+      if (mounted && saved == true) {
+        setState(() => _submittedReviews.add(request.requestId));
+      }
+    } finally {
+      _ratingRequests.remove(request.requestId);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final customerId = FirebaseAuth.instance.currentUser?.uid;
-
-    if (customerId == null) {
+    if (_requests == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
         body: const Center(
@@ -37,7 +100,7 @@ class _CustomerRequestsScreenState extends State<CustomerRequestsScreen> {
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: StreamBuilder<List<ServiceRequestModel>>(
-          stream: _firestoreService.watchCustomerRequests(customerId),
+          stream: _requests,
           builder: (context, snapshot) {
             if (snapshot.hasError) {
               return _buildMessage(
@@ -63,7 +126,7 @@ class _CustomerRequestsScreenState extends State<CustomerRequestsScreen> {
             }
 
             return StreamBuilder<Set<String>>(
-              stream: _reviewService.watchReviewedRequestIds(customerId),
+              stream: _reviews,
               builder: (context, reviewSnapshot) {
                 final reviewedIds = reviewSnapshot.data ?? const <String>{};
 
@@ -88,25 +151,41 @@ class _CustomerRequestsScreenState extends State<CustomerRequestsScreen> {
                       const SizedBox(height: 24),
                       Expanded(
                         child: ListView.builder(
+                          key: const PageStorageKey('customer_requests'),
+                          padding: const EdgeInsets.only(top: 2, bottom: 8),
                           itemCount: requests.length,
                           itemBuilder: (context, index) {
                             final request = requests[index];
                             final isReviewable =
                                 request.isFinishedJob &&
-                                !reviewedIds.contains(request.requestId);
+                                reviewSnapshot.hasData &&
+                                !reviewSnapshot.hasError &&
+                                !reviewedIds.contains(request.requestId) &&
+                                !_submittedReviews.contains(request.requestId);
 
-                            return RequestCard(
-                              request: request,
-                              onTap: () => AppRouter.goToCustomerRequestDetails(
-                                context,
-                                request.requestId,
-                              ),
-                              onRate: isReviewable
-                                  ? () => AppRouter.goToRatingReview(
-                                      context,
-                                      request.requestId,
-                                    )
-                                  : null,
+                            return FutureBuilder<String?>(
+                              key: ValueKey(request.requestId),
+                              future: _providerName(request.providerId),
+                              builder: (context, providerSnapshot) =>
+                                  RequestCard.customer(
+                                    request: request,
+                                    providerName: providerSnapshot.data,
+                                    onTap: () {
+                                      if (widget.onOpenRequest != null) {
+                                        widget.onOpenRequest!(
+                                          request.requestId,
+                                        );
+                                      } else {
+                                        AppRouter.goToCustomerRequestDetails(
+                                          context,
+                                          request.requestId,
+                                        );
+                                      }
+                                    },
+                                    onRate: isReviewable
+                                        ? () => _rate(request)
+                                        : null,
+                                  ),
                             );
                           },
                         ),

@@ -6,7 +6,7 @@ import '../../core/app_router.dart';
 import '../../models/quotation_model.dart';
 import '../../models/service_request_model.dart';
 import '../../services/firestore_service.dart';
-import '../../widgets/request_card.dart';
+import '../../widgets/provider_request_card.dart';
 import '../../widgets/request_widgets.dart';
 
 class ProviderRequestsScreen extends StatefulWidget {
@@ -67,12 +67,11 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen>
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Request',
+                'Requests',
                 style: Theme.of(
                   context,
                 ).textTheme.headlineLarge?.copyWith(color: AppColors.primary),
               ),
-              const SizedBox(height: 8),
               const SizedBox(height: 20),
               Container(
                 decoration: BoxDecoration(
@@ -162,9 +161,16 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen>
                                           key: const PageStorageKey(
                                             'received_requests',
                                           ),
+                                          padding: const EdgeInsets.only(
+                                            top: 2,
+                                            bottom: 8,
+                                          ),
                                           itemCount: received.length,
                                           itemBuilder: (context, index) =>
-                                              RequestCard(
+                                              ProviderRequestCard.received(
+                                                key: ValueKey(
+                                                  received[index].requestId,
+                                                ),
                                                 request: received[index],
                                                 onTap: () =>
                                                     _open(received[index]),
@@ -180,52 +186,26 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen>
                                           key: const PageStorageKey(
                                             'sent_quotations',
                                           ),
+                                          padding: const EdgeInsets.only(
+                                            top: 2,
+                                            bottom: 8,
+                                          ),
                                           itemCount: sent.length,
                                           itemBuilder: (context, index) {
                                             final quote = sent[index];
                                             final request =
                                                 byId[quote.requestId];
-                                            return Card(
-                                              margin: const EdgeInsets.only(
-                                                bottom: 16,
-                                              ),
-                                              color: Colors.white,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                              ),
-                                              child: ListTile(
-                                                contentPadding:
-                                                    const EdgeInsets.all(16),
-                                                title: Text(
-                                                  request?.title ??
-                                                      'Request unavailable',
-                                                  style: Theme.of(
+                                            return ProviderRequestCard.sent(
+                                              key: ValueKey(quote.quotationId),
+                                              request: request,
+                                              quotation: quote,
+                                              onTap: () =>
+                                                  AppRouter.goToProviderRequestDetails(
                                                     context,
-                                                  ).textTheme.titleMedium,
-                                                ),
-                                                subtitle: Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                        top: 8,
-                                                      ),
-                                                  child: Text(
-                                                    '${request?.customerName ?? 'Name unavailable'}\n${request?.addressText ?? quote.requestId}\nRs. ${quote.estimatedTotal.toStringAsFixed(2)}\nWaiting for customer approval',
+                                                    requestId: quote.requestId,
+                                                    quotationId:
+                                                        quote.quotationId,
                                                   ),
-                                                ),
-                                                trailing: const Icon(
-                                                  Icons.chevron_right,
-                                                  color: AppColors.primary,
-                                                ),
-                                                onTap: () =>
-                                                    AppRouter.goToProviderRequestDetails(
-                                                      context,
-                                                      requestId:
-                                                          quote.requestId,
-                                                      quotationId:
-                                                          quote.quotationId,
-                                                    ),
-                                              ),
                                             );
                                           },
                                         ),

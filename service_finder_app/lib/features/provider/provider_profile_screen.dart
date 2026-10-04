@@ -243,6 +243,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
           '',
       email: _user?.email ?? _auth.currentUser?.email ?? '',
       role: 'Service Provider',
+      serviceCategories: _categoryNames,
       photoUrl: _photoUrl,
       onLogout: _logout,
       accountRows: [
