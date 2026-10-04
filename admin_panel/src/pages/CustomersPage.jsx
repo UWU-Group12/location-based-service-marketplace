@@ -6,9 +6,15 @@ import MessageBanner from "../components/MessageBanner";
 import StatusBadge from "../components/StatusBadge";
 import {
   createCustomerAccount,
+  getCustomerRequestCount,
   getCustomers,
   updateCustomerAccountStatus,
+  updateCustomerDetails,
 } from "../services/customerService";
+import {
+  getSetPasswordErrorMessage,
+  setUserPassword,
+} from "../services/authService";
 import {
   formatDate,
   getCreateCustomerErrorMessage,
@@ -26,16 +32,30 @@ const emptyForm = {
   profileCompleted: false,
 };
 
+const emptyEditForm = {
+  displayName: "",
+  phoneNumber: "",
+  profileCompleted: false,
+  newPassword: "",
+  confirmNewPassword: "",
+};
+
 function CustomersPage() {
   const [customers, setCustomers] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showRemoved, setShowRemoved] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState(null);
   const [pendingAction, setPendingAction] = useState(null);
+  const [requestCount, setRequestCount] = useState(null);
+  const [isCountLoading, setIsCountLoading] = useState(false);
   const [customerForm, setCustomerForm] = useState(emptyForm);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState("");
+  const [editingCustomer, setEditingCustomer] = useState(null);
+  const [editForm, setEditForm] = useState(emptyEditForm);
+  const [editError, setEditError] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -83,10 +103,15 @@ function CustomersPage() {
         customer.email?.toLowerCase().includes(queryText);
       const matchesStatus =
         statusFilter === "all" || customer.accountStatus === statusFilter;
+      // Removed customers are hidden by default. Picking "Disabled" in the
+      // status filter also reveals them so the two controls never disagree.
+      const isRemoved = customer.accountStatus === "disabled";
+      const matchesRemoved =
+        showRemoved || statusFilter === "disabled" || !isRemoved;
 
-      return matchesSearch && matchesStatus;
+      return matchesSearch && matchesStatus && matchesRemoved;
     });
-  }, [customers, searchText, statusFilter]);
+  }, [customers, searchText, statusFilter, showRemoved]);
 
   function openAddForm() {
     setCustomerForm(emptyForm);
@@ -156,7 +181,7 @@ function CustomersPage() {
         ),
       );
       setSuccessMessage(
-        `${newCustomer.displayName} can now sign in with the temporary password.`,
+        `${newCustomer.displayName} can now sign in with the password you set.`,
       );
       closeForm();
     } catch (error) {
@@ -172,13 +197,143 @@ function CustomersPage() {
     }
   }
 
+  function openEditForm(customer) {
+    setEditingCustomer(customer);
+    setEditForm({
+      displayName: customer.displayName || "",
+      phoneNumber: customer.phoneNumber || "",
+      profileCompleted: Boolean(customer.profileCompleted),
+      newPassword: "",
+      confirmNewPassword: "",
+    });
+    setShowPassword(false);
+    setEditError("");
+  }
+
+  function closeEditForm() {
+    setEditingCustomer(null);
+    setEditError("");
+  }
+
+  function updateEditField(field, value) {
+    setEditForm((currentForm) => ({ ...currentForm, [field]: value }));
+  }
+
+  async function handleEditSubmit(event) {
+    event.preventDefault();
+    setEditError("");
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    if (!editingCustomer) {
+      return;
+    }
+
+    if (!editForm.displayName.trim()) {
+      setEditError("Customer name is required.");
+      return;
+    }
+
+    // A blank new password keeps the current one.
+    if (editForm.newPassword && editForm.newPassword.length < 6) {
+      setEditError("Use a password with at least 6 characters.");
+      return;
+    }
+
+    if (editForm.newPassword !== editForm.confirmNewPassword) {
+      setEditError("The two passwords do not match.");
+      return;
+    }
+
+    setIsProcessing(true);
+
+    if (editForm.newPassword) {
+      try {
+        await setUserPassword(editingCustomer.id, editForm.newPassword);
+      } catch (error) {
+        console.error("Customer password could not be changed:", error);
+        setEditError(getSetPasswordErrorMessage(error));
+        setIsProcessing(false);
+        return;
+      }
+    }
+
+    try {
+      await updateCustomerDetails(editingCustomer.id, editForm);
+      setCustomers((currentCustomers) =>
+        currentCustomers.map((customer) =>
+          customer.id === editingCustomer.id
+            ? {
+                ...customer,
+                displayName: editForm.displayName.trim(),
+                ...(editForm.phoneNumber.trim()
+                  ? { phoneNumber: editForm.phoneNumber.trim() }
+                  : {}),
+                profileCompleted: editForm.profileCompleted,
+              }
+            : customer,
+        ),
+      );
+      setSelectedCustomer((current) =>
+        current?.id === editingCustomer.id
+          ? {
+              ...current,
+              displayName: editForm.displayName.trim(),
+              ...(editForm.phoneNumber.trim()
+                ? { phoneNumber: editForm.phoneNumber.trim() }
+                : {}),
+              profileCompleted: editForm.profileCompleted,
+            }
+          : current,
+      );
+      setSuccessMessage(
+        editForm.newPassword
+          ? `${editForm.displayName.trim()}'s details and password were updated.`
+          : `${editForm.displayName.trim()}'s details were updated.`,
+      );
+      closeEditForm();
+    } catch (error) {
+      console.error("Customer details could not be updated:", error);
+      setEditError(
+        getDataErrorMessage(
+          error,
+          "The customer details could not be updated.",
+        ),
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  }
+
   function requestStatusChange(customer) {
     const targetStatus =
       customer.accountStatus === "active" ? "suspended" : "active";
-    setPendingAction({ customer, targetStatus });
+    setRequestCount(null);
+    setPendingAction({ type: "status", customer, targetStatus });
   }
 
-  async function confirmStatusChange() {
+  function requestRestore(customer) {
+    setRequestCount(null);
+    setPendingAction({ type: "restore", customer, targetStatus: "active" });
+  }
+
+  async function requestRemove(customer) {
+    setRequestCount(null);
+    setIsCountLoading(true);
+    setPendingAction({ type: "remove", customer, targetStatus: "disabled" });
+
+    try {
+      setRequestCount(await getCustomerRequestCount(customer.id));
+    } catch (error) {
+      // A failed count must not block removal, so the dialog simply omits it.
+      console.error("Customer request count could not be loaded:", error);
+      setRequestCount(null);
+    } finally {
+      setIsCountLoading(false);
+    }
+  }
+
+  async function confirmPendingAction() {
     if (!pendingAction) {
       return;
     }
@@ -204,9 +359,18 @@ function CustomersPage() {
           ? { ...current, accountStatus: pendingAction.targetStatus }
           : current,
       );
-      setSuccessMessage(
-        `${pendingAction.customer.displayName || "Customer"} is now ${pendingAction.targetStatus}.`,
-      );
+
+      const customerName = pendingAction.customer.displayName || "Customer";
+      if (pendingAction.type === "remove") {
+        setSuccessMessage(
+          `${customerName} was removed and can no longer sign in.`,
+        );
+      } else if (pendingAction.type === "restore") {
+        setSuccessMessage(`${customerName} was restored to active.`);
+      } else {
+        setSuccessMessage(`${customerName} is now ${pendingAction.targetStatus}.`);
+      }
+
       setPendingAction(null);
     } catch (error) {
       console.error("Customer status could not be updated:", error);
@@ -275,6 +439,14 @@ function CustomersPage() {
               <option value="disabled">Disabled</option>
             </select>
           </label>
+          <label className="checkbox-field">
+            <input
+              type="checkbox"
+              checked={showRemoved}
+              onChange={(event) => setShowRemoved(event.target.checked)}
+            />
+            <span>Show removed accounts</span>
+          </label>
         </div>
 
         {visibleCustomers.length === 0 ? (
@@ -283,7 +455,7 @@ function CustomersPage() {
             message={
               customers.length === 0
                 ? "Customer accounts will appear here after registration."
-                : "Try changing the search text or account-status filter."
+                : "Try changing the search text, the account-status filter, or show removed accounts."
             }
           />
         ) : (
@@ -332,17 +504,43 @@ function CustomersPage() {
                         </button>
                         <button
                           type="button"
-                          className={`button button-small ${
-                            customer.accountStatus === "active"
-                              ? "button-danger-soft"
-                              : "button-success-soft"
-                          }`}
-                          onClick={() => requestStatusChange(customer)}
+                          className="button button-small button-secondary"
+                          onClick={() => openEditForm(customer)}
                         >
-                          {customer.accountStatus === "active"
-                            ? "Suspend"
-                            : "Activate"}
+                          Edit
                         </button>
+                        {customer.accountStatus !== "disabled" && (
+                          <button
+                            type="button"
+                            className={`button button-small ${
+                              customer.accountStatus === "active"
+                                ? "button-danger-soft"
+                                : "button-success-soft"
+                            }`}
+                            onClick={() => requestStatusChange(customer)}
+                          >
+                            {customer.accountStatus === "active"
+                              ? "Suspend"
+                              : "Activate"}
+                          </button>
+                        )}
+                        {customer.accountStatus === "disabled" ? (
+                          <button
+                            type="button"
+                            className="button button-small button-success-soft"
+                            onClick={() => requestRestore(customer)}
+                          >
+                            Restore
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="button button-small button-danger-soft"
+                            onClick={() => requestRemove(customer)}
+                          >
+                            Remove
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -366,14 +564,26 @@ function CustomersPage() {
                 <h2 id="customer-details-title">Customer details</h2>
                 <p>Basic account information stored in the users collection.</p>
               </div>
-              <button
-                type="button"
-                className="icon-button"
-                aria-label="Close customer details"
-                onClick={() => setSelectedCustomer(null)}
-              >
-                ×
-              </button>
+              <div className="card-header-actions">
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() => {
+                    openEditForm(selectedCustomer);
+                    setSelectedCustomer(null);
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Close customer details"
+                  onClick={() => setSelectedCustomer(null)}
+                >
+                  ×
+                </button>
+              </div>
             </div>
             <dl className="details-grid">
               <div><dt>Name</dt><dd>{selectedCustomer.displayName || "Not provided"}</dd></div>
@@ -383,6 +593,141 @@ function CustomersPage() {
               <div><dt>Profile completed</dt><dd>{selectedCustomer.profileCompleted ? "Yes" : "No"}</dd></div>
               <div><dt>Created</dt><dd>{formatDate(selectedCustomer.createdAt)}</dd></div>
             </dl>
+          </div>
+        </div>
+      )}
+
+      {editingCustomer && !isFormOpen && (
+        <div className="modal-backdrop" role="presentation">
+          <div
+            className="modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="customer-edit-title"
+          >
+            <div className="card-heading">
+              <div>
+                <h2 id="customer-edit-title">Edit customer</h2>
+                <p>Update the profile details stored in the users collection.</p>
+              </div>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Close customer edit form"
+                onClick={closeEditForm}
+                disabled={isProcessing}
+              >
+                ×
+              </button>
+            </div>
+
+            <MessageBanner message={editError} type="error" />
+
+            <form className="form-stack" onSubmit={handleEditSubmit} noValidate>
+              <label className="form-field">
+                <span>Customer name *</span>
+                <input
+                  type="text"
+                  value={editForm.displayName}
+                  onChange={(event) =>
+                    updateEditField("displayName", event.target.value)
+                  }
+                  disabled={isProcessing}
+                />
+              </label>
+
+              <label className="form-field">
+                <span>Email address</span>
+                <input
+                  type="email"
+                  value={editingCustomer.email || ""}
+                  disabled
+                />
+                <small>
+                  The sign-in email is managed in Firebase Authentication and
+                  cannot be changed from this panel.
+                </small>
+              </label>
+
+              <label className="form-field">
+                <span>Phone number</span>
+                <input
+                  type="tel"
+                  value={editForm.phoneNumber}
+                  placeholder="+94771234567"
+                  onChange={(event) =>
+                    updateEditField("phoneNumber", event.target.value)
+                  }
+                  disabled={isProcessing}
+                />
+              </label>
+
+              <label className="checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={editForm.profileCompleted}
+                  onChange={(event) =>
+                    updateEditField("profileCompleted", event.target.checked)
+                  }
+                  disabled={isProcessing}
+                />
+                <span>Profile setup is complete</span>
+              </label>
+
+              <label className="form-field">
+                <span>New password</span>
+                <div className="password-field">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={editForm.newPassword}
+                    autoComplete="new-password"
+                    placeholder="Leave blank to keep the current password"
+                    onChange={(event) =>
+                      updateEditField("newPassword", event.target.value)
+                    }
+                    disabled={isProcessing}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    disabled={isProcessing}
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </label>
+
+              <label className="form-field">
+                <span>Confirm new password</span>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={editForm.confirmNewPassword}
+                  autoComplete="new-password"
+                  onChange={(event) =>
+                    updateEditField("confirmNewPassword", event.target.value)
+                  }
+                  disabled={isProcessing}
+                />
+              </label>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={closeEditForm}
+                  disabled={isProcessing}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="button button-primary"
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? "Saving..." : "Save changes"}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -459,7 +804,7 @@ function CustomersPage() {
               </label>
 
               <label className="form-field">
-                <span>Temporary password *</span>
+                <span>Password *</span>
                 <div className="password-field">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -522,8 +867,8 @@ function CustomersPage() {
               </label>
 
               <p>
-                Share the temporary password with the customer over a trusted
-                channel. They can change it from the mobile app or use the
+                Share the password with the customer over a trusted channel.
+                They can change it from the mobile app or use the
                 password-reset email.
               </p>
 
@@ -551,22 +896,58 @@ function CustomersPage() {
 
       <ConfirmDialog
         isOpen={Boolean(pendingAction)}
-        title="Change customer status?"
+        title={
+          pendingAction?.type === "remove"
+            ? "Remove this customer?"
+            : pendingAction?.type === "restore"
+              ? "Restore this customer?"
+              : "Change customer status?"
+        }
         message={
-          pendingAction
-            ? `Set ${pendingAction.customer.displayName || "this customer"} to ${pendingAction.targetStatus}?`
-            : ""
+          pendingAction?.type === "remove"
+            ? `${pendingAction.customer.displayName || "This customer"} will lose app access and can sign in no further. Their account is kept so this can be undone, and existing service history is retained.`
+            : pendingAction?.type === "restore"
+              ? `${pendingAction.customer.displayName || "This customer"} will regain full access to the app.`
+              : pendingAction
+                ? `Set ${pendingAction.customer.displayName || "this customer"} to ${pendingAction.targetStatus}?`
+                : ""
         }
         confirmLabel={
-          pendingAction?.targetStatus === "active" ? "Activate" : "Suspend"
+          pendingAction?.type === "remove"
+            ? "Remove customer"
+            : pendingAction?.type === "restore"
+              ? "Restore"
+              : pendingAction?.targetStatus === "active"
+                ? "Activate"
+                : "Suspend"
         }
         confirmTone={
-          pendingAction?.targetStatus === "active" ? "success" : "danger"
+          pendingAction?.type === "remove"
+            ? "danger"
+            : pendingAction?.type === "restore"
+              ? "success"
+              : pendingAction?.targetStatus === "active"
+                ? "success"
+                : "danger"
         }
-        isProcessing={isProcessing}
+        isProcessing={isProcessing || isCountLoading}
         onCancel={() => setPendingAction(null)}
-        onConfirm={confirmStatusChange}
-      />
+        onConfirm={confirmPendingAction}
+      >
+        {pendingAction?.type === "remove" && (
+          <p>
+            {isCountLoading
+              ? "Checking service requests..."
+              : requestCount === null
+                ? "The number of service requests could not be checked."
+                : requestCount === 0
+                  ? "This customer has no service requests."
+                  : `This customer has ${requestCount} service ${
+                      requestCount === 1 ? "request" : "requests"
+                    } linked to the account.`}
+          </p>
+        )}
+      </ConfirmDialog>
     </div>
   );
 }

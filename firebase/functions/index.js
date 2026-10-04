@@ -1,6 +1,8 @@
 const { onDocumentCreated, onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const { setGlobalOptions } = require("firebase-functions/v2");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { initializeApp } = require("firebase-admin/app");
+const { getAuth } = require("firebase-admin/auth");
 const { getFirestore, FieldValue } = require("firebase-admin/firestore");
 
 // Same region as the Firestore database (firebase.json)
@@ -60,3 +62,30 @@ exports.recomputeRatingOnReviewUpdated = onDocumentUpdated(
     await recomputeProviderRating(providerId);
   },
 );
+// Admin panel: set a new sign-in password for a customer or provider.
+// Changing another user's password needs the Admin SDK, so it runs here.
+exports.setUserPassword = onCall(async (request) => {
+  if (!request.auth || request.auth.token.admin !== true) {
+    throw new HttpsError("permission-denied", "Only administrators can change passwords.");
+  }
+
+  const { userId, password } = request.data || {};
+
+  if (typeof userId !== "string" || !userId) {
+    throw new HttpsError("invalid-argument", "A user ID is required.");
+  }
+
+  if (typeof password !== "string" || password.length < 6) {
+    throw new HttpsError("invalid-argument", "Use a password with at least 6 characters.");
+  }
+
+  const userSnapshot = await db.collection("users").doc(userId).get();
+  const role = userSnapshot.exists ? userSnapshot.data().role : null;
+
+  // Only app users; administrator passwords are not managed from the panel.
+  if (role !== "customer" && role !== "provider") {
+    throw new HttpsError("not-found", "Customer or provider account not found.");
+  }
+
+  await getAuth().updateUser(userId, { password });
+});

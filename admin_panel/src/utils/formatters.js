@@ -30,7 +30,7 @@ export function getInitials(name = "") {
 
 export function getDataErrorMessage(error, fallbackMessage) {
   if (error?.code === "permission-denied") {
-    return "Your administrator account is not allowed to perform this action.";
+    return "Firebase denied this action. Check administrator permissions and deployed Firestore rules.";
   }
 
   if (error?.code === "unavailable") {
@@ -40,7 +40,7 @@ export function getDataErrorMessage(error, fallbackMessage) {
   return fallbackMessage;
 }
 
-export function getCreateCustomerErrorMessage(error, fallbackMessage) {
+export function getCreateAccountErrorMessage(error, fallbackMessage) {
   switch (error?.code) {
     case "auth/email-already-in-use":
       return "A sign-in account already exists for this email address.";
@@ -49,12 +49,27 @@ export function getCreateCustomerErrorMessage(error, fallbackMessage) {
     case "auth/weak-password":
       return "Use a password with at least 6 characters.";
     case "auth/operation-not-allowed":
+    case "auth/configuration-not-found":
       return "Email and password sign-in is disabled in Firebase Authentication.";
     case "auth/too-many-requests":
       return "Too many attempts. Please wait and try again.";
     case "auth/network-request-failed":
       return "Unable to reach Firebase. Check your internet connection.";
+    case "auth/unauthorized-domain":
+      return "This website domain is not authorized for Firebase Authentication.";
+    case "auth/invalid-api-key":
+      return "Firebase Authentication is misconfigured. Check the Firebase API key.";
     default:
-      return getDataErrorMessage(error, fallbackMessage);
+      if (error?.code === "permission-denied") {
+        return getDataErrorMessage(error, fallbackMessage);
+      }
+
+      return error?.code
+        ? `${fallbackMessage} (Firebase error: ${error.code})`
+        : fallbackMessage;
   }
+}
+
+export function getCreateCustomerErrorMessage(error, fallbackMessage) {
+  return getCreateAccountErrorMessage(error, fallbackMessage);
 }

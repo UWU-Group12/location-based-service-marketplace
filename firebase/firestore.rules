@@ -85,9 +85,10 @@ service cloud.firestore {
     match /providerProfiles/{providerId} {
       allow read: if signedIn();
 
-      // New profile must start as 'pending'
-      allow create: if isMe(providerId)
-        && request.resource.data.verificationStatus == 'pending';
+      // Administrators can provision profiles; self-registration starts pending.
+      allow create: if isAdmin()
+        || (isMe(providerId)
+            && request.resource.data.verificationStatus == 'pending');
 
       // Provider can edit own profile, but cannot verify himself
       // nor change ratingAverage / reviewCount / completedJobCount.

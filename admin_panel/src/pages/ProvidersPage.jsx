@@ -13,16 +13,25 @@ import {
   updateProviderDetails,
   uploadProviderProfilePhoto,
 } from "../services/providerService";
+import {
+  getSetPasswordErrorMessage,
+  setUserPassword,
+} from "../services/authService";
 import { getAuthorizedFileUrl } from "../services/storageService";
-import { getDataErrorMessage } from "../utils/formatters";
+import {
+  getCreateAccountErrorMessage,
+  getDataErrorMessage,
+} from "../utils/formatters";
 
 function ProvidersPage() {
   const [providers, setProviders] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [verificationFilter, setVerificationFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
+  const [showRemoved, setShowRemoved] = useState(false);
   const [selectedProvider, setSelectedProvider] = useState(null);
   const [isCreatingProvider, setIsCreatingProvider] = useState(false);
+  const [showCreatePassword, setShowCreatePassword] = useState(false);
   const [isEditingProvider, setIsEditingProvider] = useState(false);
   const [editProviderForm, setEditProviderForm] = useState(null);
   const [createProviderForm, setCreateProviderForm] = useState(null);
@@ -81,17 +90,39 @@ function ProvidersPage() {
         availabilityFilter === "all" ||
         provider.profile.availabilityStatus === availabilityFilter;
 
-      return matchesSearch && matchesVerification && matchesAvailability;
+      const isRemoved = provider.accountStatus === "disabled";
+      const matchesRemoved = showRemoved || !isRemoved;
+
+      return (
+        matchesSearch &&
+        matchesVerification &&
+        matchesAvailability &&
+        matchesRemoved
+      );
     });
-  }, [availabilityFilter, providers, searchText, verificationFilter]);
+  }, [
+    availabilityFilter,
+    providers,
+    searchText,
+    showRemoved,
+    verificationFilter,
+  ]);
 
   function requestStatusChange(provider) {
     const targetStatus =
       provider.accountStatus === "active" ? "suspended" : "active";
-    setPendingAction({ provider, targetStatus });
+    setPendingAction({ type: "status", provider, targetStatus });
   }
 
-  async function confirmStatusChange() {
+  function requestRemove(provider) {
+    setPendingAction({ type: "remove", provider, targetStatus: "disabled" });
+  }
+
+  function requestRestore(provider) {
+    setPendingAction({ type: "restore", provider, targetStatus: "active" });
+  }
+
+  async function confirmPendingAction() {
     if (!pendingAction) {
       return;
     }
@@ -117,9 +148,18 @@ function ProvidersPage() {
           ? { ...current, accountStatus: pendingAction.targetStatus }
           : current,
       );
-      setSuccessMessage(
-        `${pendingAction.provider.displayName || "Provider"} is now ${pendingAction.targetStatus}.`,
-      );
+      const providerName = pendingAction.provider.displayName || "Provider";
+      if (pendingAction.type === "remove") {
+        setSuccessMessage(
+          `${providerName} was removed and can no longer sign in.`,
+        );
+      } else if (pendingAction.type === "restore") {
+        setSuccessMessage(`${providerName} was restored to active.`);
+      } else {
+        setSuccessMessage(
+          `${providerName} is now ${pendingAction.targetStatus}.`,
+        );
+      }
       setPendingAction(null);
     } catch (error) {
       console.error("Provider status could not be updated:", error);
@@ -138,10 +178,12 @@ function ProvidersPage() {
     setCreateProviderForm({
       displayName: "",
       email: "",
+      password: "",
+      confirmPassword: "",
       phoneNumber: "",
       categories: "",
-      availabilityStatus: "unavailable",
-      verificationStatus: "not_submitted",
+      availabilityStatus: "available",
+      verificationStatus: "verified",
       experienceYears: 0,
       workingHours: "",
       bio: "",
@@ -151,10 +193,11 @@ function ProvidersPage() {
       photoPreview: "",
       photoFile: null,
     });
+    setShowCreatePassword(false);
     setIsCreatingProvider(true);
   }
 
-  async function openProviderEditForm() {
+  async function openProviderEditForm(selectedProvider) {
     if (!selectedProvider) {
       return;
     }
@@ -194,7 +237,10 @@ function ProvidersPage() {
       photoPath: existingPhotoPath,
       photoPreview,
       photoFile: null,
+      newPassword: "",
+      confirmNewPassword: "",
     });
+    setShowCreatePassword(false);
     setIsEditingProvider(true);
   }
 
@@ -238,9 +284,31 @@ function ProvidersPage() {
       return;
     }
 
+    // A blank new password keeps the current one.
+    if (editProviderForm.newPassword && editProviderForm.newPassword.length < 6) {
+      setErrorMessage("Use a password with at least 6 characters.");
+      return;
+    }
+
+    if (editProviderForm.newPassword !== editProviderForm.confirmNewPassword) {
+      setErrorMessage("The two passwords do not match.");
+      return;
+    }
+
     setIsProcessing(true);
     setErrorMessage("");
     setSuccessMessage("");
+
+    if (editProviderForm.newPassword) {
+      try {
+        await setUserPassword(selectedProvider.id, editProviderForm.newPassword);
+      } catch (error) {
+        console.error("Provider password could not be changed:", error);
+        setErrorMessage(getSetPasswordErrorMessage(error));
+        setIsProcessing(false);
+        return;
+      }
+    }
 
     try {
       const normalizedProfile = {
@@ -316,7 +384,11 @@ function ProvidersPage() {
       setSelectedProvider(updatedSelectedProvider);
       setIsEditingProvider(false);
       setEditProviderForm(null);
-      setSuccessMessage("Provider details were updated successfully.");
+      setSuccessMessage(
+        editProviderForm.newPassword
+          ? "Provider details and password were updated successfully."
+          : "Provider details were updated successfully.",
+      );
     } catch (error) {
       console.error("Provider details could not be updated:", error);
       setErrorMessage(
@@ -335,6 +407,26 @@ function ProvidersPage() {
       return;
     }
 
+    if (!createProviderForm.displayName.trim()) {
+      setErrorMessage("Provider name is required.");
+      return;
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(createProviderForm.email.trim())) {
+      setErrorMessage("Enter a valid email address.");
+      return;
+    }
+
+    if (createProviderForm.password.length < 6) {
+      setErrorMessage("Use a password with at least 6 characters.");
+      return;
+    }
+
+    if (createProviderForm.password !== createProviderForm.confirmPassword) {
+      setErrorMessage("The two passwords do not match.");
+      return;
+    }
+
     setIsProcessing(true);
     setErrorMessage("");
     setSuccessMessage("");
@@ -348,6 +440,7 @@ function ProvidersPage() {
       const createdProvider = await createProvider({
         displayName: createProviderForm.displayName.trim(),
         email: createProviderForm.email.trim(),
+        password: createProviderForm.password,
         phoneNumber: createProviderForm.phoneNumber.trim(),
         categories: categoryIds.join(", "),
         categoryIds,
@@ -360,34 +453,59 @@ function ProvidersPage() {
         serviceRadiusKm: Number(createProviderForm.serviceRadiusKm || 10),
       });
 
-      if (createProviderForm.photoFile) {
-        const uploadedPhotoPath = await uploadProviderProfilePhoto(
-          createdProvider.id,
-          createProviderForm.photoFile,
-        );
-
-        if (uploadedPhotoPath) {
-          await updateProviderDetails(createdProvider.id, {
-            photoPath: uploadedPhotoPath,
-            profile: {
-              profileImagePath: uploadedPhotoPath,
-            },
-          });
-
-          createdProvider.photoPath = uploadedPhotoPath;
-          createdProvider.profile.profileImagePath = uploadedPhotoPath;
-        }
-      }
-
       setProviders((currentProviders) => [createdProvider, ...currentProviders]);
       setSelectedProvider(createdProvider);
       setIsCreatingProvider(false);
       setCreateProviderForm(null);
       setSuccessMessage(`${createdProvider.displayName} was added successfully.`);
+
+      if (createProviderForm.photoFile) {
+        try {
+          const uploadedPhotoPath = await uploadProviderProfilePhoto(
+            createdProvider.id,
+            createProviderForm.photoFile,
+          );
+
+          if (uploadedPhotoPath) {
+            await updateProviderDetails(createdProvider.id, {
+              photoPath: uploadedPhotoPath,
+              profile: {
+                profileImagePath: uploadedPhotoPath,
+              },
+            });
+
+            const providerWithPhoto = {
+              ...createdProvider,
+              photoPath: uploadedPhotoPath,
+              profile: {
+                ...createdProvider.profile,
+                profileImagePath: uploadedPhotoPath,
+              },
+            };
+            setProviders((currentProviders) =>
+              currentProviders.map((provider) =>
+                provider.id === createdProvider.id ? providerWithPhoto : provider,
+              ),
+            );
+            setSelectedProvider(providerWithPhoto);
+          }
+        } catch (error) {
+          console.error("Provider was created, but photo upload failed:", error);
+          setErrorMessage(
+            getDataErrorMessage(
+              error,
+              "The provider was created, but their photo could not be saved. You can add it later by editing the provider.",
+            ),
+          );
+        }
+      }
     } catch (error) {
       console.error("Provider could not be created:", error);
       setErrorMessage(
-        getDataErrorMessage(error, "The provider could not be created."),
+        getCreateAccountErrorMessage(
+          error,
+          "The provider could not be created. Check the Firebase console for details.",
+        ),
       );
     } finally {
       setIsProcessing(false);
@@ -462,6 +580,14 @@ function ProvidersPage() {
               <option value="unavailable">Unavailable</option>
             </select>
           </label>
+          <label className="checkbox-field">
+            <input
+              type="checkbox"
+              checked={showRemoved}
+              onChange={(event) => setShowRemoved(event.target.checked)}
+            />
+            <span>Show removed accounts</span>
+          </label>
         </div>
 
         {visibleProviders.length === 0 ? (
@@ -470,7 +596,7 @@ function ProvidersPage() {
             message={
               providers.length === 0
                 ? "Provider accounts will appear here after registration."
-                : "Try changing the search text or filters."
+                : "Try changing the search text, filters, or show removed accounts."
             }
           />
         ) : (
@@ -548,25 +674,54 @@ function ProvidersPage() {
                           >
                             Details
                           </button>
+                          <button
+                            type="button"
+                            className="button button-small button-secondary"
+                            onClick={() => {
+                              setSelectedProvider(provider);
+                              openProviderEditForm(provider);
+                            }}
+                          >
+                            Edit
+                          </button>
                           <Link
                             className="button button-small button-secondary"
                             to={`/provider-verifications?providerId=${provider.id}`}
                           >
                             Verification
                           </Link>
-                          <button
-                            type="button"
-                            className={`button button-small ${
-                              provider.accountStatus === "active"
-                                ? "button-danger-soft"
-                                : "button-success-soft"
-                            }`}
-                            onClick={() => requestStatusChange(provider)}
-                          >
-                            {provider.accountStatus === "active"
-                              ? "Suspend"
-                              : "Activate"}
-                          </button>
+                          {provider.accountStatus !== "disabled" && (
+                            <button
+                              type="button"
+                              className={`button button-small ${
+                                provider.accountStatus === "active"
+                                  ? "button-danger-soft"
+                                  : "button-success-soft"
+                              }`}
+                              onClick={() => requestStatusChange(provider)}
+                            >
+                              {provider.accountStatus === "active"
+                                ? "Suspend"
+                                : "Activate"}
+                            </button>
+                          )}
+                          {provider.accountStatus === "disabled" ? (
+                            <button
+                              type="button"
+                              className="button button-small button-success-soft"
+                              onClick={() => requestRestore(provider)}
+                            >
+                              Restore
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="button button-small button-danger-soft"
+                              onClick={() => requestRemove(provider)}
+                            >
+                              Remove
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -625,6 +780,51 @@ function ProvidersPage() {
                     onChange={(event) =>
                       handleCreateProviderChange("email", event.target.value)
                     }
+                  />
+                </div>
+                <div className="form-field">
+                  <label htmlFor="provider-create-password">
+                    Password
+                  </label>
+                  <div className="password-field">
+                    <input
+                      id="provider-create-password"
+                      type={showCreatePassword ? "text" : "password"}
+                      value={createProviderForm.password}
+                      autoComplete="new-password"
+                      placeholder="At least 6 characters"
+                      onChange={(event) =>
+                        handleCreateProviderChange("password", event.target.value)
+                      }
+                      disabled={isProcessing}
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setShowCreatePassword((current) => !current)
+                      }
+                      disabled={isProcessing}
+                    >
+                      {showCreatePassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </div>
+                <div className="form-field">
+                  <label htmlFor="provider-create-confirm-password">
+                    Confirm password
+                  </label>
+                  <input
+                    id="provider-create-confirm-password"
+                    type={showCreatePassword ? "text" : "password"}
+                    value={createProviderForm.confirmPassword}
+                    autoComplete="new-password"
+                    onChange={(event) =>
+                      handleCreateProviderChange(
+                        "confirmPassword",
+                        event.target.value,
+                      )
+                    }
+                    disabled={isProcessing}
                   />
                 </div>
                 <div className="form-field">
@@ -832,7 +1032,7 @@ function ProvidersPage() {
                   <button
                     type="button"
                     className="button button-secondary"
-                    onClick={openProviderEditForm}
+                    onClick={() => openProviderEditForm(selectedProvider)}
                   >
                     Edit
                   </button>
@@ -854,6 +1054,7 @@ function ProvidersPage() {
 
             {isEditingProvider && editProviderForm ? (
               <div className="form-stack">
+                <MessageBanner message={errorMessage} type="error" />
                 <div className="details-grid">
                   <div className="form-field">
                     <label htmlFor="provider-edit-name">Name</label>
@@ -884,6 +1085,49 @@ function ProvidersPage() {
                       onChange={(event) =>
                         handleEditProviderChange("phoneNumber", event.target.value)
                       }
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="provider-edit-password">New password</label>
+                    <div className="password-field">
+                      <input
+                        id="provider-edit-password"
+                        type={showCreatePassword ? "text" : "password"}
+                        value={editProviderForm.newPassword}
+                        autoComplete="new-password"
+                        placeholder="Leave blank to keep current"
+                        onChange={(event) =>
+                          handleEditProviderChange("newPassword", event.target.value)
+                        }
+                        disabled={isProcessing}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowCreatePassword((current) => !current)
+                        }
+                        disabled={isProcessing}
+                      >
+                        {showCreatePassword ? "Hide" : "Show"}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="provider-edit-confirm-password">
+                      Confirm new password
+                    </label>
+                    <input
+                      id="provider-edit-confirm-password"
+                      type={showCreatePassword ? "text" : "password"}
+                      value={editProviderForm.confirmNewPassword}
+                      autoComplete="new-password"
+                      onChange={(event) =>
+                        handleEditProviderChange(
+                          "confirmNewPassword",
+                          event.target.value,
+                        )
+                      }
+                      disabled={isProcessing}
                     />
                   </div>
                   <div className="form-field">
@@ -1143,21 +1387,41 @@ function ProvidersPage() {
 
       <ConfirmDialog
         isOpen={Boolean(pendingAction)}
-        title="Change provider status?"
+        title={
+          pendingAction?.type === "remove"
+            ? "Remove this provider?"
+            : pendingAction?.type === "restore"
+              ? "Restore this provider?"
+              : "Change provider status?"
+        }
         message={
-          pendingAction
-            ? `Set ${pendingAction.provider.displayName || "this provider"} to ${pendingAction.targetStatus}?`
-            : ""
+          pendingAction?.type === "remove"
+            ? `${pendingAction.provider.displayName || "This provider"} will lose app access and can no longer sign in. Their account and service history are kept so this can be undone.`
+            : pendingAction?.type === "restore"
+              ? `${pendingAction.provider.displayName || "This provider"} will regain app access.`
+              : pendingAction
+                ? `Set ${pendingAction.provider.displayName || "this provider"} to ${pendingAction.targetStatus}?`
+                : ""
         }
         confirmLabel={
-          pendingAction?.targetStatus === "active" ? "Activate" : "Suspend"
+          pendingAction?.type === "remove"
+            ? "Remove provider"
+            : pendingAction?.type === "restore"
+              ? "Restore"
+              : pendingAction?.targetStatus === "active"
+                ? "Activate"
+                : "Suspend"
         }
         confirmTone={
-          pendingAction?.targetStatus === "active" ? "success" : "danger"
+          pendingAction?.type === "remove"
+            ? "danger"
+            : pendingAction?.targetStatus === "active"
+              ? "success"
+              : "danger"
         }
         isProcessing={isProcessing}
         onCancel={() => setPendingAction(null)}
-        onConfirm={confirmStatusChange}
+        onConfirm={confirmPendingAction}
       />
     </div>
   );
