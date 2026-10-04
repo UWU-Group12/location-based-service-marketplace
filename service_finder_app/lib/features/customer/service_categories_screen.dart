@@ -3,7 +3,7 @@ import 'package:service_finder_app/core/app_router.dart';
 
 import '../../services/firestore_service.dart';
 import '../../models/service_category_model.dart';
-import '../../services/storage_service.dart';
+import '../../widgets/category_card.dart';
 
 class ServiceCategoriesScreen extends StatefulWidget {
   const ServiceCategoriesScreen({super.key});
@@ -15,7 +15,6 @@ class ServiceCategoriesScreen extends StatefulWidget {
 
 class _ServiceCategoriesScreenState extends State<ServiceCategoriesScreen> {
   final FirestoreService firestoreService = FirestoreService();
-  final StorageService storageService = StorageService();
 
   @override
   Widget build(BuildContext context) {
@@ -39,86 +38,37 @@ class _ServiceCategoriesScreenState extends State<ServiceCategoriesScreen> {
             return const Center(child: Text("No Categories"));
           }
 
-          return GridView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: categories.length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.2,
-            ),
-            itemBuilder: (context, index) {
-              final category = categories[index];
+          return LayoutBuilder(
+            builder: (context, constraints) {
+              const padding = 16.0;
+              const spacing = 12.0;
+              final availableWidth = constraints.maxWidth - (padding * 2);
+              final tileWidth = (availableWidth - spacing) / 2;
+              final tileHeight = CategoryCard.tileHeight(context, tileWidth);
 
-              return Card(
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: () {
-                    AppRouter.goToProviderListScreen(
-                      context,
-                      categoryId: category.id,
-                      categoryName: category.name,
-                    );
-                  },
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(
-                          width: 48,
-                          height: 48,
-                          child: category.iconPath.isEmpty
-                              ? const Icon(Icons.home_repair_service, size: 42)
-                              : FutureBuilder<String?>(
-                                  future: storageService.getDownloadUrl(
-                                    category.iconPath,
-                                  ),
-                                  builder: (context, iconSnapshot) {
-                                    if (iconSnapshot.connectionState ==
-                                        ConnectionState.waiting) {
-                                      return const Center(
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      );
-                                    }
-
-                                    if (iconSnapshot.hasError ||
-                                        iconSnapshot.data == null) {
-                                      return const Icon(
-                                        Icons.home_repair_service,
-                                        size: 42,
-                                      );
-                                    }
-
-                                    return Image.network(
-                                      iconSnapshot.data!,
-                                      fit: BoxFit.contain,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                            return const Icon(
-                                              Icons.home_repair_service,
-                                              size: 42,
-                                            );
-                                          },
-                                    );
-                                  },
-                                ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          category.name,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+              return GridView.builder(
+                padding: const EdgeInsets.all(padding),
+                itemCount: categories.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: spacing,
+                  mainAxisSpacing: spacing,
+                  childAspectRatio: tileWidth / tileHeight,
                 ),
+                itemBuilder: (context, index) {
+                  final category = categories[index];
+
+                  return CategoryCard(
+                    category: category,
+                    onTap: () {
+                      AppRouter.goToProviderListScreen(
+                        context,
+                        categoryId: category.id,
+                        categoryName: category.name,
+                      );
+                    },
+                  );
+                },
               );
             },
           );
