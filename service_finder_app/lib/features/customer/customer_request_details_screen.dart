@@ -7,6 +7,7 @@ import '../../models/review_model.dart';
 import '../../models/service_request_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/review_service.dart';
+import '../../widgets/profile_settings.dart';
 import '../../widgets/request_widgets.dart';
 import '../../widgets/review_tile.dart';
 
@@ -117,6 +118,7 @@ class _CustomerRequestDetailsScreenState
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        centerTitle: true,
         title: const Text('Request Details'),
         backgroundColor: AppColors.background,
         elevation: 0,
@@ -155,50 +157,88 @@ class _CustomerRequestDetailsScreenState
   }
 
   Widget _buildContent(BuildContext context, ServiceRequestModel request) {
-    final textTheme = Theme.of(context).textTheme;
+    final preferredVisit = [
+      if (request.preferredDate != null)
+        requestDateLabel(context, request.preferredDate),
+      if (request.preferredTime?.trim().isNotEmpty ?? false)
+        request.preferredTime!.trim(),
+    ].join(' · ');
 
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
       children: [
-        Text(request.title, style: textTheme.headlineSmall),
-        const SizedBox(height: 16),
-        RequestDetailCard(
-          title: 'Request',
+        ProfileSettingsGroup(
           children: [
-            RequestDetailField(
-              'Status',
-              requestStatusLabel(request.requestStatus),
-            ),
-            RequestDetailField(
-              'Quotation',
-              requestStatusLabel(request.quotationStatus),
-            ),
-            RequestDetailField('Address', request.addressText),
-            RequestDetailField('Description', request.description),
-            RequestDetailField(
-              'Preferred date',
-              requestDateLabel(context, request.preferredDate),
-            ),
-            RequestDetailField('Preferred time', request.preferredTime),
-            RequestDetailField(
-              'Created',
-              requestDateTimeLabel(context, request.createdAt),
-            ),
-            if (request.finalAmount != null)
-              RequestDetailField(
-                'Agreed amount',
-                'Rs. ${request.finalAmount!.toStringAsFixed(2)}',
+            ListTile(
+              contentPadding: const EdgeInsets.all(18),
+              leading: CircleAvatar(
+                radius: 28,
+                backgroundColor: AppColors.primary.withValues(alpha: 0.08),
+                child: const Icon(
+                  Icons.assignment_outlined,
+                  color: AppColors.primary,
+                ),
               ),
+              title: Text(
+                request.title,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              subtitle: Padding(
+                padding: const EdgeInsets.only(top: 3),
+                child: Text(
+                  requestStatusLabel(request.requestStatus),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
+        RequestSection('Request', [
+          ProfileSettingsRow(
+            icon: Icons.description_outlined,
+            title: 'Problem',
+            value: request.description.trim().isEmpty
+                ? 'Not provided'
+                : request.description.trim(),
+          ),
+          ProfileSettingsRow(
+            icon: Icons.event_outlined,
+            title: 'Preferred visit',
+            value: preferredVisit.isEmpty ? 'Not provided' : preferredVisit,
+          ),
+          if (request.finalAmount != null)
+            ProfileSettingsRow(
+              icon: Icons.payments_outlined,
+              title: 'Agreed amount',
+              value: 'Rs. ${request.finalAmount!.toStringAsFixed(2)}',
+            ),
+        ]),
+        RequestSection('Location', [
+          ProfileSettingsRow(
+            icon: Icons.location_on_outlined,
+            title: 'Service address',
+            value: request.addressText.trim().isEmpty
+                ? 'Not provided'
+                : request.addressText.trim(),
+          ),
+          RequestLocationMap(point: request.servicePoint),
+        ]),
         if (request.isAwaitingQuotationApproval)
           _buildQuotationSection(context, request),
         if (request.requestStatus == 'in_progress')
           _buildConfirmButton(context, request),
-        RequestDetailCard(
-          title: 'Your review',
-          children: [_buildReviewSection(context, request)],
-        ),
+        RequestSection('Your review', [
+          Padding(
+            padding: const EdgeInsets.all(18),
+            child: _buildReviewSection(context, request),
+          ),
+        ]),
       ],
     );
   }
@@ -211,10 +251,12 @@ class _CustomerRequestDetailsScreenState
       stream: _quotation,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return const RequestDetailCard(
-            title: 'Quotation',
-            children: [Text('Unable to load the quotation.')],
-          );
+          return const RequestSection('Quotation', [
+            ProfileSettingsRow(
+              icon: Icons.error_outline,
+              title: 'Unable to load the quotation.',
+            ),
+          ]);
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -232,33 +274,36 @@ class _CustomerRequestDetailsScreenState
           return const SizedBox.shrink();
         }
 
-        return RequestDetailCard(
-          title: 'Quotation',
-          children: [
-            RequestDetailField(
-              'Service charge',
-              'Rs. ${quote.serviceCharge.toStringAsFixed(2)}',
+        return RequestSection('Quotation', [
+          ProfileSettingsRow(
+            icon: Icons.payments_outlined,
+            title:
+                'Estimated total: Rs. ${quote.estimatedTotal.toStringAsFixed(2)}',
+            value: quote.inspectionFee == null
+                ? 'Service charge Rs. ${quote.serviceCharge.toStringAsFixed(2)}'
+                : 'Service charge Rs. ${quote.serviceCharge.toStringAsFixed(2)} · Inspection fee Rs. ${quote.inspectionFee!.toStringAsFixed(2)}',
+          ),
+          if (quote.materialCostNote?.trim().isNotEmpty ?? false)
+            ProfileSettingsRow(
+              icon: Icons.build_outlined,
+              title: 'Material costs',
+              value: quote.materialCostNote!.trim(),
             ),
-            if (quote.inspectionFee != null)
-              RequestDetailField(
-                'Inspection fee',
-                'Rs. ${quote.inspectionFee!.toStringAsFixed(2)}',
-              ),
-            RequestDetailField(
-              'Estimated total',
-              'Rs. ${quote.estimatedTotal.toStringAsFixed(2)}',
+          if (quote.availableAt != null)
+            ProfileSettingsRow(
+              icon: Icons.schedule_outlined,
+              title: 'Provider available',
+              value: requestDateTimeLabel(context, quote.availableAt),
             ),
-            if (quote.materialCostNote?.trim().isNotEmpty ?? false)
-              RequestDetailField('Material costs', quote.materialCostNote),
-            if (quote.availableAt != null)
-              RequestDetailField(
-                'Provider available',
-                requestDateTimeLabel(context, quote.availableAt),
-              ),
-            if (quote.message?.trim().isNotEmpty ?? false)
-              RequestDetailField('Message', quote.message),
-            const SizedBox(height: 4),
-            Row(
+          if (quote.message?.trim().isNotEmpty ?? false)
+            ProfileSettingsRow(
+              icon: Icons.chat_bubble_outline,
+              title: 'Message',
+              value: quote.message!.trim(),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+            child: Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
@@ -279,8 +324,8 @@ class _CustomerRequestDetailsScreenState
                 ),
               ],
             ),
-          ],
-        );
+          ),
+        ]);
       },
     );
   }
@@ -290,11 +335,11 @@ class _CustomerRequestDetailsScreenState
     ServiceRequestModel request,
   ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.only(top: 24),
       child: ElevatedButton.icon(
         onPressed: _isConfirming ? null : () => _confirmJobDone(request),
         style: ElevatedButton.styleFrom(
-          minimumSize: const Size.fromHeight(52),
+          minimumSize: const Size.fromHeight(54),
           backgroundColor: AppColors.primary,
         ),
         icon: _isConfirming

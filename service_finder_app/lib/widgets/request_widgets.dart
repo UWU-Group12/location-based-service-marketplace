@@ -1,6 +1,10 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 import '../../core/app_colors.dart';
+import 'profile_settings.dart';
 
 String requestStatusLabel(String value) => value
     .split('_')
@@ -124,6 +128,123 @@ class RequestDetailField extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyLarge,
         ),
       ],
+    ),
+  );
+}
+
+// Grey heading above a white rounded group, matching the profile screen.
+class RequestSection extends StatelessWidget {
+  final String title;
+  final List<Widget> children;
+
+  const RequestSection(this.title, this.children, {super.key});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(top: 24),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 6, bottom: 10),
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        ProfileSettingsGroup(children: children),
+      ],
+    ),
+  );
+}
+
+// View-only map of the service location; the pin cannot be moved.
+class RequestLocationMap extends StatelessWidget {
+  final GeoPoint point;
+
+  const RequestLocationMap({super.key, required this.point});
+
+  @override
+  Widget build(BuildContext context) {
+    // GeoPoint(0, 0) is the model fallback when no location was saved.
+    if (point.latitude == 0 && point.longitude == 0) {
+      return const SizedBox.shrink();
+    }
+    final location = LatLng(point.latitude, point.longitude);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 18),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: SizedBox(
+          height: 200,
+          child: FlutterMap(
+            options: MapOptions(
+              initialCenter: location,
+              initialZoom: 15,
+              interactionOptions: const InteractionOptions(
+                flags: InteractiveFlag.none,
+              ),
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.group12.service_finder_app',
+              ),
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: location,
+                    width: 40,
+                    height: 40,
+                    alignment: Alignment.topCenter,
+                    child: const Icon(
+                      Icons.location_pin,
+                      color: Colors.red,
+                      size: 40,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// Pill-shaped top tabs shared by the request and job lists.
+class RequestTabBar extends StatelessWidget {
+  final TabController controller;
+  final List<String> labels;
+
+  const RequestTabBar({
+    super.key,
+    required this.controller,
+    required this.labels,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      color: AppColors.providerCard,
+      borderRadius: BorderRadius.circular(30),
+    ),
+    child: TabBar(
+      controller: controller,
+      dividerColor: Colors.transparent,
+      indicatorSize: TabBarIndicatorSize.tab,
+      indicator: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(30),
+      ),
+      labelColor: Colors.white,
+      unselectedLabelColor: AppColors.primary,
+      tabs: [for (final label in labels) Tab(text: label)],
     ),
   );
 }

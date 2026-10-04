@@ -1,11 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/app_colors.dart';
 import '../../core/app_router.dart';
 import '../../models/quotation_model.dart';
 import '../../models/service_request_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/storage_service.dart';
+import '../../widgets/profile_settings.dart';
 import '../../widgets/request_widgets.dart';
 
 class ProviderRequestDetailsScreen extends StatefulWidget {
@@ -103,7 +105,9 @@ class _ProviderRequestDetailsScreenState
 
   @override
   Widget build(BuildContext context) => Scaffold(
+    backgroundColor: AppColors.background,
     appBar: AppBar(
+      centerTitle: true,
       title: Text(
         widget.isJob
             ? 'Job details'
@@ -172,207 +176,224 @@ class _ProviderRequestDetailsScreenState
                     return _error('Quotation does not match this request');
                   }
                   final hasSentQuote = quote?.status == 'sent';
+                  final customerName =
+                      request.customerName?.trim().isNotEmpty ?? false
+                      ? request.customerName!.trim()
+                      : 'Name unavailable';
+                  final preferredVisit = [
+                    if (request.preferredDate != null)
+                      requestDateLabel(context, request.preferredDate),
+                    if (request.preferredTime?.trim().isNotEmpty ?? false)
+                      request.preferredTime!.trim(),
+                  ].join(' · ');
+                  final images = request.imagePaths ?? const <String>[];
                   return ListView(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
                     children: [
-                      Text(
-                        request.title,
-                        style: Theme.of(context).textTheme.headlineSmall,
-                      ),
-                      const SizedBox(height: 16),
-                      if (widget.isJob)
-                        RequestDetailCard(
-                          title: 'Job status',
-                          children: [
-                            RequestDetailField(
-                              'Status',
-                              requestStatusLabel(request.requestStatus),
-                            ),
-                            if (request.isFinishedJob)
-                              const Text(
-                                'This job is completed and is kept in your history.',
-                              )
-                            else if (request.requestStatus == 'in_progress')
-                              const Text(
-                                'Work is in progress. This job moves to Finished when the customer marks it completed.',
-                              )
-                            else
-                              const Text(
-                                'The customer accepted your quotation. You can start the job when work begins.',
+                      ProfileSettingsGroup(
+                        children: [
+                          ListTile(
+                            contentPadding: const EdgeInsets.all(18),
+                            leading: CircleAvatar(
+                              radius: 28,
+                              backgroundColor: AppColors.primary.withValues(
+                                alpha: 0.08,
                               ),
-                            if (request.requestStatus == 'confirmed' &&
-                                quote?.status == 'accepted') ...[
-                              const SizedBox(height: 16),
-                              ElevatedButton.icon(
-                                onPressed: _startingJob
-                                    ? null
-                                    : () => _startJob(request),
-                                icon: _startingJob
-                                    ? const SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Icon(Icons.play_arrow),
-                                label: Text(
-                                  _startingJob ? 'Starting...' : 'Start job',
+                              child: const Icon(
+                                Icons.person_outline,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            title: Text(
+                              request.title,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 3),
+                              child: Text(
+                                '$customerName\n${requestStatusLabel(request.requestStatus)}',
+                                style: const TextStyle(
+                                  color: AppColors.textSecondary,
+                                  height: 1.5,
                                 ),
                               ),
-                            ],
-                          ],
-                        ),
-                      RequestDetailCard(
-                        title: 'Customer',
-                        children: [
-                          RequestDetailField(
-                            'Customer Name',
-                            request.customerName == null ||
-                                    request.customerName!.trim().isEmpty
-                                ? 'Name unavailable'
-                                : request.customerName,
-                          ),
-                        ],
-                      ),
-                      RequestDetailCard(
-                        title: 'Request',
-                        children: [
-                          RequestDetailField(
-                            'Customer problem',
-                            request.description,
-                          ),
-                          RequestDetailField(
-                            'Request status',
-                            requestStatusLabel(request.requestStatus),
-                          ),
-                          RequestDetailField(
-                            'Quotation status',
-                            requestStatusLabel(request.quotationStatus),
-                          ),
-                          RequestDetailField(
-                            'Service category',
-                            request.categoryId,
-                          ),
-
-                          RequestDetailField(
-                            'Requested on',
-                            requestDateTimeLabel(context, request.createdAt),
-                          ),
-
-                          if (request.finalAmount != null)
-                            RequestDetailField(
-                              'Final amount',
-                              'Rs. ${request.finalAmount!.toStringAsFixed(2)}',
                             ),
-                        ],
-                      ),
-                      RequestDetailCard(
-                        title: 'Location and preferred visit',
-                        children: [
-                          RequestDetailField(
-                            'Service address',
-                            request.addressText,
-                          ),
-                          RequestDetailField(
-                            'Coordinates',
-                            '${request.servicePoint.latitude}, ${request.servicePoint.longitude}',
-                          ),
-                          RequestDetailField(
-                            'Preferred date',
-                            requestDateLabel(context, request.preferredDate),
-                          ),
-                          RequestDetailField(
-                            'Preferred time',
-                            request.preferredTime,
                           ),
                         ],
                       ),
-                      RequestDetailCard(
-                        title: 'Request images',
-                        children: [
-                          if (request.imagePaths == null ||
-                              request.imagePaths!.isEmpty)
-                            const Text('No images provided.')
-                          else
-                            ...request.imagePaths!.map(
-                              (path) => _RequestImage(
-                                key: ValueKey(path),
-                                path: path,
+                      if (widget.isJob)
+                        RequestSection('Job', [
+                          ProfileSettingsRow(
+                            icon: Icons.work_outline,
+                            title: 'Status',
+                            value: request.isFinishedJob
+                                ? 'Completed and kept in your history.'
+                                : request.requestStatus == 'in_progress'
+                                ? 'In progress. Moves to Finished when the customer marks it completed.'
+                                : 'Customer accepted your quotation. Start the job when work begins.',
+                          ),
+                          if (request.requestStatus == 'confirmed' &&
+                              quote?.status == 'accepted')
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(18, 4, 18, 18),
+                              child: SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: _startingJob
+                                      ? null
+                                      : () => _startJob(request),
+                                  icon: _startingJob
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                      : const Icon(Icons.play_arrow),
+                                  label: Text(
+                                    _startingJob ? 'Starting...' : 'Start job',
+                                  ),
+                                ),
                               ),
                             ),
-                        ],
-                      ),
+                        ]),
+                      RequestSection('Request', [
+                        ProfileSettingsRow(
+                          icon: Icons.description_outlined,
+                          title: 'Customer problem',
+                          value: request.description.trim().isEmpty
+                              ? 'Not provided'
+                              : request.description.trim(),
+                        ),
+                        ProfileSettingsRow(
+                          icon: Icons.category_outlined,
+                          title: 'Service category',
+                          value: requestStatusLabel(request.categoryId),
+                        ),
+                        ProfileSettingsRow(
+                          icon: Icons.event_outlined,
+                          title: 'Preferred visit',
+                          value: preferredVisit.isEmpty
+                              ? 'Not provided'
+                              : preferredVisit,
+                        ),
+                        if (request.finalAmount != null)
+                          ProfileSettingsRow(
+                            icon: Icons.payments_outlined,
+                            title: 'Final amount',
+                            value:
+                                'Rs. ${request.finalAmount!.toStringAsFixed(2)}',
+                          ),
+                      ]),
+                      RequestSection('Location', [
+                        ProfileSettingsRow(
+                          icon: Icons.location_on_outlined,
+                          title: 'Service address',
+                          value: request.addressText.trim().isEmpty
+                              ? 'Not provided'
+                              : request.addressText.trim(),
+                        ),
+                        RequestLocationMap(point: request.servicePoint),
+                      ]),
+                      if (images.isNotEmpty)
+                        RequestSection('Photos', [
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(18, 18, 18, 6),
+                            child: Column(
+                              children: images
+                                  .map(
+                                    (path) => _RequestImage(
+                                      key: ValueKey(path),
+                                      path: path,
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          ),
+                        ]),
                       if (quote != null)
-                        RequestDetailCard(
-                          title: widget.isJob
+                        RequestSection(
+                          widget.isJob
                               ? 'Accepted quotation'
-                              : 'Quotation sent',
-                          children: [
-                            RequestDetailField(
-                              'Approval status',
-                              quote.status == 'sent'
+                              : 'Your quotation',
+                          [
+                            ProfileSettingsRow(
+                              icon: Icons.verified_outlined,
+                              title: 'Status',
+                              value: quote.status == 'sent'
                                   ? (request.isAwaitingQuotationApproval
                                         ? 'Waiting for customer approval'
                                         : 'Sent - request ${requestStatusLabel(request.requestStatus).toLowerCase()}')
                                   : requestStatusLabel(quote.status),
                             ),
-                            RequestDetailField(
-                              'Service charge',
-                              'Rs. ${quote.serviceCharge.toStringAsFixed(2)}',
+                            ProfileSettingsRow(
+                              icon: Icons.payments_outlined,
+                              title:
+                                  'Estimated total: Rs. ${quote.estimatedTotal.toStringAsFixed(2)}',
+                              value: quote.inspectionFee == null
+                                  ? 'Service charge Rs. ${quote.serviceCharge.toStringAsFixed(2)}'
+                                  : 'Service charge Rs. ${quote.serviceCharge.toStringAsFixed(2)} · Inspection fee Rs. ${quote.inspectionFee!.toStringAsFixed(2)}',
                             ),
-                            RequestDetailField(
-                              'Inspection fee',
-                              'Rs. ${(quote.inspectionFee ?? 0).toStringAsFixed(2)}',
-                            ),
-                            RequestDetailField(
-                              'Estimated total',
-                              'Rs. ${quote.estimatedTotal.toStringAsFixed(2)}',
-                            ),
-                            RequestDetailField(
-                              'Material costs',
-                              quote.materialCostNote,
-                            ),
-                            RequestDetailField(
-                              'Message to customer',
-                              quote.message,
-                            ),
-                            RequestDetailField(
-                              'Available visit',
-                              requestDateTimeLabel(context, quote.availableAt),
-                            ),
-                            RequestDetailField(
-                              'Expires on',
-                              requestDateTimeLabel(context, quote.expiresAt),
-                            ),
-                            RequestDetailField(
-                              'Sent on',
-                              requestDateTimeLabel(context, quote.createdAt),
-                            ),
-                            RequestDetailField(
-                              'Last updated',
-                              requestDateTimeLabel(context, quote.updatedAt),
-                            ),
+                            if (quote.materialCostNote?.trim().isNotEmpty ??
+                                false)
+                              ProfileSettingsRow(
+                                icon: Icons.build_outlined,
+                                title: 'Material costs',
+                                value: quote.materialCostNote!.trim(),
+                              ),
+                            if (quote.availableAt != null)
+                              ProfileSettingsRow(
+                                icon: Icons.schedule_outlined,
+                                title: 'Available visit',
+                                value: requestDateTimeLabel(
+                                  context,
+                                  quote.availableAt,
+                                ),
+                              ),
+                            if (quote.message?.trim().isNotEmpty ?? false)
+                              ProfileSettingsRow(
+                                icon: Icons.chat_bubble_outline,
+                                title: 'Message to customer',
+                                value: quote.message!.trim(),
+                              ),
+                            if (!widget.isJob && quote.expiresAt != null)
+                              ProfileSettingsRow(
+                                icon: Icons.timer_outlined,
+                                title: 'Expires on',
+                                value: requestDateTimeLabel(
+                                  context,
+                                  quote.expiresAt,
+                                ),
+                              ),
                           ],
                         ),
                       if ((widget.isJob || widget.quotationId != null) &&
                           quote == null)
-                        const RequestDetailCard(
-                          title: 'Quotation unavailable',
-                          children: [
-                            Text('This quotation is no longer available.'),
-                          ],
-                        ),
+                        RequestSection('Quotation', const [
+                          ProfileSettingsRow(
+                            icon: Icons.error_outline,
+                            title: 'Quotation unavailable',
+                            value: 'This quotation is no longer available.',
+                          ),
+                        ]),
                       if (!widget.isJob &&
                           request.canReceiveQuotation &&
                           !hasSentQuote &&
-                          widget.quotationId == null)
-                        ElevatedButton.icon(
-                          onPressed: () => _createQuotation(request),
-                          icon: const Icon(Icons.receipt_long_outlined),
-                          label: const Text('Create quotation'),
+                          widget.quotationId == null) ...[
+                        const SizedBox(height: 30),
+                        SizedBox(
+                          height: 54,
+                          child: ElevatedButton.icon(
+                            onPressed: () => _createQuotation(request),
+                            icon: const Icon(Icons.receipt_long_outlined),
+                            label: const Text('Create quotation'),
+                          ),
                         ),
-                      const SizedBox(height: 20),
+                      ],
                     ],
                   );
                 },

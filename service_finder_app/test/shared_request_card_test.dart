@@ -181,6 +181,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: CustomerRequestsScreen(
+            showServices: true,
             requestsStream: requests.stream,
             reviewedRequestIdsStream: reviews.stream,
             loadProviderName: (id) async {
@@ -200,8 +201,13 @@ void main() {
         job(id: 'active-job', status: 'in_progress', title: 'Active job'),
       ]);
       await tester.pumpAndSettle();
+      // The in-progress job is on the Active tab; the completed one on Finished.
+      expect(find.text('Active job'), findsOneWidget);
+      expect(find.text('Alex Provider'), findsOneWidget);
+      await tester.tap(find.text('Finished'));
+      await tester.pumpAndSettle();
       expect(find.text('Rate'), findsNothing);
-      expect(find.text('Alex Provider'), findsNWidgets(2));
+      expect(find.text('Alex Provider'), findsOneWidget);
       expect(namesLoaded, 1);
       reviews.add({});
       await tester.pumpAndSettle();
@@ -239,6 +245,7 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: CustomerRequestsScreen(
+            showServices: true,
             requestsStream: requests.stream,
             reviewedRequestIdsStream: reviews.stream,
             loadProviderName: (_) async => 'Alex Provider',
@@ -247,6 +254,8 @@ void main() {
         ),
       );
       requests.add([job()]);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Finished'));
       await tester.pumpAndSettle();
       reviews.add({'job-1'});
       await tester.pumpAndSettle();

@@ -8,8 +8,11 @@ import '../../models/service_request_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/review_service.dart';
 import '../../widgets/request_card.dart';
+import '../../widgets/request_widgets.dart';
 
 class CustomerRequestsScreen extends StatefulWidget {
+  // false: Requests tab (Sent / Received), true: Services tab (Active / Finished)
+  final bool showServices;
   final Stream<List<ServiceRequestModel>>? requestsStream;
   final Stream<Set<String>>? reviewedRequestIdsStream;
   final Future<String?> Function(String)? loadProviderName;
@@ -18,6 +21,7 @@ class CustomerRequestsScreen extends StatefulWidget {
 
   const CustomerRequestsScreen({
     super.key,
+    this.showServices = false,
     this.requestsStream,
     this.reviewedRequestIdsStream,
     this.loadProviderName,
@@ -29,9 +33,11 @@ class CustomerRequestsScreen extends StatefulWidget {
   State<CustomerRequestsScreen> createState() => _CustomerRequestsScreenState();
 }
 
-class _CustomerRequestsScreenState extends State<CustomerRequestsScreen> {
+class _CustomerRequestsScreenState extends State<CustomerRequestsScreen>
+    with SingleTickerProviderStateMixin {
   late final FirestoreService _firestoreService = FirestoreService();
   late final ReviewService _reviewService = ReviewService();
+  late final TabController _tabs;
   Stream<List<ServiceRequestModel>>? _requests;
   Stream<Set<String>>? _reviews;
   final _providerNames = <String, Future<String?>>{};
@@ -41,6 +47,7 @@ class _CustomerRequestsScreenState extends State<CustomerRequestsScreen> {
   @override
   void initState() {
     super.initState();
+    _tabs = TabController(length: 2, vsync: this);
     final customerId = widget.requestsStream == null
         ? FirebaseAuth.instance.currentUser?.uid
         : null;
@@ -54,6 +61,12 @@ class _CustomerRequestsScreenState extends State<CustomerRequestsScreen> {
         (customerId == null
             ? null
             : _reviewService.watchReviewedRequestIds(customerId));
+  }
+
+  @override
+  void dispose() {
+    _tabs.dispose();
+    super.dispose();
   }
 
   Future<String?> _providerName(String providerId) =>
@@ -87,12 +100,15 @@ class _CustomerRequestsScreenState extends State<CustomerRequestsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     if (_requests == null) {
       return Scaffold(
         backgroundColor: AppColors.background,
-        body: const Center(
-          child: Text('You must sign in to see your requests.'),
+        body: Center(
+          child: Text(
+            widget.showServices
+                ? 'You must sign in to see your services.'
+                : 'You must sign in to see your requests.',
+          ),
         ),
       );
     }
@@ -100,141 +116,153 @@ class _CustomerRequestsScreenState extends State<CustomerRequestsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: StreamBuilder<List<ServiceRequestModel>>(
-          stream: _requests,
-          builder: (context, snapshot) {
-            if (snapshot.hasError) {
-              return _buildMessage(
-                icon: Icons.error_outline,
-                title: 'Unable to load your requests',
-                detail: 'Please check your connection and try again.',
-                iconColor: AppColors.error,
-              );
-            }
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.showServices ? 'Services' : 'Requests',
+                style: Theme.of(
+                  context,
+                ).textTheme.headlineLarge?.copyWith(color: AppColors.primary),
+              ),
+              const SizedBox(height: 20),
+              RequestTabBar(
+                controller: _tabs,
+                labels: widget.showServices
+                    ? const ['Active', 'Finished']
+                    : const ['Sent', 'Received'],
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: StreamBuilder<List<ServiceRequestModel>>(
+                  stream: _requests,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return const RequestStateView(
+                        title: 'Unable to load your requests',
+                        message: 'Please check your connection and try again.',
+                        icon: Icons.error_outline,
+                      );
+                    }
 
-            if (!snapshot.hasData) {
-              return const Center(child: CircularProgressIndicator());
-            }
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-            final requests = snapshot.data!;
+                    final all = snapshot.data!;
+                    // Accepted quotations become services; the rest stay requests.
+                    final first = widget.showServices
+                        ? all.where((r) => r.isActiveJob).toList()
+                        : all
+                              .where(
+                                (r) =>
+                                    !r.isActiveJob &&
+                                    !r.isFinishedJob &&
+                                    !r.isAwaitingQuotationApproval,
+                              )
+                              .toList();
+                    final second = widget.showServices
+                        ? (all.where((r) => r.isFinishedJob).toList()..sort(
+                            (a, b) => b.updatedAt.compareTo(a.updatedAt),
+                          ))
+                        : all
+                              .where((r) => r.isAwaitingQuotationApproval)
+                              .toList();
 
-            if (requests.isEmpty) {
-              return _buildMessage(
-                icon: Icons.assignment_outlined,
-                title: 'No requests yet',
-                detail: 'Your submitted service requests will appear here.',
-              );
-            }
-
-            return StreamBuilder<Set<String>>(
-              stream: _reviews,
-              builder: (context, reviewSnapshot) {
-                final reviewedIds = reviewSnapshot.data ?? const <String>{};
-
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'My Requests',
-                        style: textTheme.headlineMedium?.copyWith(
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Track your submitted service requests',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Expanded(
-                        child: ListView.builder(
-                          key: const PageStorageKey('customer_requests'),
-                          padding: EdgeInsets.only(
-                            top: 2,
-                            bottom:
-                                FloatingGlassNavigationBar.clearanceFor(
-                                  context,
-                                ) +
-                                8,
+                    return StreamBuilder<Set<String>>(
+                      stream: _reviews,
+                      builder: (context, reviewSnapshot) => TabBarView(
+                        controller: _tabs,
+                        children: [
+                          _list(
+                            first,
+                            reviewSnapshot,
+                            emptyTitle: widget.showServices
+                                ? 'No active services'
+                                : 'No sent requests',
+                            emptyIcon: widget.showServices
+                                ? Icons.handyman_outlined
+                                : Icons.assignment_outlined,
+                            storageKey: widget.showServices
+                                ? 'customer_active_services'
+                                : 'customer_sent_requests',
                           ),
-                          itemCount: requests.length,
-                          itemBuilder: (context, index) {
-                            final request = requests[index];
-                            final isReviewable =
-                                request.isFinishedJob &&
-                                reviewSnapshot.hasData &&
-                                !reviewSnapshot.hasError &&
-                                !reviewedIds.contains(request.requestId) &&
-                                !_submittedReviews.contains(request.requestId);
-
-                            return FutureBuilder<String?>(
-                              key: ValueKey(request.requestId),
-                              future: _providerName(request.providerId),
-                              builder: (context, providerSnapshot) =>
-                                  RequestCard.customer(
-                                    request: request,
-                                    providerName: providerSnapshot.data,
-                                    onTap: () {
-                                      if (widget.onOpenRequest != null) {
-                                        widget.onOpenRequest!(
-                                          request.requestId,
-                                        );
-                                      } else {
-                                        AppRouter.goToCustomerRequestDetails(
-                                          context,
-                                          request.requestId,
-                                        );
-                                      }
-                                    },
-                                    onRate: isReviewable
-                                        ? () => _rate(request)
-                                        : null,
-                                  ),
-                            );
-                          },
-                        ),
+                          _list(
+                            second,
+                            reviewSnapshot,
+                            emptyTitle: widget.showServices
+                                ? 'No finished services'
+                                : 'No quotations received',
+                            emptyIcon: widget.showServices
+                                ? Icons.task_alt
+                                : Icons.receipt_long_outlined,
+                            storageKey: widget.showServices
+                                ? 'customer_finished_services'
+                                : 'customer_received_requests',
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildMessage({
-    required IconData icon,
-    required String title,
-    required String detail,
-    Color iconColor = Colors.grey,
+  Widget _list(
+    List<ServiceRequestModel> requests,
+    AsyncSnapshot<Set<String>> reviewSnapshot, {
+    required String emptyTitle,
+    required IconData emptyIcon,
+    required String storageKey,
   }) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 70, color: iconColor),
-            const SizedBox(height: 16),
-            Text(title, style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text(
-              detail,
-              textAlign: TextAlign.center,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
-            ),
-          ],
-        ),
+    if (requests.isEmpty) {
+      return RequestStateView(title: emptyTitle, icon: emptyIcon);
+    }
+    final reviewedIds = reviewSnapshot.data ?? const <String>{};
+
+    return ListView.builder(
+      key: PageStorageKey(storageKey),
+      padding: EdgeInsets.only(
+        top: 2,
+        bottom: FloatingGlassNavigationBar.clearanceFor(context) + 8,
       ),
+      itemCount: requests.length,
+      itemBuilder: (context, index) {
+        final request = requests[index];
+        final isReviewable =
+            request.isFinishedJob &&
+            reviewSnapshot.hasData &&
+            !reviewSnapshot.hasError &&
+            !reviewedIds.contains(request.requestId) &&
+            !_submittedReviews.contains(request.requestId);
+
+        return FutureBuilder<String?>(
+          key: ValueKey(request.requestId),
+          future: _providerName(request.providerId),
+          builder: (context, providerSnapshot) => RequestCard.customer(
+            request: request,
+            providerName: providerSnapshot.data,
+            onTap: () {
+              if (widget.onOpenRequest != null) {
+                widget.onOpenRequest!(request.requestId);
+              } else {
+                AppRouter.goToCustomerRequestDetails(
+                  context,
+                  request.requestId,
+                );
+              }
+            },
+            onRate: isReviewable ? () => _rate(request) : null,
+          ),
+        );
+      },
     );
   }
 }
