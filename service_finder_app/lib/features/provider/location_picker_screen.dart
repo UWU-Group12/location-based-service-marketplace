@@ -33,7 +33,7 @@ class _LocationPickerScreenState extends State<LocationPickerScreen> {
               // Return the picked location back to the previous screen
               Navigator.of(context).pop(_pickedLocation);
             },
-          )
+          ),
         ],
       ),
       body: FlutterMap(

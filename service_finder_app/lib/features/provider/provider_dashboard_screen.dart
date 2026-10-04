@@ -3,7 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/widgets/floating_glass_navigation_bar.dart';
 import '../../services/location_service.dart';
+import '../../widgets/greeting_header.dart';
 
 class ProviderDashboardScreen extends StatefulWidget {
   final String userName;
@@ -88,6 +90,7 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
+        bottom: false,
         child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
           stream: _profileStream,
           builder: (context, snapshot) {
@@ -107,20 +110,15 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                 : Colors.red.shade700;
 
             return ListView(
-              padding: const EdgeInsets.all(24),
+              padding: EdgeInsets.fromLTRB(
+                24,
+                24,
+                24,
+                FloatingGlassNavigationBar.clearanceFor(context) + 16,
+              ),
               children: [
                 const SizedBox(height: 8),
-                Text(
-                  'Hi',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.textPrimary.withValues(alpha: 0.6),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  firstName,
-                  style: Theme.of(context).textTheme.headlineMedium,
-                ),
+                GreetingHeader(firstName: firstName),
                 const SizedBox(height: 24),
                 if (snapshot.connectionState == ConnectionState.waiting)
                   const LinearProgressIndicator(),

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/app_router.dart';
+import '../../core/widgets/floating_glass_navigation_bar.dart';
 import '../../models/provider_model.dart';
 import '../../models/service_category_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/storage_service.dart';
-import '../../widgets/ai_problem_card.dart';
-import '../../widgets/provider_card.dart';
+import '../../widgets/customer_search_bar.dart';
+import '../../widgets/featured_provider_carousel.dart';
+import '../../widgets/greeting_header.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   final String userName;
@@ -123,52 +125,28 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
+        bottom: false,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: EdgeInsets.fromLTRB(
+            20,
+            0,
+            20,
+            FloatingGlassNavigationBar.clearanceFor(context) + 12,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 20),
               // Header
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Good morning,',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey[600],
-                          fontSize: 16,
-                        ),
-                      ),
-                      Text(
-                        _firstName,
-                        style: textTheme.headlineMedium?.copyWith(
-                          fontSize: 28,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              GreetingHeader(firstName: _firstName),
               const SizedBox(height: 25),
 
               // Search Bar
               Column(
                 children: [
-                  TextField(
+                  CustomerSearchBar(
                     controller: _searchController,
                     onChanged: _searchServices,
-                    decoration: InputDecoration(
-                      hintText: 'What service do you need?',
-                      prefixIcon: Icon(
-                        Icons.search,
-                        color: Colors.black.withValues(alpha: 0.7),
-                      ),
-                    ),
                   ),
                   if (filteredServices.isNotEmpty)
                     Container(
@@ -210,9 +188,6 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                 ],
               ),
 
-              const SizedBox(height: 25),
-              // AI Banner
-              const AiProblemCard(),
               const SizedBox(height: 30),
 
               // Popular Services
@@ -283,39 +258,15 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
               const SizedBox(height: 30),
               // Nearby Professionals
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Available professionals',
-                        style: textTheme.titleLarge?.copyWith(fontSize: 18),
-                      ),
-                      Text(
-                        'Browse providers by service',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: Colors.grey[500],
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      AppRouter.goToServiceCategoryScreen(context);
-                    },
-                    child: Text(
-                      'See all',
-                      style: textTheme.labelLarge?.copyWith(color: darkRed),
-                    ),
-                  ),
-                ],
+              Text(
+                'Available professionals',
+                style: textTheme.titleLarge?.copyWith(fontSize: 18),
               ),
               const SizedBox(height: 15),
               StreamBuilder<List<ProviderModel>>(
-                stream: _firestoreService.watchTopRatedAvailableProviders(),
+                stream: _firestoreService.watchTopRatedAvailableProviders(
+                  limit: 8,
+                ),
                 builder: (context, snapshot) {
                   if (snapshot.hasError) {
                     return Text(
@@ -344,15 +295,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     );
                   }
 
-                  return Column(
-                    children: [
-                      for (final provider in providers)
-                        ProviderCard(
-                          provider: provider,
-                          onTap: () =>
-                              AppRouter.goToProviderDetails(context, provider),
-                        ),
-                    ],
+                  return FeaturedProviderCarousel(
+                    providers: providers,
+                    onViewDetails: (provider) =>
+                        AppRouter.goToProviderDetails(context, provider),
                   );
                 },
               ),

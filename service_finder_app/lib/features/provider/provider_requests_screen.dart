@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/app_router.dart';
+import '../../core/widgets/floating_glass_navigation_bar.dart';
 import '../../models/quotation_model.dart';
 import '../../models/service_request_model.dart';
 import '../../services/firestore_service.dart';
@@ -61,6 +62,7 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen>
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
+        bottom: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
           child: Column(
@@ -161,9 +163,13 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen>
                                           key: const PageStorageKey(
                                             'received_requests',
                                           ),
-                                          padding: const EdgeInsets.only(
+                                          padding: EdgeInsets.only(
                                             top: 2,
-                                            bottom: 8,
+                                            bottom:
+                                                FloatingGlassNavigationBar.clearanceFor(
+                                                  context,
+                                                ) +
+                                                8,
                                           ),
                                           itemCount: received.length,
                                           itemBuilder: (context, index) =>
@@ -186,9 +192,13 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen>
                                           key: const PageStorageKey(
                                             'sent_quotations',
                                           ),
-                                          padding: const EdgeInsets.only(
+                                          padding: EdgeInsets.only(
                                             top: 2,
-                                            bottom: 8,
+                                            bottom:
+                                                FloatingGlassNavigationBar.clearanceFor(
+                                                  context,
+                                                ) +
+                                                8,
                                           ),
                                           itemCount: sent.length,
                                           itemBuilder: (context, index) {

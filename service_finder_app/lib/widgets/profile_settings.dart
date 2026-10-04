@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/app_colors.dart';
+import '../core/widgets/floating_glass_navigation_bar.dart';
 import '../services/auth_service.dart';
 
 class ProfileSettingsView extends StatelessWidget {
@@ -45,7 +46,12 @@ class ProfileSettingsView extends StatelessWidget {
         ),
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          12,
+          20,
+          FloatingGlassNavigationBar.clearanceFor(context) + 20,
+        ),
         children: [
           ProfileSettingsGroup(
             children: [
