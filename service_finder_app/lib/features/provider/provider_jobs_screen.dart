@@ -55,7 +55,7 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen>
               ).textTheme.headlineLarge?.copyWith(color: AppColors.primary),
             ),
             const SizedBox(height: 8),
-            
+
             const SizedBox(height: 20),
             Container(
               decoration: BoxDecoration(
@@ -138,11 +138,11 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen>
     }
     return ListView.builder(
       key: PageStorageKey(finished ? 'finished_jobs' : 'active_jobs'),
+      padding: const EdgeInsets.only(top: 2, bottom: 8),
       itemCount: jobs.length,
       itemBuilder: (context, index) => RequestCard(
         key: ValueKey(jobs[index].requestId),
         request: jobs[index],
-        statusLabel: requestStatusLabel(jobs[index].requestStatus),
         onTap: () =>
             AppRouter.goToProviderJobDetails(context, jobs[index].requestId),
       ),
