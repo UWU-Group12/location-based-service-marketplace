@@ -362,7 +362,7 @@ class _CustomerEditProfileScreenState extends State<CustomerEditProfileScreen> {
       await _authService.signOut();
       if (!mounted) return;
 
-      AppRouter.goToLoginAfterLogout(context);
+      AppRouter.goToWelcomeAfterLogout(context);
     } catch (error) {
       debugPrint('Customer logout failed: $error');
       if (!mounted) return;

@@ -261,10 +261,10 @@ class AppRouter {
     );
   }
 
-  static void goToLoginAfterLogout(BuildContext context) {
+  static void goToWelcomeAfterLogout(BuildContext context) {
     Navigator.of(
       context,
-    ).pushAndRemoveUntil(_buildRoute(const LoginScreen()), (route) => false);
+    ).pushAndRemoveUntil(_buildRoute(const WelcomeScreen()), (route) => false);
   }
 
   static void goToSignedInHome(BuildContext context, UserModel user) {
