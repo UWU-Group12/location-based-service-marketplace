@@ -39,3 +39,22 @@ export function getDataErrorMessage(error, fallbackMessage) {
 
   return fallbackMessage;
 }
+
+export function getCreateCustomerErrorMessage(error, fallbackMessage) {
+  switch (error?.code) {
+    case "auth/email-already-in-use":
+      return "A sign-in account already exists for this email address.";
+    case "auth/invalid-email":
+      return "Enter a valid email address.";
+    case "auth/weak-password":
+      return "Use a password with at least 6 characters.";
+    case "auth/operation-not-allowed":
+      return "Email and password sign-in is disabled in Firebase Authentication.";
+    case "auth/too-many-requests":
+      return "Too many attempts. Please wait and try again.";
+    case "auth/network-request-failed":
+      return "Unable to reach Firebase. Check your internet connection.";
+    default:
+      return getDataErrorMessage(error, fallbackMessage);
+  }
+}
