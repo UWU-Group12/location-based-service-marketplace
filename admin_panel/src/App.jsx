@@ -4,8 +4,12 @@ import AppRoutes from "./routes/AppRoutes";
 import "./App.css";
 
 function App() {
+  const isAppPath =
+    window.location.pathname === "/app" ||
+    window.location.pathname.startsWith("/app/");
+
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={isAppPath ? "/app" : "/"}>
       <AuthProvider>
         <AppRoutes />
       </AuthProvider>

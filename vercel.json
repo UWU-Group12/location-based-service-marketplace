@@ -1,0 +1,11 @@
+{
+  "installCommand": "npm ci --prefix admin_panel",
+  "buildCommand": "npm run build --prefix admin_panel",
+  "outputDirectory": "admin_panel/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

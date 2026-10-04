@@ -42,6 +42,20 @@ The app uses only the `users`, `providerProfiles`, `providerVerifications`, and 
 
 These Firebase web values identify the Firebase project; never add service-account JSON, private keys, or Admin SDK credentials to this frontend.
 
+## Vercel deployment
+
+The repository includes Vercel configuration for both deployment layouts:
+
+- If the Vercel project root is the repository, the root `vercel.json` builds
+  `admin_panel` and publishes `admin_panel/dist`.
+- If the Vercel project root is set to `admin_panel`, the panel's `vercel.json`
+  configures the SPA route fallback.
+
+Set the six `VITE_FIREBASE_*` values from `.env.example` in the Vercel project's
+Environment Variables for the Production, Preview, and Development environments
+you use, then redeploy. The rewrite configuration allows direct visits and
+refreshes on panel routes such as `/categories` and `/app/categories`.
+
 ## Administrator access
 
 The login accepts Firebase email/password accounts only. The signed-in account must have this Firebase Authentication custom claim:
