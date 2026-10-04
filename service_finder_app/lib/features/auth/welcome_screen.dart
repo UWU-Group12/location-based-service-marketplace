@@ -73,41 +73,88 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Center(
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: (constraints.maxHeight - 48).clamp(
+                    0.0,
+                    double.infinity,
+                  ),
+                ),
+                child: IntrinsicHeight(
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _buildIllustration(),
-                      const SizedBox(height: 36),
-                      Text(
-                        'Find trusted professionals',
-                        textAlign: TextAlign.center,
-                        style: textTheme.headlineLarge?.copyWith(
-                          fontSize: 34,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                          height: 1.15,
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.asset(
+                            'assets/icons/applogo2.png',
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 32),
+                      // Same two-line style as the dashboard GreetingHeader.
                       Text(
-                        'Connect with skilled service providers around you in minutes.',
-                        textAlign: TextAlign.center,
-                        style: textTheme.bodyLarge?.copyWith(
-                          fontSize: 16,
+                        'Welcome to',
+                        style: textTheme.headlineMedium?.copyWith(
+                          color: AppColors.textPrimary.withValues(alpha: 0.6),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Raw',
+                        style: textTheme.headlineMedium?.copyWith(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Find trusted professionals around you in minutes.',
+                        style: TextStyle(
                           color: AppColors.textSecondary,
                           height: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      const SizedBox(height: 24),
+                      // R = Request, A = Arrange, W = Work
+                      _card(
+                        child: Column(
+                          children: [
+                            _meaningRow(
+                              Icons.assignment_outlined,
+                              'R',
+                              'equest',
+                              'Describe the job you need done',
+                            ),
+                            const Divider(height: 28),
+                            _meaningRow(
+                              Icons.event_available_outlined,
+                              'A',
+                              'rrange',
+                              'Compare quotes and pick a time',
+                            ),
+                            const Divider(height: 28),
+                            _meaningRow(
+                              Icons.handyman_outlined,
+                              'W',
+                              'ork',
+                              'A trusted pro gets it done',
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      const SizedBox(height: 32),
                       _buildPrimaryButton(
                         context: context,
                         label: 'Create Account',
@@ -133,35 +180,61 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                   ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _buildIllustration() {
-    return Center(
-      child: Container(
-        width: 170,
-        height: 170,
-        decoration: BoxDecoration(
-          color: AppColors.providerCard,
-          borderRadius: BorderRadius.circular(36),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.textPrimary.withValues(alpha: 0.06),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ],
-        ),
-        child: const Icon(
-          Icons.handyman_rounded,
-          size: 88,
-          color: AppColors.primary,
-        ),
+  // White bordered card, same as the provider dashboard cards.
+  Widget _card({required Widget child}) {
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AppColors.border),
       ),
+      child: Padding(padding: const EdgeInsets.all(20), child: child),
+    );
+  }
+
+  // One letter of the name, e.g. "R" + "equest" with a short explanation.
+  Widget _meaningRow(IconData icon, String letter, String rest, String detail) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.primary),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: letter,
+                      style: const TextStyle(color: AppColors.primary),
+                    ),
+                    TextSpan(text: rest),
+                  ],
+                ),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                detail,
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
