@@ -68,6 +68,21 @@ describe("reviews rules", () => {
       await assertFails(reviewDoc(IDS.otherCustomer, HIDDEN_REVIEW_ID).get());
     });
 
+    it("blocks an unauthenticated read of a visible review", async () => {
+      await assertFails(
+        unauthenticated()
+          .firestore()
+          .collection("reviews")
+          .doc(OTHER_REQUEST_ID)
+          .get(),
+      );
+    });
+
+    it("lets a signed-in customer check for a review that doesn't exist", async () => {
+      // The app does this to decide whether to show the rating option.
+      await assertSucceeds(reviewDoc(IDS.customer, "request-not-reviewed").get());
+    });
+
     it("blocks an unauthenticated read of a held back review", async () => {
       await assertFails(
         unauthenticated()

@@ -3,7 +3,7 @@
   "description": "Trusted backend jobs for the Service Finder platform",
   "private": true,
   "engines": {
-    "node": "20"
+    "node": "22"
   },
   "main": "index.js",
   "dependencies": {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/app_router.dart';
+import '../../models/quotation_model.dart';
 import '../../models/review_model.dart';
 import '../../models/service_request_model.dart';
 import '../../services/firestore_service.dart';
@@ -24,7 +25,61 @@ class _CustomerRequestDetailsScreenState
   final FirestoreService _firestoreService = FirestoreService();
   final ReviewService _reviewService = ReviewService();
 
+  late final Stream<QuotationModel?> _quotation = _firestoreService
+      .watchQuotation(widget.requestId);
+
   bool _isConfirming = false;
+  bool _isDeciding = false;
+
+  Future<void> _decideQuotation(QuotationModel quote, bool accept) async {
+    if (_isDeciding) return;
+
+    if (!accept) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Reject this quotation?'),
+          content: const Text('This request will be cancelled.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Keep'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Reject'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+
+    setState(() {
+      _isDeciding = true;
+    });
+
+    try {
+      if (accept) {
+        await _firestoreService.acceptQuotation(quote);
+      } else {
+        await _firestoreService.rejectQuotation(quote.requestId);
+      }
+    } catch (error) {
+      if (!mounted) return;
+      _showMessage(
+        accept
+            ? 'Unable to accept this quotation. Please try again.'
+            : 'Unable to reject this quotation. Please try again.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isDeciding = false;
+        });
+      }
+    }
+  }
 
   Future<void> _confirmJobDone(ServiceRequestModel request) async {
     if (_isConfirming) return;
@@ -136,6 +191,8 @@ class _CustomerRequestDetailsScreenState
               ),
           ],
         ),
+        if (request.isAwaitingQuotationApproval)
+          _buildQuotationSection(context, request),
         if (request.requestStatus == 'in_progress')
           _buildConfirmButton(context, request),
         RequestDetailCard(
@@ -143,6 +200,88 @@ class _CustomerRequestDetailsScreenState
           children: [_buildReviewSection(context, request)],
         ),
       ],
+    );
+  }
+
+  Widget _buildQuotationSection(
+    BuildContext context,
+    ServiceRequestModel request,
+  ) {
+    return StreamBuilder<QuotationModel?>(
+      stream: _quotation,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const RequestDetailCard(
+            title: 'Quotation',
+            children: [Text('Unable to load the quotation.')],
+          );
+        }
+
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final quote = snapshot.data;
+
+        // Only a sent quotation for this request can be decided on
+        if (quote == null ||
+            quote.status != 'sent' ||
+            quote.requestId != request.requestId ||
+            quote.customerId != request.customerId ||
+            quote.providerId != request.providerId) {
+          return const SizedBox.shrink();
+        }
+
+        return RequestDetailCard(
+          title: 'Quotation',
+          children: [
+            RequestDetailField(
+              'Service charge',
+              'Rs. ${quote.serviceCharge.toStringAsFixed(2)}',
+            ),
+            if (quote.inspectionFee != null)
+              RequestDetailField(
+                'Inspection fee',
+                'Rs. ${quote.inspectionFee!.toStringAsFixed(2)}',
+              ),
+            RequestDetailField(
+              'Estimated total',
+              'Rs. ${quote.estimatedTotal.toStringAsFixed(2)}',
+            ),
+            if (quote.materialCostNote?.trim().isNotEmpty ?? false)
+              RequestDetailField('Material costs', quote.materialCostNote),
+            if (quote.availableAt != null)
+              RequestDetailField(
+                'Provider available',
+                requestDateTimeLabel(context, quote.availableAt),
+              ),
+            if (quote.message?.trim().isNotEmpty ?? false)
+              RequestDetailField('Message', quote.message),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isDeciding
+                        ? null
+                        : () => _decideQuotation(quote, false),
+                    child: const Text('Reject'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _isDeciding
+                        ? null
+                        : () => _decideQuotation(quote, true),
+                    child: Text(_isDeciding ? 'Please wait...' : 'Accept'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -195,7 +334,7 @@ class _CustomerRequestDetailsScreenState
           return const Text('Unable to load your review.');
         }
 
-        if (!snapshot.hasData) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
         }
 

@@ -90,7 +90,7 @@ export async function uploadCategoryIcon(categoryId, file) {
     (file.name && file.name.includes("."))
       ? file.name.split(".").pop() || "png"
       : file.type?.split("/")[1] || "png";
-  const iconPath = `categories/${categoryId}/icon.${extension}`;
+  const iconPath = `categories/${categoryId}.${extension}`;
   const iconRef = ref(storage, iconPath);
 
   await uploadBytes(iconRef, file);

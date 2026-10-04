@@ -210,9 +210,13 @@ service cloud.firestore {
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
 
-      allow read: if isAdmin()
+      // resource == null lets the app check for a review before it exists
+      allow read: if signedIn() && (
+        resource == null
+        || isAdmin()
         || resource.data.moderationStatus == 'visible'
-        || resource.data.customerId == request.auth.uid;
+        || resource.data.customerId == request.auth.uid
+      );
 
       allow update, delete: if isAdmin();
     }
