@@ -13,6 +13,10 @@ import {
   updateProviderDetails,
   uploadProviderProfilePhoto,
 } from "../services/providerService";
+import {
+  getSetPasswordErrorMessage,
+  setUserPassword,
+} from "../services/authService";
 import { getAuthorizedFileUrl } from "../services/storageService";
 import {
   getCreateAccountErrorMessage,
@@ -178,8 +182,8 @@ function ProvidersPage() {
       confirmPassword: "",
       phoneNumber: "",
       categories: "",
-      availabilityStatus: "unavailable",
-      verificationStatus: "not_submitted",
+      availabilityStatus: "available",
+      verificationStatus: "verified",
       experienceYears: 0,
       workingHours: "",
       bio: "",
@@ -193,7 +197,7 @@ function ProvidersPage() {
     setIsCreatingProvider(true);
   }
 
-  async function openProviderEditForm() {
+  async function openProviderEditForm(selectedProvider) {
     if (!selectedProvider) {
       return;
     }
@@ -233,7 +237,10 @@ function ProvidersPage() {
       photoPath: existingPhotoPath,
       photoPreview,
       photoFile: null,
+      newPassword: "",
+      confirmNewPassword: "",
     });
+    setShowCreatePassword(false);
     setIsEditingProvider(true);
   }
 
@@ -277,9 +284,31 @@ function ProvidersPage() {
       return;
     }
 
+    // A blank new password keeps the current one.
+    if (editProviderForm.newPassword && editProviderForm.newPassword.length < 6) {
+      setErrorMessage("Use a password with at least 6 characters.");
+      return;
+    }
+
+    if (editProviderForm.newPassword !== editProviderForm.confirmNewPassword) {
+      setErrorMessage("The two passwords do not match.");
+      return;
+    }
+
     setIsProcessing(true);
     setErrorMessage("");
     setSuccessMessage("");
+
+    if (editProviderForm.newPassword) {
+      try {
+        await setUserPassword(selectedProvider.id, editProviderForm.newPassword);
+      } catch (error) {
+        console.error("Provider password could not be changed:", error);
+        setErrorMessage(getSetPasswordErrorMessage(error));
+        setIsProcessing(false);
+        return;
+      }
+    }
 
     try {
       const normalizedProfile = {
@@ -355,7 +384,11 @@ function ProvidersPage() {
       setSelectedProvider(updatedSelectedProvider);
       setIsEditingProvider(false);
       setEditProviderForm(null);
-      setSuccessMessage("Provider details were updated successfully.");
+      setSuccessMessage(
+        editProviderForm.newPassword
+          ? "Provider details and password were updated successfully."
+          : "Provider details were updated successfully.",
+      );
     } catch (error) {
       console.error("Provider details could not be updated:", error);
       setErrorMessage(
@@ -641,6 +674,16 @@ function ProvidersPage() {
                           >
                             Details
                           </button>
+                          <button
+                            type="button"
+                            className="button button-small button-secondary"
+                            onClick={() => {
+                              setSelectedProvider(provider);
+                              openProviderEditForm(provider);
+                            }}
+                          >
+                            Edit
+                          </button>
                           <Link
                             className="button button-small button-secondary"
                             to={`/provider-verifications?providerId=${provider.id}`}
@@ -741,7 +784,7 @@ function ProvidersPage() {
                 </div>
                 <div className="form-field">
                   <label htmlFor="provider-create-password">
-                    Temporary password
+                    Password
                   </label>
                   <div className="password-field">
                     <input
@@ -989,7 +1032,7 @@ function ProvidersPage() {
                   <button
                     type="button"
                     className="button button-secondary"
-                    onClick={openProviderEditForm}
+                    onClick={() => openProviderEditForm(selectedProvider)}
                   >
                     Edit
                   </button>
@@ -1011,6 +1054,7 @@ function ProvidersPage() {
 
             {isEditingProvider && editProviderForm ? (
               <div className="form-stack">
+                <MessageBanner message={errorMessage} type="error" />
                 <div className="details-grid">
                   <div className="form-field">
                     <label htmlFor="provider-edit-name">Name</label>
@@ -1041,6 +1085,49 @@ function ProvidersPage() {
                       onChange={(event) =>
                         handleEditProviderChange("phoneNumber", event.target.value)
                       }
+                    />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="provider-edit-password">New password</label>
+                    <div className="password-field">
+                      <input
+                        id="provider-edit-password"
+                        type={showCreatePassword ? "text" : "password"}
+                        value={editProviderForm.newPassword}
+                        autoComplete="new-password"
+                        placeholder="Leave blank to keep current"
+                        onChange={(event) =>
+                          handleEditProviderChange("newPassword", event.target.value)
+                        }
+                        disabled={isProcessing}
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowCreatePassword((current) => !current)
+                        }
+                        disabled={isProcessing}
+                      >
+                        {showCreatePassword ? "Hide" : "Show"}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="provider-edit-confirm-password">
+                      Confirm new password
+                    </label>
+                    <input
+                      id="provider-edit-confirm-password"
+                      type={showCreatePassword ? "text" : "password"}
+                      value={editProviderForm.confirmNewPassword}
+                      autoComplete="new-password"
+                      onChange={(event) =>
+                        handleEditProviderChange(
+                          "confirmNewPassword",
+                          event.target.value,
+                        )
+                      }
+                      disabled={isProcessing}
                     />
                   </div>
                   <div className="form-field">

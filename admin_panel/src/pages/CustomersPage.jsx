@@ -12,6 +12,10 @@ import {
   updateCustomerDetails,
 } from "../services/customerService";
 import {
+  getSetPasswordErrorMessage,
+  setUserPassword,
+} from "../services/authService";
+import {
   formatDate,
   getCreateCustomerErrorMessage,
   getDataErrorMessage,
@@ -32,6 +36,8 @@ const emptyEditForm = {
   displayName: "",
   phoneNumber: "",
   profileCompleted: false,
+  newPassword: "",
+  confirmNewPassword: "",
 };
 
 function CustomersPage() {
@@ -175,7 +181,7 @@ function CustomersPage() {
         ),
       );
       setSuccessMessage(
-        `${newCustomer.displayName} can now sign in with the temporary password.`,
+        `${newCustomer.displayName} can now sign in with the password you set.`,
       );
       closeForm();
     } catch (error) {
@@ -197,7 +203,10 @@ function CustomersPage() {
       displayName: customer.displayName || "",
       phoneNumber: customer.phoneNumber || "",
       profileCompleted: Boolean(customer.profileCompleted),
+      newPassword: "",
+      confirmNewPassword: "",
     });
+    setShowPassword(false);
     setEditError("");
   }
 
@@ -225,7 +234,29 @@ function CustomersPage() {
       return;
     }
 
+    // A blank new password keeps the current one.
+    if (editForm.newPassword && editForm.newPassword.length < 6) {
+      setEditError("Use a password with at least 6 characters.");
+      return;
+    }
+
+    if (editForm.newPassword !== editForm.confirmNewPassword) {
+      setEditError("The two passwords do not match.");
+      return;
+    }
+
     setIsProcessing(true);
+
+    if (editForm.newPassword) {
+      try {
+        await setUserPassword(editingCustomer.id, editForm.newPassword);
+      } catch (error) {
+        console.error("Customer password could not be changed:", error);
+        setEditError(getSetPasswordErrorMessage(error));
+        setIsProcessing(false);
+        return;
+      }
+    }
 
     try {
       await updateCustomerDetails(editingCustomer.id, editForm);
@@ -256,7 +287,9 @@ function CustomersPage() {
           : current,
       );
       setSuccessMessage(
-        `${editForm.displayName.trim()}'s details were updated.`,
+        editForm.newPassword
+          ? `${editForm.displayName.trim()}'s details and password were updated.`
+          : `${editForm.displayName.trim()}'s details were updated.`,
       );
       closeEditForm();
     } catch (error) {
@@ -476,19 +509,21 @@ function CustomersPage() {
                         >
                           Edit
                         </button>
-                        <button
-                          type="button"
-                          className={`button button-small ${
-                            customer.accountStatus === "active"
-                              ? "button-danger-soft"
-                              : "button-success-soft"
-                          }`}
-                          onClick={() => requestStatusChange(customer)}
-                        >
-                          {customer.accountStatus === "active"
-                            ? "Suspend"
-                            : "Activate"}
-                        </button>
+                        {customer.accountStatus !== "disabled" && (
+                          <button
+                            type="button"
+                            className={`button button-small ${
+                              customer.accountStatus === "active"
+                                ? "button-danger-soft"
+                                : "button-success-soft"
+                            }`}
+                            onClick={() => requestStatusChange(customer)}
+                          >
+                            {customer.accountStatus === "active"
+                              ? "Suspend"
+                              : "Activate"}
+                          </button>
+                        )}
                         {customer.accountStatus === "disabled" ? (
                           <button
                             type="button"
@@ -529,14 +564,26 @@ function CustomersPage() {
                 <h2 id="customer-details-title">Customer details</h2>
                 <p>Basic account information stored in the users collection.</p>
               </div>
-              <button
-                type="button"
-                className="icon-button"
-                aria-label="Close customer details"
-                onClick={() => setSelectedCustomer(null)}
-              >
-                ×
-              </button>
+              <div className="card-header-actions">
+                <button
+                  type="button"
+                  className="button button-secondary"
+                  onClick={() => {
+                    openEditForm(selectedCustomer);
+                    setSelectedCustomer(null);
+                  }}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Close customer details"
+                  onClick={() => setSelectedCustomer(null)}
+                >
+                  ×
+                </button>
+              </div>
             </div>
             <dl className="details-grid">
               <div><dt>Name</dt><dd>{selectedCustomer.displayName || "Not provided"}</dd></div>
@@ -625,6 +672,42 @@ function CustomersPage() {
                   disabled={isProcessing}
                 />
                 <span>Profile setup is complete</span>
+              </label>
+
+              <label className="form-field">
+                <span>New password</span>
+                <div className="password-field">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={editForm.newPassword}
+                    autoComplete="new-password"
+                    placeholder="Leave blank to keep the current password"
+                    onChange={(event) =>
+                      updateEditField("newPassword", event.target.value)
+                    }
+                    disabled={isProcessing}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((current) => !current)}
+                    disabled={isProcessing}
+                  >
+                    {showPassword ? "Hide" : "Show"}
+                  </button>
+                </div>
+              </label>
+
+              <label className="form-field">
+                <span>Confirm new password</span>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={editForm.confirmNewPassword}
+                  autoComplete="new-password"
+                  onChange={(event) =>
+                    updateEditField("confirmNewPassword", event.target.value)
+                  }
+                  disabled={isProcessing}
+                />
               </label>
 
               <div className="modal-actions">
@@ -721,7 +804,7 @@ function CustomersPage() {
               </label>
 
               <label className="form-field">
-                <span>Temporary password *</span>
+                <span>Password *</span>
                 <div className="password-field">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -784,8 +867,8 @@ function CustomersPage() {
               </label>
 
               <p>
-                Share the temporary password with the customer over a trusted
-                channel. They can change it from the mobile app or use the
+                Share the password with the customer over a trusted channel.
+                They can change it from the mobile app or use the
                 password-reset email.
               </p>
 
