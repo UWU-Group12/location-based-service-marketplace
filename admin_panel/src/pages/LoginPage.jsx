@@ -61,8 +61,8 @@ function LoginPage() {
         justifyContent: "center",
         alignItems: "center",
         minHeight: "100vh",
-        padding: "750px",
-        gap: "-500px",
+        padding: "0 170px",
+        gap: "1px",
         backgroundColor: "#ffffff",
       }}
     >
