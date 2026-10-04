@@ -17,6 +17,15 @@ class FloatingGlassNavigationBar extends StatefulWidget {
   final ValueChanged<int> onTap;
   final List<BottomNavigationBarItem> items;
 
+  /// Vertical space the bar occupies below the page content edge.
+  /// Scrollable pages add this as bottom padding so their last item can
+  /// still be scrolled clear of the floating bar.
+  static double clearanceFor(BuildContext context) {
+    final labelHeight = MediaQuery.textScalerOf(context).scale(11) * 1.3;
+    final barHeight = 46 + labelHeight + 16;
+    return 12 + barHeight + 15 + MediaQuery.viewPaddingOf(context).bottom;
+  }
+
   @override
   State<FloatingGlassNavigationBar> createState() =>
       _FloatingGlassNavigationBarState();

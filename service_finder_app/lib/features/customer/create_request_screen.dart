@@ -200,7 +200,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -270,10 +272,10 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                       : _enhanceDescription,
                   icon: isEnhancing
                       ? const SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Icon(Icons.auto_awesome),
                   label: Text(
                     isEnhancing ? 'Enhancing...' : 'Enhance Description',
@@ -301,7 +303,11 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.location_on, color: AppColors.primary, size: 28),
+                      const Icon(
+                        Icons.location_on,
+                        color: AppColors.primary,
+                        size: 28,
+                      ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: Column(
@@ -309,7 +315,11 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                           children: [
                             const Text(
                               'Selected Location',
-                              style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -323,7 +333,11 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                           ],
                         ),
                       ),
-                      const Icon(Icons.check_circle, color: Colors.green, size: 24),
+                      const Icon(
+                        Icons.check_circle,
+                        color: Colors.green,
+                        size: 24,
+                      ),
                     ],
                   ),
                 ),
@@ -336,13 +350,15 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                     : _useCurrentLocation,
                 icon: _isGettingLocation
                     ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
                     : const Icon(Icons.my_location),
                 label: Text(
-                  _isGettingLocation ? 'Detecting Location...' : 'Use Live GPS Location',
+                  _isGettingLocation
+                      ? 'Detecting Location...'
+                      : 'Use Live GPS Location',
                 ),
               ),
 
@@ -388,20 +404,20 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                 onTap: _isSubmitting
                     ? null
                     : () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime(2030),
-                    initialDate: DateTime.now(),
-                  );
+                        final date = await showDatePicker(
+                          context: context,
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime(2030),
+                          initialDate: DateTime.now(),
+                        );
 
-                  if (date != null && mounted) {
-                    setState(() {
-                      selectedDate =
-                      '${date.day}/${date.month}/${date.year}';
-                    });
-                  }
-                },
+                        if (date != null && mounted) {
+                          setState(() {
+                            selectedDate =
+                                '${date.day}/${date.month}/${date.year}';
+                          });
+                        }
+                      },
               ),
               ListTile(
                 contentPadding: EdgeInsets.zero,
@@ -410,15 +426,15 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                 onTap: _isSubmitting
                     ? null
                     : () async {
-                  final time = await showTimePicker(
-                    context: context,
-                    initialTime: TimeOfDay.now(),
-                  );
+                        final time = await showTimePicker(
+                          context: context,
+                          initialTime: TimeOfDay.now(),
+                        );
 
-                  if (time != null && mounted) {
-                    setState(() => selectedTime = time.format(context));
-                  }
-                },
+                        if (time != null && mounted) {
+                          setState(() => selectedTime = time.format(context));
+                        }
+                      },
               ),
               const SizedBox(height: 30),
               ElevatedButton(
@@ -427,13 +443,13 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                     : _submitRequest,
                 child: _isSubmitting
                     ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
                     : const Text('Submit Request'),
               ),
             ],

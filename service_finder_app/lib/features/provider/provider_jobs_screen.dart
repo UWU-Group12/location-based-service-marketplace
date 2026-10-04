@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/app_router.dart';
+import '../../core/widgets/floating_glass_navigation_bar.dart';
 import '../../models/service_request_model.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/request_card.dart';
@@ -43,6 +44,7 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen>
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.background,
     body: SafeArea(
+      bottom: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
         child: Column(
@@ -138,7 +140,10 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen>
     }
     return ListView.builder(
       key: PageStorageKey(finished ? 'finished_jobs' : 'active_jobs'),
-      padding: const EdgeInsets.only(top: 2, bottom: 8),
+      padding: EdgeInsets.only(
+        top: 2,
+        bottom: FloatingGlassNavigationBar.clearanceFor(context) + 8,
+      ),
       itemCount: jobs.length,
       itemBuilder: (context, index) => RequestCard(
         key: ValueKey(jobs[index].requestId),

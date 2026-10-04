@@ -108,16 +108,11 @@ class BuildProfessionalProfile extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 18,
-        vertical: 18,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: AppColors.border,
-        ),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
@@ -133,11 +128,7 @@ class BuildProfessionalProfile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 18),
-          Icon(
-            icon,
-            color: AppColors.primary,
-            size: 26,
-          ),
+          Icon(icon, color: AppColors.primary, size: 26),
           const SizedBox(width: 18),
           Expanded(
             child: Text(

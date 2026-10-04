@@ -13,14 +13,10 @@ class ProviderShellScreen extends StatefulWidget {
   // Give a name only when using the development bypass.
   final String? debugUserName;
 
-  const ProviderShellScreen({
-    super.key,
-    this.debugUserName,
-  });
+  const ProviderShellScreen({super.key, this.debugUserName});
 
   @override
-  State<ProviderShellScreen> createState() =>
-      _ProviderShellScreenState();
+  State<ProviderShellScreen> createState() => _ProviderShellScreenState();
 }
 
 class _ProviderShellScreenState extends State<ProviderShellScreen> {
@@ -38,8 +34,7 @@ class _ProviderShellScreenState extends State<ProviderShellScreen> {
     if (widget.debugUserName != null) {
       final debugName = widget.debugUserName!.trim();
 
-      _providerName =
-      debugName.isEmpty ? 'Demo Provider' : debugName;
+      _providerName = debugName.isEmpty ? 'Demo Provider' : debugName;
 
       _isLoading = false;
     } else {
@@ -71,13 +66,10 @@ class _ProviderShellScreenState extends State<ProviderShellScreen> {
       final userData = userDocument.data()!;
 
       final role = userData['role'] as String? ?? '';
-      final accountStatus =
-          userData['accountStatus'] as String? ?? 'active';
+      final accountStatus = userData['accountStatus'] as String? ?? 'active';
 
       if (role != 'provider') {
-        _showError(
-          'This account is not registered as a service provider.',
-        );
+        _showError('This account is not registered as a service provider.');
         return;
       }
 
@@ -93,22 +85,19 @@ class _ProviderShellScreenState extends State<ProviderShellScreen> {
 
       final providerData = providerDocument.data();
 
-      final professionalName =
-      (providerData?['displayName'] as String?)?.trim();
+      final professionalName = (providerData?['displayName'] as String?)
+          ?.trim();
 
-      final userName =
-      (userData['displayName'] as String?)?.trim();
+      final userName = (userData['displayName'] as String?)?.trim();
 
-      final authenticationName =
-      firebaseUser.displayName?.trim();
+      final authenticationName = firebaseUser.displayName?.trim();
 
       final resolvedName =
-      professionalName != null && professionalName.isNotEmpty
+          professionalName != null && professionalName.isNotEmpty
           ? professionalName
           : userName != null && userName.isNotEmpty
           ? userName
-          : authenticationName != null &&
-          authenticationName.isNotEmpty
+          : authenticationName != null && authenticationName.isNotEmpty
           ? authenticationName
           : 'Provider';
 
@@ -122,18 +111,14 @@ class _ProviderShellScreenState extends State<ProviderShellScreen> {
     } on FirebaseException catch (error) {
       debugPrint(
         'Provider data loading error: '
-            '${error.code} - ${error.message}',
+        '${error.code} - ${error.message}',
       );
 
-      _showError(
-        'Unable to load your provider account. Please try again.',
-      );
+      _showError('Unable to load your provider account. Please try again.');
     } catch (error) {
       debugPrint('Provider data loading error: $error');
 
-      _showError(
-        'Unable to load your provider account. Please try again.',
-      );
+      _showError('Unable to load your provider account. Please try again.');
     }
   }
 
@@ -149,11 +134,7 @@ class _ProviderShellScreenState extends State<ProviderShellScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_errorMessage != null) {
@@ -176,10 +157,8 @@ class _ProviderShellScreenState extends State<ProviderShellScreen> {
     ];
 
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: pages,
-      ),
+      extendBody: true,
+      body: IndexedStack(index: _currentIndex, children: pages),
       bottomNavigationBar: FloatingGlassNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {
@@ -218,10 +197,7 @@ class _ProviderShellErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ProviderShellErrorView({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ProviderShellErrorView({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -231,21 +207,11 @@ class _ProviderShellErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.error_outline,
-              size: 56,
-              color: Colors.red,
-            ),
+            const Icon(Icons.error_outline, size: 56, color: Colors.red),
             const SizedBox(height: 16),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-            ),
+            Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: onRetry,
-              child: const Text('Try Again'),
-            ),
+            ElevatedButton(onPressed: onRetry, child: const Text('Try Again')),
           ],
         ),
       ),

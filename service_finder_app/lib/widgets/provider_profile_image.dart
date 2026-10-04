@@ -19,8 +19,6 @@ class ProviderProfileImage extends StatefulWidget {
 }
 
 class _ProviderProfileImageState extends State<ProviderProfileImage> {
-  final StorageService _storageService = StorageService();
-
   late Future<String?> _imageUrlFuture;
 
   @override
@@ -49,7 +47,7 @@ class _ProviderProfileImageState extends State<ProviderProfileImage> {
       return imagePath;
     }
 
-    return _storageService.getDownloadUrl(imagePath);
+    return StorageService().getDownloadUrl(imagePath);
   }
 
   @override

@@ -156,7 +156,10 @@ class _CustomerShellScreenState extends State<CustomerShellScreen> {
     }
 
     final pages = <Widget>[
-      CustomerHomeScreen(userName: _userName, initials: _initials),
+      TickerMode(
+        enabled: _currentIndex == 0,
+        child: CustomerHomeScreen(userName: _userName, initials: _initials),
+      ),
 
       const CustomerRequestsScreen(),
 
@@ -164,6 +167,7 @@ class _CustomerShellScreenState extends State<CustomerShellScreen> {
     ];
 
     return Scaffold(
+      extendBody: true,
       body: IndexedStack(index: _currentIndex, children: pages),
       bottomNavigationBar: FloatingGlassNavigationBar(
         currentIndex: _currentIndex,

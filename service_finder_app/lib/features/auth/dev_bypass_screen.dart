@@ -39,7 +39,10 @@ class DevBypassScreen extends StatelessWidget {
                 icon: Icons.person,
                 color: Colors.blue[700]!,
                 onPressed: () {
-                  AppRouter.goToCustomerDashboard(context, debugUserName: "Debug User");
+                  AppRouter.goToCustomerDashboard(
+                    context,
+                    debugUserName: "Debug User",
+                  );
                 },
               ),
               const SizedBox(height: 20),
@@ -49,7 +52,10 @@ class DevBypassScreen extends StatelessWidget {
                 icon: Icons.work,
                 color: darkRed,
                 onPressed: () {
-                  AppRouter.goToProviderDashboard(context, debugUserName: "Debug User");
+                  AppRouter.goToProviderDashboard(
+                    context,
+                    debugUserName: "Debug User",
+                  );
                 },
               ),
               const SizedBox(height: 50),

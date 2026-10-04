@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/app_router.dart';
+import '../../core/widgets/floating_glass_navigation_bar.dart';
 import '../../models/service_request_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/review_service.dart';
@@ -152,7 +153,14 @@ class _CustomerRequestsScreenState extends State<CustomerRequestsScreen> {
                       Expanded(
                         child: ListView.builder(
                           key: const PageStorageKey('customer_requests'),
-                          padding: const EdgeInsets.only(top: 2, bottom: 8),
+                          padding: EdgeInsets.only(
+                            top: 2,
+                            bottom:
+                                FloatingGlassNavigationBar.clearanceFor(
+                                  context,
+                                ) +
+                                8,
+                          ),
                           itemCount: requests.length,
                           itemBuilder: (context, index) {
                             final request = requests[index];

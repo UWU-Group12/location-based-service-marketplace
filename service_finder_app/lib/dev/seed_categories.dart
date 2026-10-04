@@ -152,11 +152,7 @@ Future<void> seedServiceCategories() async {
         .collection('categories')
         .doc(categoryEntry.key);
 
-    batch.set(
-      categoryDocument,
-      categoryEntry.value,
-      SetOptions(merge: true),
-    );
+    batch.set(categoryDocument, categoryEntry.value, SetOptions(merge: true));
   }
 
   await batch.commit();

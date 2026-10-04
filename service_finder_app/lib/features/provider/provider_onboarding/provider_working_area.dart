@@ -66,9 +66,9 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
       );
     } on StateError catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message.toString())));
     } catch (error) {
       debugPrint('Provider location error: $error');
       if (!mounted) return;
@@ -133,16 +133,18 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
       return;
     }
 
-    Provider.of<ProviderOnboardingProvider>(context, listen: false).setLocation(
-      baseLocation: currentLocation,
-      serviceRadiusKm: radiusKm,
-    );
+    Provider.of<ProviderOnboardingProvider>(
+      context,
+      listen: false,
+    ).setLocation(baseLocation: currentLocation, serviceRadiusKm: radiusKm);
 
     AppRouter.goToVerificationDocuments(context);
   }
 
   void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _buildLocationForm() {
@@ -158,10 +160,10 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
           items: _radiusOptions
               .map(
                 (radius) => DropdownMenuItem(
-              value: radius,
-              child: Text('${radius.toInt()} km'),
-            ),
-          )
+                  value: radius,
+                  child: Text('${radius.toInt()} km'),
+                ),
+              )
               .toList(),
           onChanged: _isGettingLocation
               ? null
@@ -174,13 +176,15 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
           onPressed: _isGettingLocation ? null : _useCurrentLocation,
           icon: _isGettingLocation
               ? const SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
               : const Icon(Icons.my_location),
           label: Text(
-            _isGettingLocation ? 'Getting Location...' : 'Use Live GPS Location',
+            _isGettingLocation
+                ? 'Getting Location...'
+                : 'Use Live GPS Location',
           ),
         ),
         const SizedBox(height: 12),
