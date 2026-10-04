@@ -34,17 +34,19 @@ class FeaturedProviderCard extends StatelessWidget {
 
     // ProviderLocationText can add a padded location line in production even
     // though widget tests usually render it empty without geocoding plugins.
-    if (tags.length >= 2 && contentWidth < 300) height += 36;
+    if (tags.length >= 3 || (tags.length >= 2 && contentWidth < 300)) {
+      height += 36;
+    }
     if (_stacksHeader(textScale)) height += 24;
     if (_stacksActionRow(textScale, contentWidth)) height += 60;
 
     return height + (240 * (textScale - 1));
   }
 
-  static bool _stacksHeader(double textScale) => textScale > 1.6;
+  static bool _stacksHeader(double textScale) => textScale > 1.3;
 
   static bool _stacksActionRow(double textScale, double contentWidth) {
-    return textScale > 2.0 || contentWidth < 240;
+    return textScale > 1.3 || contentWidth < 240;
   }
 
   @override
@@ -67,14 +69,6 @@ class FeaturedProviderCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 28,
-                spreadRadius: 2,
-                offset: const Offset(0, 12),
-              ),
-            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

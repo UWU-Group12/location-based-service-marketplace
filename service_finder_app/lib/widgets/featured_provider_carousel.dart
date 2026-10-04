@@ -25,6 +25,9 @@ class FeaturedProviderCarousel extends StatefulWidget {
 }
 
 class _FeaturedProviderCarouselState extends State<FeaturedProviderCarousel> {
+  static const double _cardRadius = 24;
+  static const double _shadowRoom = 44;
+
   final math.Random _random = math.Random();
 
   late PageController _pageController;
@@ -182,7 +185,22 @@ class _FeaturedProviderCarouselState extends State<FeaturedProviderCarousel> {
           ),
         )
         .reduce(math.max);
-    return tallestCard + 12;
+    return tallestCard + _shadowRoom;
+  }
+
+  BoxDecoration _frameDecoration() {
+    return BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(_cardRadius),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withValues(alpha: 0.06),
+          blurRadius: 28,
+          spreadRadius: 2,
+          offset: const Offset(0, 12),
+        ),
+      ],
+    );
   }
 
   @override
@@ -191,25 +209,34 @@ class _FeaturedProviderCarouselState extends State<FeaturedProviderCarousel> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        final cardHeight = _height(context, constraints.maxWidth) - _shadowRoom;
         return SizedBox(
           height: _height(context, constraints.maxWidth),
-          child: PageView.builder(
-            key: ValueKey(_sourceIds.join('|')),
-            controller: _pageController,
-            itemCount: _orderedProviders.length,
-            onPageChanged: (index) {
-              _index = index;
-            },
-            itemBuilder: (context, index) {
-              final provider = _orderedProviders[index];
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                child: FeaturedProviderCard(
-                  provider: provider,
-                  onViewDetails: () => widget.onViewDetails(provider),
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: Container(
+              key: const ValueKey('featured-provider-frame'),
+              height: cardHeight,
+              decoration: _frameDecoration(),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(_cardRadius),
+                child: PageView.builder(
+                  key: ValueKey(_sourceIds.join('|')),
+                  controller: _pageController,
+                  itemCount: _orderedProviders.length,
+                  onPageChanged: (index) {
+                    _index = index;
+                  },
+                  itemBuilder: (context, index) {
+                    final provider = _orderedProviders[index];
+                    return FeaturedProviderCard(
+                      provider: provider,
+                      onViewDetails: () => widget.onViewDetails(provider),
+                    );
+                  },
                 ),
-              );
-            },
+              ),
+            ),
           ),
         );
       },

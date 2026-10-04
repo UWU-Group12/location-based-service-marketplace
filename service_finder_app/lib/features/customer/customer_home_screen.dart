@@ -7,6 +7,7 @@ import '../../models/provider_model.dart';
 import '../../models/service_category_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/storage_service.dart';
+import '../../widgets/category_card.dart';
 import '../../widgets/customer_search_bar.dart';
 import '../../widgets/featured_provider_carousel.dart';
 import '../../widgets/greeting_header.dart';
@@ -119,7 +120,6 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final darkRed = AppColors.primary.withValues(alpha: 0.8);
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
@@ -202,9 +202,20 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     onPressed: () {
                       AppRouter.goToServiceCategoryScreen(context);
                     },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
                     child: Text(
-                      'View all',
-                      style: textTheme.labelLarge?.copyWith(color: darkRed),
+                      'See All',
+                      style: textTheme.labelLarge?.copyWith(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        decoration: TextDecoration.underline,
+                        decorationColor: AppColors.textSecondary,
+                        decorationThickness: 1.2,
+                      ),
                     ),
                   ),
                 ],
@@ -228,30 +239,15 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
                     return const Text('No popular services right now.');
                   }
 
-                  // Take only the first 4 categories for the home screen row
-                  final popularCategories = snapshot.data!.take(4).toList();
-
-                  const tints = [
-                    AppColors.categoryTintRose,
-                    AppColors.categoryTintBlue,
-                    AppColors.categoryTintAmber,
-                    AppColors.categoryTintGreen,
-                  ];
-
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: List.generate(popularCategories.length, (index) {
-                      final category = popularCategories[index];
-
-                      return Expanded(
-                        child: _buildServiceItem(
-                          context,
-                          category,
-                          tints[index % tints.length],
-                        ),
+                  return CategoryCardRow(
+                    categories: _popularCategories(snapshot.data!),
+                    onTapCategory: (category) {
+                      AppRouter.goToProviderListing(
+                        context,
+                        categoryId: category.id,
+                        categoryName: category.name,
                       );
-                    }),
+                    },
                   );
                 },
               ),
@@ -310,58 +306,18 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     );
   }
 
-  Widget _buildServiceItem(
-    BuildContext context,
-    ServiceCategory category,
-    Color boxColor,
-  ) {
-    final textTheme = Theme.of(context).textTheme;
+  List<ServiceCategory> _popularCategories(List<ServiceCategory> categories) {
+    const priorityIds = ['painter', 'welder', 'mason'];
+    final byId = {for (final category in categories) category.id: category};
+    final prioritized = [
+      for (final id in priorityIds)
+        if (byId[id] != null) byId[id]!,
+    ];
+    final prioritySet = priorityIds.toSet();
 
-    return GestureDetector(
-      onTap: () {
-        AppRouter.goToProviderListing(
-          context,
-          categoryId: category.id,
-          categoryName: category.name,
-        );
-      },
-      child: Column(
-        children: [
-          Container(
-            height: 65,
-            width: 65,
-            decoration: BoxDecoration(
-              color: boxColor,
-              borderRadius: BorderRadius.circular(15),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Center(
-              child: _buildCategoryIcon(category.iconPath, size: 34),
-            ),
-          ),
-          const SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4.0),
-            child: Text(
-              category.name,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodySmall?.copyWith(
-                fontSize: 12,
-                height: 1.1,
-                color: Colors.black.withValues(alpha: 0.7),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
+    return [
+      ...prioritized,
+      ...categories.where((category) => !prioritySet.contains(category.id)),
+    ];
   }
 }

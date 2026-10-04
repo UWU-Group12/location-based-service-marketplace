@@ -145,6 +145,39 @@ void main() {
     await disposeCarousel(tester);
   });
 
+  testWidgets('paints the soft shadow outside the clipped PageView', (
+    tester,
+  ) async {
+    await pumpCarousel(tester);
+
+    final frameFinder = find.byKey(const ValueKey('featured-provider-frame'));
+    expect(frameFinder, findsOneWidget);
+    expect(
+      find.ancestor(of: find.byType(PageView), matching: frameFinder),
+      findsOneWidget,
+    );
+
+    final frame = tester.widget<Container>(frameFinder);
+    final decoration = frame.decoration! as BoxDecoration;
+    expect(decoration.color, Colors.white);
+    expect(decoration.borderRadius, BorderRadius.circular(24));
+    expect(decoration.boxShadow, isNotNull);
+    expect(decoration.boxShadow!.first.blurRadius, greaterThanOrEqualTo(24));
+
+    final clip = tester.widget<ClipRRect>(
+      find
+          .ancestor(of: find.byType(PageView), matching: find.byType(ClipRRect))
+          .first,
+    );
+    expect(clip.borderRadius, BorderRadius.circular(24));
+
+    final carousel = tester.getRect(find.byType(FeaturedProviderCarousel));
+    final frameRect = tester.getRect(frameFinder);
+    expect(carousel.bottom - frameRect.bottom, greaterThanOrEqualTo(40));
+
+    await disposeCarousel(tester);
+  });
+
   testWidgets('advances one card on the fixed interval', (tester) async {
     await pumpCarousel(tester);
     final first = visibleNames(tester).single;
@@ -257,6 +290,8 @@ void main() {
   ) async {
     final sizes = <double>[320, 360, 412];
     final scales = <double>[1, 1.15, 1.5, 2, 3];
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
     for (final width in sizes) {
       tester.view.physicalSize = Size(width, 900);
@@ -271,8 +306,6 @@ void main() {
       }
     }
 
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
     await disposeCarousel(tester);
   });
 

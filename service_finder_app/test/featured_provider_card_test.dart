@@ -89,12 +89,12 @@ void main() {
         }
         final decoration = widget.decoration! as BoxDecoration;
         return decoration.color == Colors.white &&
-            (decoration.boxShadow?.isNotEmpty ?? false);
+            decoration.borderRadius == BorderRadius.circular(24);
       }).first,
     );
     final decoration = card.decoration! as BoxDecoration;
     expect(decoration.borderRadius, BorderRadius.circular(24));
-    expect(decoration.boxShadow!.first.blurRadius, greaterThanOrEqualTo(24));
+    expect(decoration.boxShadow, isNull);
 
     final button = tester.widget<TextButton>(
       find.widgetWithText(TextButton, 'View details'),
@@ -126,6 +126,8 @@ void main() {
 
     await showCard(tester, textScale: 3);
     expect(tester.takeException(), isNull);
+    await tester.ensureVisible(find.text('View details'));
+    await tester.pump();
     await tester.tap(find.text('View details'));
     await tester.pump();
     expect(tester.takeException(), isNull);
