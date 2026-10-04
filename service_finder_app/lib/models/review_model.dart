@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class ReviewModel{
+class ReviewModel {
+  final String reviewId;
   final String requestId;
   final String customerId;
   final String providerId;
@@ -10,8 +11,8 @@ class ReviewModel{
   final DateTime createdAt;
   final DateTime updatedAt;
 
-
   ReviewModel({
+    required this.reviewId,
     required this.requestId,
     required this.customerId,
     required this.providerId,
@@ -20,30 +21,36 @@ class ReviewModel{
     required this.moderationStatus,
     required this.createdAt,
     required this.updatedAt,
-});
-  factory ReviewModel.fromFirestore(String docId, Map<String, dynamic>data){
+  });
+
+  factory ReviewModel.fromFirestore(
+    DocumentSnapshot<Map<String, dynamic>> snapshot,
+  ) {
+    final data = snapshot.data();
+
     return ReviewModel(
-      requestId: docId,
-      customerId: data['customerId']?? '',
-      providerId: data['providerId']?? '',
-      rating: (data['rating']?? 0.0).toDouble(),
-      comment: data['comment'],
-      moderationStatus: data['moderationStatus']?? 'visible',
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt']as Timestamp).toDate(),
+      reviewId: snapshot.id,
+      requestId: data?['requestId'] ?? '',
+      customerId: data?['customerId'] ?? '',
+      providerId: data?['providerId'] ?? '',
+      rating: (data?['rating'] as num?)?.toDouble() ?? 0,
+      comment: data?['comment'] as String?,
+      moderationStatus: data?['moderationStatus'] ?? 'visible',
+      createdAt: (data?['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (data?['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
-  Map<String,dynamic>toFirestore(){
-    return{
-     'requestId': requestId,
+
+  Map<String, dynamic> toFirestore() {
+    return {
+      'requestId': requestId,
       'customerId': customerId,
       'providerId': providerId,
       'rating': rating,
       'comment': comment,
       'moderationStatus': moderationStatus,
       'createdAt': Timestamp.fromDate(createdAt),
-     'updatedAt': Timestamp.fromDate(updatedAt),
-
+      'updatedAt': Timestamp.fromDate(updatedAt),
     };
   }
 }

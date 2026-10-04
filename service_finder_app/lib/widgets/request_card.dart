@@ -1,32 +1,36 @@
 import 'package:flutter/material.dart';
 
+import '../core/app_colors.dart';
+
 import '../models/service_request_model.dart';
 
 class RequestCard extends StatelessWidget {
   final ServiceRequestModel request;
   final VoidCallback? onTap;
+  final VoidCallback? onRate;
   final String? statusLabel;
 
   const RequestCard({
     super.key,
     required this.request,
     this.onTap,
+    this.onRate,
     this.statusLabel,
   });
 
   Color _statusColor() {
     switch (request.requestStatus) {
       case 'completed':
-        return Colors.green;
+        return AppColors.success;
 
       case 'confirmed':
-        return Colors.blue;
+        return AppColors.info;
 
       case 'quotation_received':
-        return Colors.orange;
+        return AppColors.warning;
 
       case 'cancelled':
-        return Colors.red;
+        return AppColors.error;
 
       default:
         return Colors.grey;
@@ -66,6 +70,17 @@ class RequestCard extends StatelessWidget {
               style: textTheme.bodyMedium?.copyWith(color: Colors.grey),
             ),
             const SizedBox(height: 12),
+            if (onRate != null) ...[
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onRate,
+                  icon: const Icon(Icons.star_outline, size: 18),
+                  label: const Text('Rate this job'),
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [

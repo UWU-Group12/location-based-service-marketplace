@@ -6,7 +6,7 @@ import '../../models/quotation_model.dart';
 import '../../models/service_request_model.dart';
 import '../../services/firestore_service.dart';
 import '../../services/storage_service.dart';
-import 'request_widgets.dart';
+import '../../widgets/request_widgets.dart';
 
 class ProviderRequestDetailsScreen extends StatefulWidget {
   final String requestId;

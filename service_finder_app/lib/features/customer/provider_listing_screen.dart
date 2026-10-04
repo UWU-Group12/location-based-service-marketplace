@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_router.dart';
 import '../../models/provider_model.dart';
 import '../../services/firestore_service.dart';
 import '../../widgets/provider_card.dart';
-import 'provider_details_screen.dart';
 
 class ProviderListingScreen extends StatefulWidget {
   final String service;
@@ -138,15 +138,8 @@ class _ProviderListingScreenState extends State<ProviderListingScreen> {
 
                     return ProviderCard(
                       provider: provider,
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                ProviderDetailsScreen(provider: provider),
-                          ),
-                        );
-                      },
+                      onTap: () =>
+                          AppRouter.goToProviderDetails(context, provider),
                     );
                   },
                 ),

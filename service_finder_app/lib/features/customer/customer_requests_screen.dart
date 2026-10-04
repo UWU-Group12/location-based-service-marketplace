@@ -1,83 +1,152 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
-import '../../data/dummy_requests.dart';
+import '../../core/app_router.dart';
+import '../../models/service_request_model.dart';
+import '../../services/firestore_service.dart';
+import '../../services/review_service.dart';
 import '../../widgets/request_card.dart';
 
-class CustomerRequestsScreen extends StatelessWidget {
+class CustomerRequestsScreen extends StatefulWidget {
   const CustomerRequestsScreen({super.key});
+
+  @override
+  State<CustomerRequestsScreen> createState() => _CustomerRequestsScreenState();
+}
+
+class _CustomerRequestsScreenState extends State<CustomerRequestsScreen> {
+  final FirestoreService _firestoreService = FirestoreService();
+  final ReviewService _reviewService = ReviewService();
 
   @override
   Widget build(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
+    final customerId = FirebaseAuth.instance.currentUser?.uid;
+
+    if (customerId == null) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        body: const Center(
+          child: Text('You must sign in to see your requests.'),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: dummyRequests.isEmpty
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.assignment_outlined,
-                      size: 70,
-                      color: Colors.grey.shade400,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'No requests yet',
-                      style: textTheme.titleLarge,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Your submitted service requests will appear here.',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              )
-            : Padding(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'My Requests',
-                      style: textTheme.headlineMedium?.copyWith(
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Track your submitted service requests',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: dummyRequests.length,
-                        itemBuilder: (context, index) {
-                          final request = dummyRequests[index];
+        child: StreamBuilder<List<ServiceRequestModel>>(
+          stream: _firestoreService.watchCustomerRequests(customerId),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return _buildMessage(
+                icon: Icons.error_outline,
+                title: 'Unable to load your requests',
+                detail: 'Please check your connection and try again.',
+                iconColor: AppColors.error,
+              );
+            }
 
-                          return RequestCard(
-                            request: request,
-                            onTap: () {
-                              // TODO:
-                              // Navigate to Request Details Screen
-                            },
-                          );
-                        },
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final requests = snapshot.data!;
+
+            if (requests.isEmpty) {
+              return _buildMessage(
+                icon: Icons.assignment_outlined,
+                title: 'No requests yet',
+                detail: 'Your submitted service requests will appear here.',
+              );
+            }
+
+            return StreamBuilder<Set<String>>(
+              stream: _reviewService.watchReviewedRequestIds(customerId),
+              builder: (context, reviewSnapshot) {
+                final reviewedIds = reviewSnapshot.data ?? const <String>{};
+
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'My Requests',
+                        style: textTheme.headlineMedium?.copyWith(
+                          color: AppColors.primary,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Track your submitted service requests',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: requests.length,
+                          itemBuilder: (context, index) {
+                            final request = requests[index];
+                            final isReviewable =
+                                request.isFinishedJob &&
+                                !reviewedIds.contains(request.requestId);
+
+                            return RequestCard(
+                              request: request,
+                              onTap: () => AppRouter.goToCustomerRequestDetails(
+                                context,
+                                request.requestId,
+                              ),
+                              onRate: isReviewable
+                                  ? () => AppRouter.goToRatingReview(
+                                      context,
+                                      request.requestId,
+                                    )
+                                  : null,
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessage({
+    required IconData icon,
+    required String title,
+    required String detail,
+    Color iconColor = Colors.grey,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 70, color: iconColor),
+            const SizedBox(height: 16),
+            Text(title, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            Text(
+              detail,
+              textAlign: TextAlign.center,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
+            ),
+          ],
+        ),
       ),
     );
   }

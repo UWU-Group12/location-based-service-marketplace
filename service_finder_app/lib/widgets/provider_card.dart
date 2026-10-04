@@ -50,11 +50,7 @@ class ProviderCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      const Icon(
-                        Icons.star,
-                        size: 18,
-                        color: AppColors.rating,
-                      ),
+                      const Icon(Icons.star, size: 18, color: AppColors.rating),
                       const SizedBox(width: 4),
                       Text(
                         provider.ratingAverage.toStringAsFixed(1),
