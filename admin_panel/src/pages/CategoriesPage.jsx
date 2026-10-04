@@ -10,15 +10,82 @@ import {
   setCategoryActive,
   updateCategory,
 } from "../services/categoryService";
+import { getAuthorizedFileUrl } from "../services/storageService";
 import { getDataErrorMessage } from "../utils/formatters";
 
 const emptyForm = {
   name: "",
   description: "",
   iconPath: "",
+  iconFile: null,
+  iconPreview: null,
   active: true,
   sortOrder: "",
 };
+
+function StorageImage({ filePath, alt, width, height, style }) {
+  const [imageUrl, setImageUrl] = useState("");
+  const [hasError, setHasError] = useState(false);
+  const imageLabel = alt || "Category icon";
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadImageUrl() {
+      setImageUrl("");
+      setHasError(false);
+
+      if (!filePath) {
+        return;
+      }
+
+      try {
+        const url = await getAuthorizedFileUrl(filePath);
+        if (isActive) {
+          setImageUrl(url);
+        }
+      } catch (error) {
+        console.error(`Could not load image from Firebase Storage (${filePath}):`, error);
+        if (isActive) {
+          setHasError(true);
+        }
+      }
+    }
+
+    loadImageUrl();
+    return () => {
+      isActive = false;
+    };
+  }, [filePath]);
+
+  if (!imageUrl || hasError) {
+    return (
+      <span
+        className="storage-image-placeholder"
+        role="img"
+        aria-label={hasError ? `${imageLabel} unavailable` : `${imageLabel} loading`}
+        title={hasError ? "Image unavailable. Upload the image again." : "Loading image"}
+        style={{ width: Number(width), height: Number(height), ...style }}
+      >
+        {hasError ? "No image" : ""}
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={imageUrl}
+      alt={alt}
+      width={width}
+      height={height}
+      style={style}
+      onError={() => {
+        console.error(`Firebase Storage image could not be displayed (${filePath}).`);
+        setHasError(true);
+      }}
+    />
+  );
+}
 
 function CategoriesPage() {
   const [categories, setCategories] = useState([]);
@@ -89,6 +156,8 @@ function CategoriesPage() {
       name: category.name || "",
       description: category.description || "",
       iconPath: category.iconPath || "",
+      iconFile: null,
+      iconPreview: category.iconPath ? null : null,
       active: Boolean(category.active),
       sortOrder: String(category.sortOrder ?? ""),
     });
@@ -101,6 +170,22 @@ function CategoriesPage() {
     setEditingCategory(null);
     setCategoryForm(emptyForm);
     setFormError("");
+  }
+
+  function handleIconFileChange(event) {
+    const file = event.target.files[0];
+    if (!file) {
+      setCategoryForm((current) => ({ ...current, iconFile: null, iconPreview: null }));
+      return;
+    }
+
+    if (!file.type.startsWith("image/")) {
+      setFormError("Please select an image file.");
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setCategoryForm((current) => ({ ...current, iconFile: file, iconPreview: previewUrl }));
   }
 
   function updateFormField(field, value) {
@@ -127,30 +212,31 @@ function CategoriesPage() {
       return;
     }
 
-    const categoryData = { ...categoryForm, sortOrder };
+    const submitData = { ...categoryForm, sortOrder };
+    delete submitData.iconPreview;
     setIsProcessing(true);
 
     try {
       if (editingCategory) {
-        await updateCategory(editingCategory.id, categoryData);
+        await updateCategory(editingCategory.id, submitData);
         setCategories((currentCategories) =>
           currentCategories
             .map((category) =>
               category.id === editingCategory.id
-                ? { ...category, ...categoryData }
+                ? { ...category, ...submitData }
                 : category,
             )
             .sort((first, second) => first.sortOrder - second.sortOrder),
         );
-        setSuccessMessage(`${categoryData.name} was updated.`);
+        setSuccessMessage(`${submitData.name} was updated.`);
       } else {
-        const categoryId = await createCategory(categoryData);
+        const categoryId = await createCategory(submitData);
         setCategories((currentCategories) =>
-          [...currentCategories, { id: categoryId, ...categoryData }].sort(
+          [...currentCategories, { id: categoryId, ...submitData }].sort(
             (first, second) => first.sortOrder - second.sortOrder,
           ),
         );
-        setSuccessMessage(`${categoryData.name} was added.`);
+        setSuccessMessage(`${submitData.name} was added.`);
       }
 
       closeForm();
@@ -228,10 +314,7 @@ function CategoriesPage() {
       <section className="page-intro page-intro-actions">
         <div>
           <h2>Service categories</h2>
-          <p>
-            Add, edit, order, and deactivate the categories used by the mobile
-            application.
-          </p>
+          
         </div>
         <button
           type="button"
@@ -288,13 +371,26 @@ function CategoriesPage() {
                   <th>Actions</th>
                 </tr>
               </thead>
-              <tbody>
+<tbody>
                 {visibleCategories.map((category) => (
                   <tr key={category.id}>
                     <td>
                       <div className="category-name-cell">
-                        <span className="category-icon" aria-hidden="true">
-                          {(category.name?.[0] || "?").toUpperCase()}
+                        <span className="category-icon">
+                          {category.iconPath ? (
+                            <StorageImage
+                              filePath={category.iconPath}
+                              alt=""
+                              width="24"
+                              height="24"
+                              style={{ objectFit: "contain" }}
+                            />
+                          ) : (
+                            <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" aria-hidden="true">
+                              <circle cx="12" cy="8" r="4" />
+                              <path d="M4 20c0-4 3.6-6 8-6s8 2 8 6z" />
+                            </svg>
+                          )}
                         </span>
                         <span>
                           <strong>{category.name}</strong>
@@ -405,16 +501,60 @@ function CategoriesPage() {
                 />
               </label>
               <label className="form-field">
-                <span>Icon path</span>
-                <input
-                  type="text"
-                  value={categoryForm.iconPath}
-                  placeholder="categories/electrician_icon.png"
-                  onChange={(event) =>
-                    updateFormField("iconPath", event.target.value)
-                  }
-                  disabled={isProcessing}
-                />
+                <span>Icon</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleIconFileChange}
+                    disabled={isProcessing}
+                    style={{ display: "none" }}
+                    id="category-icon-upload"
+                    ref={(el) => { window.categoryIconInput = el; }}
+                  />
+                  <button
+                    type="button"
+                    className="button button-secondary"
+                    onClick={() => window.categoryIconInput?.click()}
+                    disabled={isProcessing}
+                  >
+                    {categoryForm.iconFile ? "Change icon" : "Upload icon"}
+                  </button>
+                  {categoryForm.iconPreview && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <img
+                        src={categoryForm.iconPreview}
+                        alt="Icon preview"
+                        width="40"
+                        height="40"
+                        style={{ objectFit: "contain", border: "1px solid #ddd", borderRadius: "4px" }}
+                      />
+                      <span style={{ fontSize: "12px", color: "#666" }}>Preview</span>
+                    </div>
+                  )}
+                  {categoryForm.iconPath && !categoryForm.iconFile && !categoryForm.iconPreview && (
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <StorageImage
+                        filePath={categoryForm.iconPath}
+                        alt="Current icon"
+                        width="40"
+                        height="40"
+                        style={{ objectFit: "contain", border: "1px solid #ddd", borderRadius: "4px" }}
+                      />
+                      <span style={{ fontSize: "12px", color: "#666" }}>Current icon</span>
+                    </div>
+                  )}
+                  <input
+                    type="text"
+                    value={categoryForm.iconPath}
+                    placeholder="categories/electrician_icon.png (or upload above)"
+                    onChange={(event) =>
+                      updateFormField("iconPath", event.target.value)
+                    }
+                    disabled={isProcessing}
+                    style={{ marginTop: "8px" }}
+                  />
+                </div>
               </label>
               <label className="form-field">
                 <span>Sort order *</span>

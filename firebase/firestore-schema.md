@@ -754,6 +754,12 @@ categories/{categoryId}/{fileName}
 
 Firestore should store the Storage path or download URL, not the file itself.
 
+Storage rules allow providers to manage their own profile images and admins
+with the `admin` custom claim to upload provider profile images on their behalf.
+Provider profile image uploads must be image files smaller than 5 MB. Category
+icons are managed by admins and their `iconPath` must point to an image that
+exists in Storage.
+
 ---
 
 ## 16. Main Queries
@@ -832,4 +838,3 @@ Firestore may request additional indexes when new compound queries are added.
 | `reviews` | Create for completed jobs | Read related reviews | Moderate |
 | `complaints` | Create and read own | Create and read own | Manage |
 | `notifications` | Own notifications | Own notifications | No normal access |
-

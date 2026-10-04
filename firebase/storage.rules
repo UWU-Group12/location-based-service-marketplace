@@ -27,7 +27,7 @@ service firebase.storage {
       allow read: if signedIn();
 
       allow create, update: if
-        isOwner(providerId)
+        (isOwner(providerId) || isAdmin())
         && request.resource.size > 0
         && request.resource.size < 5 * 1024 * 1024
         && request.resource.contentType.matches('image/.*');
@@ -68,7 +68,7 @@ service firebase.storage {
         || isAdmin();
     }
 
-    match /categories/{fileName} {
+    match /categories/{categoryId}/{fileName} {
       allow read: if signedIn();
       allow write: if isAdmin();
     }

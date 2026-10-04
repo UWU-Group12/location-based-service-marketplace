@@ -1,4 +1,4 @@
-import { initializeApp } from "firebase/app";
+import { getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
@@ -27,3 +27,25 @@ const firebaseApp = initializeApp(firebaseConfig);
 export const auth = getAuth(firebaseApp);
 export const db = getFirestore(firebaseApp);
 export const storage = getStorage(firebaseApp);
+
+const provisioningAppName = "customerProvisioning";
+
+let provisioningAuth = null;
+
+// Firebase stores the browser session per app name, so signing in on this
+// secondary instance leaves the administrator session on `auth` untouched.
+// This lets the panel provision customer sign-in accounts without a backend.
+export function getProvisioningAuth() {
+  if (provisioningAuth) {
+    return provisioningAuth;
+  }
+
+  const existingApp = getApps().find(
+    (registeredApp) => registeredApp.name === provisioningAppName,
+  );
+  const provisioningApp =
+    existingApp ?? initializeApp(firebaseConfig, provisioningAppName);
+
+  provisioningAuth = getAuth(provisioningApp);
+  return provisioningAuth;
+}

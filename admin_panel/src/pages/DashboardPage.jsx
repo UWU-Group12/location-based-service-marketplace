@@ -59,7 +59,7 @@ function DashboardPage() {
       <section className="page-intro">
         <div>
           <h2>Marketplace overview</h2>
-            <p>Current account, verification, and category totals from Firestore.</p>
+          
         </div>
       </section>
 
@@ -85,7 +85,7 @@ function DashboardPage() {
             <div className="card-heading">
               <div>
                 <h3>Recent pending verifications</h3>
-                <p>The latest provider identity submissions awaiting review.</p>
+               
               </div>
               <Link className="text-link" to="/provider-verifications">
                 Review all
