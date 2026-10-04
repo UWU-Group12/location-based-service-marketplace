@@ -110,7 +110,7 @@ Every change updates `updatedAt` and (planned) creates a notification for the ot
 |---|---|---|
 | A1 | Admin login (Firebase Auth, `admin` custom claim) | ✅ |
 | A2 | Verify providers & documents (approve/reject with reason) | ✅ |
-| A3 | Manage customers & providers (suspend/activate) | ✅ |
+| A3 | Manage customers & providers (add, edit, suspend/activate, remove) | ✅ |
 | A4 | Manage categories | ✅ (locations removed from scope) |
 | A5 | Monitor requests & quotations | 🔴 |
 | A6 | Manage complaints; moderate reviews | 🔴 |

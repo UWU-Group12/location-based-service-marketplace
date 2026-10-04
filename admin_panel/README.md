@@ -11,7 +11,7 @@ A focused React and Vite administrator panel for the Raw university project.
 - `/provider-verifications`
 - `/categories`
 
-The app uses only the `users`, `providerProfiles`, `providerVerifications`, and `categories` Firestore collections.
+The app uses only the `users`, `providerProfiles`, `providerVerifications`, and `categories` Firestore collections, plus a count query over `serviceRequests` used to warn an administrator before removing a customer.
 
 ## Local setup
 

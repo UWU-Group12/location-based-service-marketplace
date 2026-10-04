@@ -6,6 +6,7 @@ import {
 import {
   collection,
   doc,
+  getCountFromServer,
   getDocs,
   query,
   serverTimestamp,
@@ -41,6 +42,41 @@ export async function updateCustomerAccountStatus(customerId, accountStatus) {
 
   await updateDoc(doc(db, "users", customerId), {
     accountStatus,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+export async function getCustomerRequestCount(customerId) {
+  const requestsQuery = query(
+    collection(db, "serviceRequests"),
+    where("customerId", "==", customerId),
+  );
+  const snapshot = await getCountFromServer(requestsQuery);
+
+  return snapshot.data().count;
+}
+
+export async function updateCustomerDetails(customerId, details) {
+  const displayName = String(details.displayName || "").trim();
+
+  if (!displayName) {
+    throw new Error("Customer name is required.");
+  }
+
+  const updates = {
+    displayName,
+    profileCompleted: Boolean(details.profileCompleted),
+  };
+  const phoneNumber = String(details.phoneNumber || "").trim();
+
+  // Mirrors cleanCustomerData: a blank phone number leaves the stored value
+  // untouched rather than clearing it.
+  if (phoneNumber) {
+    updates.phoneNumber = phoneNumber;
+  }
+
+  await updateDoc(doc(db, "users", customerId), {
+    ...updates,
     updatedAt: serverTimestamp(),
   });
 }

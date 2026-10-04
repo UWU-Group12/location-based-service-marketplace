@@ -1,4 +1,9 @@
 import {
+  createUserWithEmailAndPassword,
+  deleteUser,
+  signOut as firebaseSignOut,
+} from "firebase/auth";
+import {
   collection,
   doc,
   getDoc,
@@ -8,9 +13,10 @@ import {
   setDoc,
   updateDoc,
   where,
+  writeBatch,
 } from "firebase/firestore";
 import { ref, uploadBytes } from "firebase/storage";
-import { db, storage } from "../firebase/firebaseConfig";
+import { db, getProvisioningAuth, storage } from "../firebase/firebaseConfig";
 
 const validAccountStatuses = ["active", "suspended", "disabled"];
 
@@ -84,6 +90,7 @@ export async function getProviders() {
 export async function createProvider(providerData) {
   const displayName = (providerData.displayName || "").trim();
   const email = (providerData.email || "").trim();
+  const password = providerData.password || "";
 
   if (!displayName) {
     throw new Error("Provider name is required.");
@@ -93,8 +100,19 @@ export async function createProvider(providerData) {
     throw new Error("Provider email is required.");
   }
 
-  const userRef = doc(collection(db, "users"));
-  const providerId = userRef.id;
+  if (password.length < 6) {
+    throw new Error("Use a password with at least 6 characters.");
+  }
+
+  const provisioningAuth = getProvisioningAuth();
+  const credential = await createUserWithEmailAndPassword(
+    provisioningAuth,
+    email,
+    password,
+  );
+  const providerId = credential.user.uid;
+  const userRef = doc(db, "users", providerId);
+  const profileRef = doc(db, "providerProfiles", providerId);
   const categoryIds = Array.isArray(providerData.categoryIds)
     ? providerData.categoryIds
     : (providerData.categories || "")
@@ -104,46 +122,61 @@ export async function createProvider(providerData) {
 
   const photoPath = (providerData.photoPath || "").trim();
 
-  await setDoc(userRef, {
-    id: providerId,
+  const accountStatus = validAccountStatuses.includes(providerData.accountStatus)
+    ? providerData.accountStatus
+    : "active";
+  const profile = {
+    providerId,
     displayName,
-    email,
-    phoneNumber: (providerData.phoneNumber || "").trim(),
-    role: "provider",
-    accountStatus: validAccountStatuses.includes(providerData.accountStatus)
-      ? providerData.accountStatus
-      : "active",
-    photoPath: photoPath || null,
-    profileCompleted: true,
+    bio: (providerData.bio || "").trim(),
+    profileImagePath: photoPath || providerData.profileImagePath || null,
+    categoryIds,
+    experienceYears: Number(providerData.experienceYears || 0),
+    workingDays: Array.isArray(providerData.workingDays)
+      ? providerData.workingDays
+      : ["Mon", "Tue", "Wed", "Thu", "Fri"],
+    workingHours: providerData.workingHours || "Full Day",
+    serviceRadiusKm: Number(providerData.serviceRadiusKm || 10),
+    availabilityStatus: providerData.availabilityStatus || "unavailable",
+    verificationStatus: providerData.verificationStatus || "not_submitted",
+    ratingAverage: 0,
+    reviewCount: 0,
+    completedJobCount: 0,
+    baseLocation: null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-  });
+  };
 
-  await setDoc(
-    doc(db, "providerProfiles", providerId),
-    {
-      providerId,
+  try {
+    const providerBatch = writeBatch(db);
+    providerBatch.set(userRef, {
+      id: providerId,
       displayName,
-      bio: (providerData.bio || "").trim(),
-      profileImagePath: photoPath || providerData.profileImagePath || null,
-      categoryIds,
-      experienceYears: Number(providerData.experienceYears || 0),
-      workingDays: Array.isArray(providerData.workingDays)
-        ? providerData.workingDays
-        : ["Mon", "Tue", "Wed", "Thu", "Fri"],
-      workingHours: providerData.workingHours || "Full Day",
-      serviceRadiusKm: Number(providerData.serviceRadiusKm || 10),
-      availabilityStatus: providerData.availabilityStatus || "unavailable",
-      verificationStatus: providerData.verificationStatus || "not_submitted",
-      ratingAverage: 0,
-      reviewCount: 0,
-      completedJobCount: 0,
-      baseLocation: null,
+      email,
+      phoneNumber: (providerData.phoneNumber || "").trim(),
+      role: "provider",
+      accountStatus,
+      photoPath: photoPath || null,
+      profileCompleted: true,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
-    },
-    { merge: true },
-  );
+    });
+    providerBatch.set(profileRef, profile);
+    await providerBatch.commit();
+  } catch (error) {
+    try {
+      await deleteUser(provisioningAuth, credential.user);
+    } catch (cleanupError) {
+      console.error("Provider authentication account cleanup failed:", cleanupError);
+    }
+    throw error;
+  } finally {
+    try {
+      await firebaseSignOut(provisioningAuth);
+    } catch (error) {
+      console.error("Provider provisioning session could not be signed out:", error);
+    }
+  }
 
   return {
     id: providerId,
@@ -151,9 +184,7 @@ export async function createProvider(providerData) {
     email,
     phoneNumber: (providerData.phoneNumber || "").trim(),
     role: "provider",
-    accountStatus: validAccountStatuses.includes(providerData.accountStatus)
-      ? providerData.accountStatus
-      : "active",
+    accountStatus,
     photoPath: photoPath || null,
     profileCompleted: true,
     profile: {

@@ -110,6 +110,29 @@ createdAt
 
 Administrator privileges should be handled using Firebase Authentication custom claims.
 
+### Administrator Edits
+
+The React panel lets an administrator correct `displayName`, `phoneNumber`, and
+`profileCompleted` on a customer. `role`, `accountStatus`, and `createdAt` are not
+part of that form, and `email` is displayed read-only: the panel cannot call the
+Firebase Authentication SDK on another user's behalf, so changing `email` here
+would only diverge from the address the customer actually signs in with.
+
+### Removing A Customer
+
+Removal is a soft delete: the panel sets `accountStatus` to `disabled` and hides
+the row. The document is kept on purpose, because `createCurrentUserProfile`
+rewrites the whole `users/{uid}` record with `accountStatus: 'active'` whenever no
+document exists, so hard-deleting it would let the account be recreated as
+active. `disabled` also keeps the app-side guard in `requireActiveUserProfile`
+working, which signs the customer out with a clear message.
+
+The Firebase Authentication record is deliberately retained, because the panel
+cannot call the Authentication SDK on another user's behalf. One consequence is
+that a removed customer's email address stays taken and cannot be re-registered.
+Ticking "Show removed accounts" in the panel reveals these rows, and "Restore"
+sets `accountStatus` back to `active`.
+
 ---
 
 ## 4. Provider Profiles Collection

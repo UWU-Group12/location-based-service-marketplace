@@ -821,6 +821,12 @@ s
   font-weight: 700;
 }
 
+.form-field small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .photo-upload-box {
   display: flex;
   align-items: center;
