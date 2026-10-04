@@ -160,12 +160,6 @@ class _CustomerShellScreenState extends State<CustomerShellScreen> {
 
       const CustomerRequestsScreen(),
 
-      const _CustomerPlaceholderPage(
-        icon: Icons.notifications_outlined,
-        title: 'Notifications',
-        message: 'Your notifications will appear here.',
-      ),
-
       const CustomerProfileScreen(),
     ];
 
@@ -190,48 +184,11 @@ class _CustomerShellScreenState extends State<CustomerShellScreen> {
             label: 'Requests',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.notifications_outlined),
-            activeIcon: Icon(Icons.notifications),
-            label: 'Notifications',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
             activeIcon: Icon(Icons.person),
             label: 'Profile',
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CustomerPlaceholderPage extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String message;
-
-  const _CustomerPlaceholderPage({
-    required this.icon,
-    required this.title,
-    required this.message,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 56, color: Colors.grey),
-              const SizedBox(height: 16),
-              Text(message, textAlign: TextAlign.center),
-            ],
-          ),
-        ),
       ),
     );
   }

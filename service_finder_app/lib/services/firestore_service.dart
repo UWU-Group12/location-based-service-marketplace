@@ -7,7 +7,10 @@ import '../models/service_category_model.dart';
 import '../models/service_request_model.dart';
 
 class FirestoreService {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+
+  FirestoreService({FirebaseFirestore? firestore})
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   Stream<ServiceRequestModel?> watchCustomerRequest(String requestId) {
     final customerId = FirebaseAuth.instance.currentUser?.uid;
@@ -224,11 +227,76 @@ class FirestoreService {
     required String phoneNumber,
     String? photoPath,
     bool clearPhoto = false,
+    GeoPoint? savedLocation,
+    String? locationName,
   }) async {
     await _firestore.collection('users').doc(userId).update({
       'displayName': displayName.trim(),
       'phoneNumber': phoneNumber.trim(),
       'photoPath': ?(clearPhoto ? FieldValue.delete() : photoPath),
+      'savedLocation': ?savedLocation,
+      'locationName': ?locationName?.trim(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> updateCustomerLocation({
+    required String userId,
+    required GeoPoint savedLocation,
+    required String locationName,
+  }) async {
+    await _firestore.collection('users').doc(userId).update({
+      'savedLocation': savedLocation,
+      'locationName': locationName.trim(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> updateProviderPersonalInformation({
+    required String providerId,
+    required String displayName,
+    required String phoneNumber,
+    String? profileImagePath,
+    bool clearPhoto = false,
+  }) async {
+    final batch = _firestore.batch();
+    batch.update(_firestore.collection('providerProfiles').doc(providerId), {
+      'displayName': displayName.trim(),
+      'profileImagePath': ?(clearPhoto
+          ? FieldValue.delete()
+          : profileImagePath),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    batch.update(_firestore.collection('users').doc(providerId), {
+      'displayName': displayName.trim(),
+      'phoneNumber': phoneNumber.trim(),
+      'photoPath': ?(clearPhoto ? FieldValue.delete() : profileImagePath),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+    await batch.commit();
+  }
+
+  Future<void> updateProviderProfessionalInformation({
+    required String providerId,
+    required String bio,
+  }) async {
+    await _firestore.collection('providerProfiles').doc(providerId).update({
+      'bio': bio.trim(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> updateProviderServiceArea({
+    required String providerId,
+    required GeoPoint baseLocation,
+    required double serviceRadiusKm,
+  }) async {
+    if (![5.0, 10.0, 15.0, 20.0, 30.0].contains(serviceRadiusKm)) {
+      throw ArgumentError('Select a supported service radius.');
+    }
+    await _firestore.collection('providerProfiles').doc(providerId).update({
+      'baseLocation': baseLocation,
+      'serviceRadiusKm': serviceRadiusKm,
       'updatedAt': FieldValue.serverTimestamp(),
     });
   }

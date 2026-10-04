@@ -10,6 +10,8 @@ class UserModel {
   final String email;
   final String? phoneNumber;
   final String? photoPath;
+  final GeoPoint? savedLocation;
+  final String? locationName;
   final UserRole role;
   final AccountStatus accountStatus;
   final bool profileCompleted;
@@ -22,6 +24,8 @@ class UserModel {
     required this.email,
     this.phoneNumber,
     this.photoPath,
+    this.savedLocation,
+    this.locationName,
     required this.role,
     required this.accountStatus,
     required this.profileCompleted,
@@ -64,6 +68,10 @@ class UserModel {
       email: _readString(data['email'], fieldName: 'email'),
       phoneNumber: _readOptionalString(data['phoneNumber']),
       photoPath: _readOptionalString(data['photoPath']),
+      savedLocation: data['savedLocation'] is GeoPoint
+          ? data['savedLocation'] as GeoPoint
+          : null,
+      locationName: _readOptionalString(data['locationName']),
       role: _readRole(data['role']),
       accountStatus: _readAccountStatus(data['accountStatus']),
       profileCompleted: data['profileCompleted'] as bool? ?? false,
@@ -78,6 +86,8 @@ class UserModel {
       'email': email.trim(),
       if (phoneNumber != null) 'phoneNumber': phoneNumber!.trim(),
       if (photoPath != null) 'photoPath': photoPath!.trim(),
+      if (savedLocation != null) 'savedLocation': savedLocation,
+      if (locationName != null) 'locationName': locationName!.trim(),
       'role': role.name,
       'accountStatus': accountStatus.name,
       'profileCompleted': profileCompleted,
