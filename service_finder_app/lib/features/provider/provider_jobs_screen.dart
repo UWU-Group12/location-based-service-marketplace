@@ -59,26 +59,9 @@ class _ProviderJobsScreenState extends State<ProviderJobsScreen>
             const SizedBox(height: 8),
 
             const SizedBox(height: 20),
-            Container(
-              decoration: BoxDecoration(
-                color: AppColors.providerCard,
-                borderRadius: BorderRadius.circular(30),
-              ),
-              child: TabBar(
-                controller: _tabs,
-                dividerColor: Colors.transparent,
-                indicatorSize: TabBarIndicatorSize.tab,
-                indicator: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                labelColor: Colors.white,
-                unselectedLabelColor: AppColors.primary,
-                tabs: const [
-                  Tab(text: 'Active'),
-                  Tab(text: 'Finished'),
-                ],
-              ),
+            RequestTabBar(
+              controller: _tabs,
+              labels: const ['Active', 'Finished'],
             ),
             const SizedBox(height: 20),
             Expanded(

@@ -163,6 +163,8 @@ class _CustomerShellScreenState extends State<CustomerShellScreen> {
 
       const CustomerRequestsScreen(),
 
+      const CustomerRequestsScreen(showServices: true),
+
       const CustomerProfileScreen(),
     ];
 
@@ -186,6 +188,11 @@ class _CustomerShellScreenState extends State<CustomerShellScreen> {
             icon: Icon(Icons.receipt_long_outlined),
             activeIcon: Icon(Icons.receipt_long),
             label: 'Requests',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.handyman_outlined),
+            activeIcon: Icon(Icons.handyman),
+            label: 'Services',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),

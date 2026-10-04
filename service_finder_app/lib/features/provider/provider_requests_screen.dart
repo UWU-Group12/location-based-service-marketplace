@@ -75,26 +75,9 @@ class _ProviderRequestsScreenState extends State<ProviderRequestsScreen>
                 ).textTheme.headlineLarge?.copyWith(color: AppColors.primary),
               ),
               const SizedBox(height: 20),
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.providerCard,
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: TabBar(
-                  controller: _tabs,
-                  dividerColor: Colors.transparent,
-                  indicatorSize: TabBarIndicatorSize.tab,
-                  indicator: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  labelColor: Colors.white,
-                  unselectedLabelColor: AppColors.primary,
-                  tabs: const [
-                    Tab(text: 'Received'),
-                    Tab(text: 'Sent'),
-                  ],
-                ),
+              RequestTabBar(
+                controller: _tabs,
+                labels: const ['Received', 'Sent'],
               ),
               const SizedBox(height: 20),
               Expanded(
