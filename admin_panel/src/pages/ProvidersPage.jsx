@@ -5,6 +5,7 @@ import EmptyState from "../components/EmptyState";
 import LoadingSpinner from "../components/LoadingSpinner";
 import MessageBanner from "../components/MessageBanner";
 import StatusBadge from "../components/StatusBadge";
+import UserAvatar from "../components/UserAvatar";
 import {
   createProvider,
   getProviders,
@@ -13,7 +14,7 @@ import {
   uploadProviderProfilePhoto,
 } from "../services/providerService";
 import { getAuthorizedFileUrl } from "../services/storageService";
-import { getDataErrorMessage, getInitials } from "../utils/formatters";
+import { getDataErrorMessage } from "../utils/formatters";
 
 function ProvidersPage() {
   const [providers, setProviders] = useState([]);
@@ -82,12 +83,7 @@ function ProvidersPage() {
 
       return matchesSearch && matchesVerification && matchesAvailability;
     });
-  }, [
-    availabilityFilter,
-    providers,
-    searchText,
-    verificationFilter,
-  ]);
+  }, [availabilityFilter, providers, searchText, verificationFilter]);
 
   function requestStatusChange(provider) {
     const targetStatus =
@@ -209,6 +205,13 @@ function ProvidersPage() {
     }));
   }
 
+  function handleCreateProviderChange(field, value) {
+    setCreateProviderForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
   function handlePhotoSelection(event, formSetter) {
     const selectedFile = event.target.files?.[0];
 
@@ -277,8 +280,7 @@ function ProvidersPage() {
         email: editProviderForm.email.trim(),
         phoneNumber: editProviderForm.phoneNumber.trim(),
         accountStatus: editProviderForm.accountStatus,
-        photoPath:
-          updatePayload.photoPath || selectedProvider.photoPath || "",
+        photoPath: updatePayload.photoPath || selectedProvider.photoPath || "",
         profile: {
           ...selectedProvider.profile,
           ...normalizedProfile,
@@ -298,8 +300,7 @@ function ProvidersPage() {
                 email: editProviderForm.email.trim(),
                 phoneNumber: editProviderForm.phoneNumber.trim(),
                 accountStatus: editProviderForm.accountStatus,
-                photoPath:
-                  updatePayload.photoPath || provider.photoPath || "",
+                photoPath: updatePayload.photoPath || provider.photoPath || "",
                 profile: {
                   ...provider.profile,
                   ...normalizedProfile,
@@ -386,10 +387,7 @@ function ProvidersPage() {
     } catch (error) {
       console.error("Provider could not be created:", error);
       setErrorMessage(
-        getDataErrorMessage(
-          error,
-          "The provider could not be created.",
-        ),
+        getDataErrorMessage(error, "The provider could not be created."),
       );
     } finally {
       setIsProcessing(false);
@@ -405,10 +403,6 @@ function ProvidersPage() {
       <section className="page-intro">
         <div>
           <h2>Service providers</h2>
-          <p>
-            Review provider profiles and manage account access. Verification
-            decisions remain on the verification page.
-          </p>
         </div>
         <div className="page-intro-actions">
           <button
@@ -506,9 +500,15 @@ function ProvidersPage() {
                     <tr key={provider.id}>
                       <td>
                         <div className="person-cell">
-                          <span className="person-avatar">
-                            {getInitials(displayName)}
-                          </span>
+                          <UserAvatar
+                            photoPath={
+                              provider.photoPath ||
+                              profile.profileImagePath ||
+                              profile.photoPath
+                            }
+                            name={displayName}
+                            size={38}
+                          />
                           <span>
                             <strong>{displayName}</strong>
                             <small>
@@ -531,14 +531,14 @@ function ProvidersPage() {
                       </td>
                       <td>
                         <StatusBadge
-                          status={
-                            profile.verificationStatus || "not_submitted"
-                          }
+                          status={profile.verificationStatus || "not_submitted"}
                         />
                       </td>
                       <td>{Number(profile.ratingAverage || 0).toFixed(1)}</td>
                       <td>{profile.completedJobCount || 0}</td>
-                      <td><StatusBadge status={provider.accountStatus} /></td>
+                      <td>
+                        <StatusBadge status={provider.accountStatus} />
+                      </td>
                       <td>
                         <div className="action-group">
                           <button
@@ -556,10 +556,11 @@ function ProvidersPage() {
                           </Link>
                           <button
                             type="button"
-                            className={`button button-small ${provider.accountStatus === "active"
-                              ? "button-danger-soft"
-                              : "button-success-soft"
-                              }`}
+                            className={`button button-small ${
+                              provider.accountStatus === "active"
+                                ? "button-danger-soft"
+                                : "button-success-soft"
+                            }`}
                             onClick={() => requestStatusChange(provider)}
                           >
                             {provider.accountStatus === "active"
@@ -611,10 +612,7 @@ function ProvidersPage() {
                     id="provider-create-name"
                     value={createProviderForm.displayName}
                     onChange={(event) =>
-                      setCreateProviderForm((current) => ({
-                        ...current,
-                        displayName: event.target.value,
-                      }))
+                      handleCreateProviderChange("displayName", event.target.value)
                     }
                   />
                 </div>
@@ -625,10 +623,7 @@ function ProvidersPage() {
                     type="email"
                     value={createProviderForm.email}
                     onChange={(event) =>
-                      setCreateProviderForm((current) => ({
-                        ...current,
-                        email: event.target.value,
-                      }))
+                      handleCreateProviderChange("email", event.target.value)
                     }
                   />
                 </div>
@@ -638,10 +633,7 @@ function ProvidersPage() {
                     id="provider-create-phone"
                     value={createProviderForm.phoneNumber}
                     onChange={(event) =>
-                      setCreateProviderForm((current) => ({
-                        ...current,
-                        phoneNumber: event.target.value,
-                      }))
+                      handleCreateProviderChange("phoneNumber", event.target.value)
                     }
                   />
                 </div>
@@ -651,24 +643,20 @@ function ProvidersPage() {
                     id="provider-create-categories"
                     value={createProviderForm.categories}
                     onChange={(event) =>
-                      setCreateProviderForm((current) => ({
-                        ...current,
-                        categories: event.target.value,
-                      }))
+                      handleCreateProviderChange("categories", event.target.value)
                     }
                     placeholder="electrician, plumbing"
                   />
                 </div>
                 <div className="form-field">
-                  <label htmlFor="provider-create-account-status">Account status</label>
+                  <label htmlFor="provider-create-account-status">
+                    Account status
+                  </label>
                   <select
                     id="provider-create-account-status"
                     value={createProviderForm.accountStatus}
                     onChange={(event) =>
-                      setCreateProviderForm((current) => ({
-                        ...current,
-                        accountStatus: event.target.value,
-                      }))
+                      handleCreateProviderChange("accountStatus", event.target.value)
                     }
                   >
                     <option value="active">Active</option>
@@ -677,15 +665,17 @@ function ProvidersPage() {
                   </select>
                 </div>
                 <div className="form-field">
-                  <label htmlFor="provider-create-availability">Availability</label>
+                  <label htmlFor="provider-create-availability">
+                    Availability
+                  </label>
                   <select
                     id="provider-create-availability"
                     value={createProviderForm.availabilityStatus}
                     onChange={(event) =>
-                      setCreateProviderForm((current) => ({
-                        ...current,
-                        availabilityStatus: event.target.value,
-                      }))
+                      handleCreateProviderChange(
+                        "availabilityStatus",
+                        event.target.value,
+                      )
                     }
                   >
                     <option value="available">Available</option>
@@ -694,15 +684,17 @@ function ProvidersPage() {
                   </select>
                 </div>
                 <div className="form-field">
-                  <label htmlFor="provider-create-verification">Verification</label>
+                  <label htmlFor="provider-create-verification">
+                    Verification
+                  </label>
                   <select
                     id="provider-create-verification"
                     value={createProviderForm.verificationStatus}
                     onChange={(event) =>
-                      setCreateProviderForm((current) => ({
-                        ...current,
-                        verificationStatus: event.target.value,
-                      }))
+                      handleCreateProviderChange(
+                        "verificationStatus",
+                        event.target.value,
+                      )
                     }
                   >
                     <option value="not_submitted">Not submitted</option>
@@ -712,17 +704,19 @@ function ProvidersPage() {
                   </select>
                 </div>
                 <div className="form-field">
-                  <label htmlFor="provider-create-experience">Experience (years)</label>
+                  <label htmlFor="provider-create-experience">
+                    Experience (years)
+                  </label>
                   <input
                     id="provider-create-experience"
                     type="number"
                     min="0"
                     value={createProviderForm.experienceYears}
                     onChange={(event) =>
-                      setCreateProviderForm((current) => ({
-                        ...current,
-                        experienceYears: event.target.value,
-                      }))
+                      handleCreateProviderChange(
+                        "experienceYears",
+                        event.target.value,
+                      )
                     }
                   />
                 </div>
@@ -732,25 +726,24 @@ function ProvidersPage() {
                     id="provider-create-hours"
                     value={createProviderForm.workingHours}
                     onChange={(event) =>
-                      setCreateProviderForm((current) => ({
-                        ...current,
-                        workingHours: event.target.value,
-                      }))
+                      handleCreateProviderChange("workingHours", event.target.value)
                     }
                   />
                 </div>
                 <div className="form-field">
-                  <label htmlFor="provider-create-radius">Service radius (km)</label>
+                  <label htmlFor="provider-create-radius">
+                    Service radius (km)
+                  </label>
                   <input
                     id="provider-create-radius"
                     type="number"
                     min="0"
                     value={createProviderForm.serviceRadiusKm}
                     onChange={(event) =>
-                      setCreateProviderForm((current) => ({
-                        ...current,
-                        serviceRadiusKm: event.target.value,
-                      }))
+                      handleCreateProviderChange(
+                        "serviceRadiusKm",
+                        event.target.value,
+                      )
                     }
                   />
                 </div>
@@ -761,10 +754,7 @@ function ProvidersPage() {
                     rows="4"
                     value={createProviderForm.bio}
                     onChange={(event) =>
-                      setCreateProviderForm((current) => ({
-                        ...current,
-                        bio: event.target.value,
-                      }))
+                      handleCreateProviderChange("bio", event.target.value)
                     }
                   />
                 </div>
@@ -897,7 +887,9 @@ function ProvidersPage() {
                     />
                   </div>
                   <div className="form-field">
-                    <label htmlFor="provider-edit-account-status">Account status</label>
+                    <label htmlFor="provider-edit-account-status">
+                      Account status
+                    </label>
                     <select
                       id="provider-edit-account-status"
                       value={editProviderForm.accountStatus}
@@ -911,7 +903,9 @@ function ProvidersPage() {
                     </select>
                   </div>
                   <div className="form-field">
-                    <label htmlFor="provider-edit-availability">Availability</label>
+                    <label htmlFor="provider-edit-availability">
+                      Availability
+                    </label>
                     <select
                       id="provider-edit-availability"
                       value={editProviderForm.availabilityStatus}
@@ -928,7 +922,9 @@ function ProvidersPage() {
                     </select>
                   </div>
                   <div className="form-field">
-                    <label htmlFor="provider-edit-verification">Verification</label>
+                    <label htmlFor="provider-edit-verification">
+                      Verification
+                    </label>
                     <select
                       id="provider-edit-verification"
                       value={editProviderForm.verificationStatus}
@@ -946,7 +942,9 @@ function ProvidersPage() {
                     </select>
                   </div>
                   <div className="form-field">
-                    <label htmlFor="provider-edit-experience">Experience (years)</label>
+                    <label htmlFor="provider-edit-experience">
+                      Experience (years)
+                    </label>
                     <input
                       id="provider-edit-experience"
                       type="number"
@@ -961,7 +959,9 @@ function ProvidersPage() {
                     />
                   </div>
                   <div className="form-field">
-                    <label htmlFor="provider-edit-working-hours">Working hours</label>
+                    <label htmlFor="provider-edit-working-hours">
+                      Working hours
+                    </label>
                     <input
                       id="provider-edit-working-hours"
                       value={editProviderForm.workingHours}
@@ -971,7 +971,9 @@ function ProvidersPage() {
                     />
                   </div>
                   <div className="form-field">
-                    <label htmlFor="provider-edit-radius">Service radius (km)</label>
+                    <label htmlFor="provider-edit-radius">
+                      Service radius (km)
+                    </label>
                     <input
                       id="provider-edit-radius"
                       type="number"
@@ -1050,19 +1052,89 @@ function ProvidersPage() {
               </div>
             ) : (
               <dl className="details-grid">
-                <div><dt>Name</dt><dd>{selectedProvider.displayName || selectedProvider.profile.displayName || "Not provided"}</dd></div>
-                <div><dt>Email</dt><dd>{selectedProvider.email || "Not provided"}</dd></div>
-                <div><dt>Phone</dt><dd>{selectedProvider.phoneNumber || "Not provided"}</dd></div>
-                <div><dt>Categories</dt><dd>{selectedProvider.categoryNames.join(", ") || "Not selected"}</dd></div>
-                <div><dt>Availability</dt><dd><StatusBadge status={selectedProvider.profile.availabilityStatus || "unavailable"} /></dd></div>
-                <div><dt>Verification</dt><dd><StatusBadge status={selectedProvider.profile.verificationStatus || "not_submitted"} /></dd></div>
-                <div><dt>Experience</dt><dd>{selectedProvider.profile.experienceYears || 0} years</dd></div>
-                <div><dt>Working hours</dt><dd>{selectedProvider.profile.workingHours || "Not provided"}</dd></div>
-                <div><dt>Rating</dt><dd>{Number(selectedProvider.profile.ratingAverage || 0).toFixed(1)} ({selectedProvider.profile.reviewCount || 0} reviews)</dd></div>
-                <div><dt>Completed jobs</dt><dd>{selectedProvider.profile.completedJobCount || 0}</dd></div>
-                <div><dt>Account status</dt><dd><StatusBadge status={selectedProvider.accountStatus} /></dd></div>
-                <div><dt>Service area</dt><dd>{selectedProvider.profile.serviceRadiusKm ? `${selectedProvider.profile.serviceRadiusKm} km radius` : "Not provided"}</dd></div>
-                <div className="details-grid-full"><dt>Bio</dt><dd>{selectedProvider.profile.bio || "Not provided"}</dd></div>
+                <div>
+                  <dt>Name</dt>
+                  <dd>
+                    {selectedProvider.displayName ||
+                      selectedProvider.profile.displayName ||
+                      "Not provided"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Email</dt>
+                  <dd>{selectedProvider.email || "Not provided"}</dd>
+                </div>
+                <div>
+                  <dt>Phone</dt>
+                  <dd>{selectedProvider.phoneNumber || "Not provided"}</dd>
+                </div>
+                <div>
+                  <dt>Categories</dt>
+                  <dd>
+                    {selectedProvider.categoryNames.join(", ") || "Not selected"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Availability</dt>
+                  <dd>
+                    <StatusBadge
+                      status={
+                        selectedProvider.profile.availabilityStatus ||
+                        "unavailable"
+                      }
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt>Verification</dt>
+                  <dd>
+                    <StatusBadge
+                      status={
+                        selectedProvider.profile.verificationStatus ||
+                        "not_submitted"
+                      }
+                    />
+                  </dd>
+                </div>
+                <div>
+                  <dt>Experience</dt>
+                  <dd>{selectedProvider.profile.experienceYears || 0} years</dd>
+                </div>
+                <div>
+                  <dt>Working hours</dt>
+                  <dd>
+                    {selectedProvider.profile.workingHours || "Not provided"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Rating</dt>
+                  <dd>
+                    {Number(selectedProvider.profile.ratingAverage || 0).toFixed(1)}{" "}
+                    ({selectedProvider.profile.reviewCount || 0} reviews)
+                  </dd>
+                </div>
+                <div>
+                  <dt>Completed jobs</dt>
+                  <dd>{selectedProvider.profile.completedJobCount || 0}</dd>
+                </div>
+                <div>
+                  <dt>Account status</dt>
+                  <dd>
+                    <StatusBadge status={selectedProvider.accountStatus} />
+                  </dd>
+                </div>
+                <div>
+                  <dt>Service area</dt>
+                  <dd>
+                    {selectedProvider.profile.serviceRadiusKm
+                      ? `${selectedProvider.profile.serviceRadiusKm} km radius`
+                      : "Not provided"}
+                  </dd>
+                </div>
+                <div className="details-grid-full">
+                  <dt>Bio</dt>
+                  <dd>{selectedProvider.profile.bio || "Not provided"}</dd>
+                </div>
               </dl>
             )}
           </div>

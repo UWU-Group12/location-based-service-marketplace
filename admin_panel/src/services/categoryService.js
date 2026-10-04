@@ -8,7 +8,8 @@ import {
   setDoc,
   updateDoc,
 } from "firebase/firestore";
-import { db } from "../firebase/firebaseConfig";
+import { ref, uploadBytes } from "firebase/storage";
+import { db, storage } from "../firebase/firebaseConfig";
 
 export async function getCategories() {
   const snapshot = await getDocs(
@@ -32,15 +33,24 @@ export async function createCategory(category) {
     throw error;
   }
 
-  await setDoc(categoryReference, cleanCategoryData(category));
+  let iconPath = category.iconPath?.trim() || "";
+  if (category.iconFile) {
+    iconPath = await uploadCategoryIcon(categoryId, category.iconFile);
+  }
+
+  const categoryData = cleanCategoryData({ ...category, iconPath });
+  await setDoc(categoryReference, categoryData);
   return categoryId;
 }
 
 export async function updateCategory(categoryId, category) {
-  await updateDoc(
-    doc(db, "categories", categoryId),
-    cleanCategoryData(category),
-  );
+  let iconPath = category.iconPath?.trim() || "";
+  if (category.iconFile) {
+    iconPath = await uploadCategoryIcon(categoryId, category.iconFile);
+  }
+
+  const categoryData = cleanCategoryData({ ...category, iconPath });
+  await updateDoc(doc(db, "categories", categoryId), categoryData);
 }
 
 export async function setCategoryActive(categoryId, active) {
@@ -69,4 +79,20 @@ function createCategorySlug(name) {
   }
 
   return slug;
+}
+
+export async function uploadCategoryIcon(categoryId, file) {
+  if (!file) {
+    return null;
+  }
+
+  const extension =
+    (file.name && file.name.includes("."))
+      ? file.name.split(".").pop() || "png"
+      : file.type?.split("/")[1] || "png";
+  const iconPath = `categories/${categoryId}/icon.${extension}`;
+  const iconRef = ref(storage, iconPath);
+
+  await uploadBytes(iconRef, file);
+  return iconPath;
 }

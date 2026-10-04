@@ -13,8 +13,8 @@ import {
   formatDate,
   getCreateCustomerErrorMessage,
   getDataErrorMessage,
-  getInitials,
 } from "../utils/formatters";
+import UserAvatar from "../components/UserAvatar";
 
 const emptyForm = {
   displayName: "",
@@ -230,9 +230,7 @@ function CustomersPage() {
       <section className="page-intro page-intro-actions">
         <div>
           <h2>Customer accounts</h2>
-          <p>
-            Add customer accounts manually, search customers, and manage access.
-          </p>
+          
         </div>
         <button
           type="button"
@@ -306,9 +304,11 @@ function CustomersPage() {
                   <tr key={customer.id}>
                     <td>
                       <div className="person-cell">
-                        <span className="person-avatar">
-                          {getInitials(customer.displayName)}
-                        </span>
+                        <UserAvatar
+                          photoPath={customer.photoPath || customer.photoURL}
+                          name={customer.displayName}
+                          size={38}
+                        />
                         <span>
                           <strong>{customer.displayName || "Unnamed customer"}</strong>
                           <small>{customer.email || "No email"}</small>
