@@ -176,6 +176,14 @@ describe("serviceRequests rules", () => {
       );
     });
 
+    it("blocks a customer starting the job (confirmed -> in_progress)", async () => {
+      await seedRequest(REQUEST_ID, "confirmed");
+
+      await assertFails(
+        requestDoc(IDS.customer).update({ requestStatus: "in_progress" }),
+      );
+    });
+
     it("blocks a customer cancelling someone else's request", async () => {
       await seedRequest("request-not-mine", "submitted", {
         customerId: IDS.otherCustomer,

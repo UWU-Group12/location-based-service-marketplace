@@ -26,9 +26,7 @@ service cloud.firestore {
     }
 
     // ---------- SERVICE REQUEST STATE MACHINE ----------
-    // Mirrors the transitions in firestore-schema.md. Guards against a
-    // customer or provider skipping straight to 'completed', which would
-    // otherwise let anybody manufacture a rating.
+    // Allowed status changes (see firestore-schema.md). No skipping steps.
     function validRequestTransition(from, to) {
       return (from == 'submitted'
               && (to == 'quotation_received'
@@ -40,15 +38,12 @@ service cloud.firestore {
         || (from == 'in_progress' && (to == 'completed' || to == 'cancelled'));
     }
 
-    // Keys a provider may change on their own assigned request. The price
-    // lives here because the provider is the only party allowed to set it.
+    // Fields a provider may change. Only the provider sets the price.
     function providerRequestKeys() {
       return ['requestStatus', 'quotationStatus', 'finalAmount', 'updatedAt'];
     }
 
-    // The provider sends a quote but never settles it, so the only
-    // quotationStatus they may write is 'sent'. Without this a provider could
-    // accept their own price and start work the customer never agreed to.
+    // Provider can only mark a quotation as 'sent', never accept it
     function providerSendsQuotationOnly() {
       return !request.resource.data.diff(resource.data)
                 .affectedKeys()
@@ -56,16 +51,7 @@ service cloud.firestore {
         || request.resource.data.quotationStatus == 'sent';
     }
 
-    // Only the customer who booked the job may confirm it as done, so a
-    // provider cannot unilaterally mark the work finished.
-    function customerMustComplete() {
-      return request.resource.data.requestStatus != 'completed'
-        || roleIs('customer');
-    }
-
-    // Keys a customer may change on their own request. Note the absence of
-    // 'finalAmount': a customer decides whether to take the quoted price but
-    // never writes it, so a price can only come from the provider.
+    // Fields a customer may change. No 'finalAmount', customer can't set the price.
     function customerRequestKeys() {
       return [
         'requestStatus',
@@ -75,8 +61,7 @@ service cloud.firestore {
       ];
     }
 
-    // The customer settles the quote but never authors it, so the only
-    // quotationStatus values they may write are 'accepted' and 'rejected'.
+    // Customer can only accept or reject a quotation
     function customerDecidesQuotationOnly() {
       return !request.resource.data.diff(resource.data)
                 .affectedKeys()
@@ -143,9 +128,7 @@ service cloud.firestore {
 
     // ---------- SERVICE REQUESTS ----------
     match /serviceRequests/{requestId} {
-      // A request must start as 'submitted'. Without this a customer could
-      // create one straight into 'completed' and then review it, which is the
-      // same forgery the transition graph below prevents.
+      // New request must start as 'submitted'
       allow create: if signedIn()
         && request.resource.data.customerId == request.auth.uid
         && request.resource.data.requestStatus == 'submitted';
@@ -154,25 +137,28 @@ service cloud.firestore {
         || resource.data.customerId == request.auth.uid
         || resource.data.providerId == request.auth.uid;
 
-      // Each party may only advance the request, never rewrite it. Identity
-      // fields, pricing and request content are off limits to both.
+      // Provider and customer can only move the request forward.
+      // Only the customer can mark it 'completed'.
       allow update: if isAdmin()
         || (roleIs('provider')
             && resource.data.providerId == request.auth.uid
             && request.resource.data.diff(resource.data)
                  .affectedKeys()
                  .hasOnly(providerRequestKeys())
+            && request.resource.data.requestStatus
+                 in ['quotation_received', 'provider_rejected', 'in_progress']
             && validRequestTransition(
                  resource.data.requestStatus,
                  request.resource.data.requestStatus
                )
-            && providerSendsQuotationOnly()
-            && customerMustComplete())
+            && providerSendsQuotationOnly())
         || (roleIs('customer')
             && resource.data.customerId == request.auth.uid
             && request.resource.data.diff(resource.data)
                  .affectedKeys()
                  .hasOnly(customerRequestKeys())
+            && request.resource.data.requestStatus
+                 in ['confirmed', 'cancelled', 'completed']
             && validRequestTransition(
                  resource.data.requestStatus,
                  request.resource.data.requestStatus
@@ -209,8 +195,8 @@ service cloud.firestore {
         return get(/databases/$(database)/documents/serviceRequests/$(requestId));
       }
 
-      allow create: if get(/databases/$(database)/documents/users/$(request.auth.uid))
-               .data.role == 'customer'
+      // Only the customer of a completed request, with server timestamps
+      allow create: if roleIs('customer')
         && request.resource.data.requestId == requestId
         && request.resource.data.customerId == request.auth.uid
         && reviewRequest().data.customerId == request.auth.uid

@@ -477,9 +477,6 @@ class FirestoreService {
     });
   }
 
-  Future<void> completeJob(String requestId) =>
-      _updateRequestStatus(requestId, 'completed');
-
   Future<void> _updateRequestStatus(String requestId, String status) {
     return _firestore.collection('serviceRequests').doc(requestId).update({
       'requestStatus': status,

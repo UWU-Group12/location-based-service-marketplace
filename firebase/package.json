@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "test": "mocha --reporter spec --timeout 30000 \"tests/**/*.test.js\"",
-    "test:emulator": "node tests/run-emulator.js"
+    "test:emulator": "firebase emulators:exec --only firestore \"npm test\""
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^3.0.4",

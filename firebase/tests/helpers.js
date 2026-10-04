@@ -7,22 +7,13 @@ const {
   assertSucceeds,
 } = require("@firebase/rules-unit-testing");
 
-// Every denied write logs a gRPC error through the SDK's default logger, which
-// buries the actual mocha output.
+// Hide the error logs from denied writes so the test output is readable
 setLogLevel("silent");
 
-// The library wants the rules source, not the file name.
 const RULES = fs.readFileSync(
   path.join(__dirname, "..", "firestore.rules"),
   "utf8",
 );
-
-// NOTE: @firebase/rules-unit-testing does not export FieldValue (checked in
-// both 3.0.4 and 5.0.2), so a test cannot send FieldValue.serverTimestamp().
-// The reviews rule clause 'createdAt == request.time' is therefore only
-// exercised from its denying side below: any client-supplied timestamp must be
-// rejected. The allowing side is covered by the manual smoke test, where the
-// app writes a real server timestamp.
 
 const IDS = {
   customer: "customer-1",
@@ -37,9 +28,7 @@ const REQUEST_ID = "request-1";
 const OTHER_REQUEST_ID = "request-2";
 const HIDDEN_REVIEW_ID = "request-3";
 
-// Fixtures are seeded with rules disabled, so a plain value is fine here.
-// Reviews sent by tests deliberately use the same plain value, because a
-// client-chosen timestamp must be rejected by the rules.
+// Plain string timestamp for test data
 const SEED_TIME = "2026-01-01T00:00:00.000Z";
 
 let testEnv;
@@ -50,8 +39,7 @@ async function setup() {
     firestore: { rules: RULES },
   });
 
-  // The emulator keeps data between runs, so a document left over from an
-  // earlier run would turn a create into an update and change the result.
+  // Clear data left over from earlier runs
   await testEnv.clearFirestore();
   await seedFixtures();
 

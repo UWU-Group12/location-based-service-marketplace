@@ -13,16 +13,8 @@ const {
   assertSucceeds,
 } = require("./helpers");
 
-// The reviews create rule requires createdAt and updatedAt to equal
-// request.time, which only a real FieldValue.serverTimestamp() satisfies.
-// @firebase/rules-unit-testing cannot send that (see helpers.js), so the
-// individual create-path conditions -- customer role, request ownership,
-// completed status, rating range, moderationStatus -- cannot be isolated from
-// the timestamp clause and are therefore not asserted here. Covering them
-// needs the Auth emulator plus the real Firebase SDK.
-//
-// What IS provable from this library is the opposite direction: a client that
-// chooses its own timestamps is rejected, plus the read/update/delete rules.
+// The test library can't send serverTimestamp(), so a successful review create
+// can't be tested here. Test it manually in the app.
 describe("reviews rules", () => {
   before(async () => {
     await setup();
