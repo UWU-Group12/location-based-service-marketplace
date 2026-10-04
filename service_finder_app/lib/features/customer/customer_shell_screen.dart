@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/app_colors.dart';
 import '../../core/widgets/floating_glass_navigation_bar.dart';
 
 import 'customer_home_screen.dart';
