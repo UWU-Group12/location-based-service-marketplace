@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 
 import '../features/provider/location_picker_screen.dart';
+import 'auth_service.dart';
 
 class LocationService {
   // Shared across instances since screens create their own LocationService
@@ -84,6 +85,23 @@ class LocationService {
       throw StateError(
         'Unable to get your current location. Please try again.',
       );
+    }
+  }
+
+  /// GPS first; falls back to the signed-in user's saved location, else null
+  Future<GeoPoint?> getCurrentOrSavedLocation() async {
+    try {
+      return await getCurrentLocation();
+    } catch (error) {
+      debugPrint('Current location unavailable: $error');
+    }
+
+    try {
+      return (await AuthService().getUserProfileForCurrentUser())
+          ?.savedLocation;
+    } catch (error) {
+      debugPrint('Saved location error: $error');
+      return null;
     }
   }
 

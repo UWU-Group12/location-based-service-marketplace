@@ -6,6 +6,7 @@ import '../../core/widgets/floating_glass_navigation_bar.dart';
 import '../../models/provider_model.dart';
 import '../../models/service_category_model.dart';
 import '../../services/firestore_service.dart';
+import '../../services/location_service.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/category_card.dart';
 import '../../widgets/customer_search_bar.dart';
@@ -28,6 +29,7 @@ class CustomerHomeScreen extends StatefulWidget {
 class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   final FirestoreService _firestoreService = FirestoreService();
   final StorageService _storageService = StorageService();
+  final LocationService _locationService = LocationService();
   final TextEditingController _searchController = TextEditingController();
 
   late Future<List<ServiceCategory>> _categoriesFuture;
@@ -39,6 +41,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     return firstName.isEmpty ? 'User' : firstName;
   }
 
+  // Null until the customer's location is known
+  Stream<List<ProviderModel>>? _nearbyProviders;
+  bool _isLoadingLocation = true;
+
   @override
   void initState() {
     super.initState();
@@ -48,6 +54,19 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     ) {
       _allCategories = categories;
       return categories;
+    });
+    _loadNearbyProviders();
+  }
+
+  Future<void> _loadNearbyProviders() async {
+    final location = await _locationService.getCurrentOrSavedLocation();
+
+    if (!mounted) return;
+    setState(() {
+      _nearbyProviders = location == null
+          ? null
+          : _firestoreService.watchNearbyAvailableProviders(location, limit: 8);
+      _isLoadingLocation = false;
     });
   }
 
@@ -255,49 +274,73 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
               const SizedBox(height: 30),
               // Nearby Professionals
               Text(
-                'Available professionals',
+                'Nearby professionals',
                 style: textTheme.titleLarge?.copyWith(fontSize: 18),
               ),
               const SizedBox(height: 15),
-              StreamBuilder<List<ProviderModel>>(
-                stream: _firestoreService.watchTopRatedAvailableProviders(
-                  limit: 8,
+              if (_isLoadingLocation)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (_nearbyProviders == null)
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Turn on location to see professionals near you.',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _isLoadingLocation = true);
+                        _loadNearbyProviders();
+                      },
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                )
+              else
+                StreamBuilder<List<ProviderModel>>(
+                  stream: _nearbyProviders,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return Text(
+                        'Unable to load professionals right now.',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      );
+                    }
+
+                    if (!snapshot.hasData) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 20),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+
+                    final providers = snapshot.data!;
+
+                    if (providers.isEmpty) {
+                      return Text(
+                        'No professionals are available near you right now.',
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      );
+                    }
+
+                    return FeaturedProviderCarousel(
+                      providers: providers,
+                      onViewDetails: (provider) =>
+                          AppRouter.goToProviderDetails(context, provider),
+                    );
+                  },
                 ),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Text(
-                      'Unable to load professionals right now.',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    );
-                  }
-
-                  if (!snapshot.hasData) {
-                    return const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 20),
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
-
-                  final providers = snapshot.data!;
-
-                  if (providers.isEmpty) {
-                    return Text(
-                      'No professionals are available right now.',
-                      style: textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
-                      ),
-                    );
-                  }
-
-                  return FeaturedProviderCarousel(
-                    providers: providers,
-                    onViewDetails: (provider) =>
-                        AppRouter.goToProviderDetails(context, provider),
-                  );
-                },
-              ),
               const SizedBox(height: 30),
             ],
           ),

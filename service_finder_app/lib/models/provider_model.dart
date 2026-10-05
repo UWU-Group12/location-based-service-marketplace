@@ -96,8 +96,9 @@ class ProviderModel {
       ratingAverage: (data['ratingAverage'] ?? 0.0).toDouble(),
       reviewCount: data['reviewCount'] ?? 0,
       completedJobCount: data['completedJobCount'] ?? 0,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      updatedAt: (data['updatedAt'] as Timestamp).toDate(),
+      // A local write with serverTimestamp() reads back as null until synced
+      createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
     );
   }
 }
