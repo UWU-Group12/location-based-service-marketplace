@@ -17,6 +17,7 @@ import {
   getSetPasswordErrorMessage,
   setUserPassword,
 } from "../services/authService";
+import { getCategories } from "../services/categoryService";
 import { getAuthorizedFileUrl } from "../services/storageService";
 import {
   getCreateAccountErrorMessage,
@@ -25,6 +26,7 @@ import {
 
 function ProvidersPage() {
   const [providers, setProviders] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [searchText, setSearchText] = useState("");
   const [verificationFilter, setVerificationFilter] = useState("all");
   const [availabilityFilter, setAvailabilityFilter] = useState("all");
@@ -46,9 +48,13 @@ function ProvidersPage() {
 
     async function loadProviders() {
       try {
-        const providerList = await getProviders();
+        const [providerList, categoryList] = await Promise.all([
+          getProviders(),
+          getCategories(),
+        ]);
         if (isActive) {
           setProviders(providerList);
+          setCategories(categoryList);
         }
       } catch (error) {
         console.error("Providers could not be loaded:", error);
@@ -181,7 +187,7 @@ function ProvidersPage() {
       password: "",
       confirmPassword: "",
       phoneNumber: "",
-      categories: "",
+      categoryIds: [],
       availabilityStatus: "available",
       verificationStatus: "verified",
       experienceYears: 0,
@@ -225,6 +231,7 @@ function ProvidersPage() {
         "",
       email: selectedProvider.email || "",
       phoneNumber: selectedProvider.phoneNumber || "",
+      categoryIds: selectedProvider.categoryIds || [],
       availabilityStatus:
         selectedProvider.profile.availabilityStatus || "unavailable",
       verificationStatus:
@@ -256,6 +263,45 @@ function ProvidersPage() {
       ...current,
       [field]: value,
     }));
+  }
+
+  function getCategoryNames(categoryIds) {
+    return categoryIds.map(
+      (categoryId) =>
+        categories.find((category) => category.id === categoryId)?.name ||
+        categoryId,
+    );
+  }
+
+  // Active categories, plus any inactive ones the provider already has.
+  function renderCategorySelect(id, selectedIds, onChange) {
+    return (
+      <>
+        <select
+          id={id}
+          multiple
+          value={selectedIds}
+          onChange={(event) =>
+            onChange(
+              Array.from(event.target.selectedOptions, (option) => option.value),
+            )
+          }
+          disabled={isProcessing}
+        >
+          {categories
+            .filter(
+              (category) =>
+                category.active !== false || selectedIds.includes(category.id),
+            )
+            .map((category) => (
+              <option key={category.id} value={category.id}>
+                {category.name || category.id}
+              </option>
+            ))}
+        </select>
+        <small>Hold Ctrl (Cmd on Mac) to select more than one.</small>
+      </>
+    );
   }
 
   function handlePhotoSelection(event, formSetter) {
@@ -318,7 +364,9 @@ function ProvidersPage() {
         workingHours: editProviderForm.workingHours.trim(),
         bio: editProviderForm.bio.trim(),
         serviceRadiusKm: Number(editProviderForm.serviceRadiusKm || 0),
+        categoryIds: editProviderForm.categoryIds,
       };
+      const categoryNames = getCategoryNames(editProviderForm.categoryIds);
 
       const updatePayload = {
         displayName: editProviderForm.displayName.trim(),
@@ -349,6 +397,8 @@ function ProvidersPage() {
         phoneNumber: editProviderForm.phoneNumber.trim(),
         accountStatus: editProviderForm.accountStatus,
         photoPath: updatePayload.photoPath || selectedProvider.photoPath || "",
+        categoryIds: editProviderForm.categoryIds,
+        categoryNames,
         profile: {
           ...selectedProvider.profile,
           ...normalizedProfile,
@@ -369,6 +419,8 @@ function ProvidersPage() {
                 phoneNumber: editProviderForm.phoneNumber.trim(),
                 accountStatus: editProviderForm.accountStatus,
                 photoPath: updatePayload.photoPath || provider.photoPath || "",
+                categoryIds: editProviderForm.categoryIds,
+                categoryNames,
                 profile: {
                   ...provider.profile,
                   ...normalizedProfile,
@@ -432,17 +484,13 @@ function ProvidersPage() {
     setSuccessMessage("");
 
     try {
-      const categoryIds = createProviderForm.categories
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean);
+      const categoryIds = createProviderForm.categoryIds;
 
-      const createdProvider = await createProvider({
+      const newProvider = await createProvider({
         displayName: createProviderForm.displayName.trim(),
         email: createProviderForm.email.trim(),
         password: createProviderForm.password,
         phoneNumber: createProviderForm.phoneNumber.trim(),
-        categories: categoryIds.join(", "),
         categoryIds,
         availabilityStatus: createProviderForm.availabilityStatus,
         verificationStatus: createProviderForm.verificationStatus,
@@ -452,6 +500,10 @@ function ProvidersPage() {
         accountStatus: createProviderForm.accountStatus,
         serviceRadiusKm: Number(createProviderForm.serviceRadiusKm || 10),
       });
+      const createdProvider = {
+        ...newProvider,
+        categoryNames: getCategoryNames(categoryIds),
+      };
 
       setProviders((currentProviders) => [createdProvider, ...currentProviders]);
       setSelectedProvider(createdProvider);
@@ -839,14 +891,12 @@ function ProvidersPage() {
                 </div>
                 <div className="form-field">
                   <label htmlFor="provider-create-categories">Categories</label>
-                  <input
-                    id="provider-create-categories"
-                    value={createProviderForm.categories}
-                    onChange={(event) =>
-                      handleCreateProviderChange("categories", event.target.value)
-                    }
-                    placeholder="electrician, plumbing"
-                  />
+                  {renderCategorySelect(
+                    "provider-create-categories",
+                    createProviderForm.categoryIds,
+                    (categoryIds) =>
+                      handleCreateProviderChange("categoryIds", categoryIds),
+                  )}
                 </div>
                 <div className="form-field">
                   <label htmlFor="provider-create-account-status">
@@ -1086,6 +1136,15 @@ function ProvidersPage() {
                         handleEditProviderChange("phoneNumber", event.target.value)
                       }
                     />
+                  </div>
+                  <div className="form-field">
+                    <label htmlFor="provider-edit-categories">Categories</label>
+                    {renderCategorySelect(
+                      "provider-edit-categories",
+                      editProviderForm.categoryIds,
+                      (categoryIds) =>
+                        handleEditProviderChange("categoryIds", categoryIds),
+                    )}
                   </div>
                   <div className="form-field">
                     <label htmlFor="provider-edit-password">New password</label>
