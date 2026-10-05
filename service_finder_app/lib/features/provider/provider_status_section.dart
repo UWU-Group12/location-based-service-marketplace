@@ -27,16 +27,6 @@ class ProviderStatusSection extends StatelessWidget {
             title: 'Verification',
             value: verification,
           ),
-          const Divider(height: 1, indent: 56, endIndent: 18),
-          ProfileSettingsRow(
-            icon: Icons.work_outline,
-            title: 'Availability',
-            value: profile == null
-                ? 'Status unavailable'
-                : profile.availabilityStatus == 'available'
-                ? 'Available'
-                : 'Not available',
-          ),
           if (controller.hasError)
             TextButton.icon(
               onPressed: controller.retry,
