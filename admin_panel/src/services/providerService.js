@@ -6,6 +6,7 @@ import {
 import {
   collection,
   doc,
+  GeoPoint,
   getDoc,
   getDocs,
   query,
@@ -19,6 +20,18 @@ import { ref, uploadBytes } from "firebase/storage";
 import { db, getProvisioningAuth, storage } from "../firebase/firebaseConfig";
 
 const validAccountStatuses = ["active", "suspended", "disabled"];
+
+// Stored as a Firestore GeoPoint, the same type the mobile app writes.
+function toGeoPoint(location) {
+  const latitude = Number(location?.latitude);
+  const longitude = Number(location?.longitude);
+
+  if (!location || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  return new GeoPoint(latitude, longitude);
+}
 
 export async function uploadProviderProfilePhoto(providerId, file) {
   if (!file) {
@@ -142,7 +155,7 @@ export async function createProvider(providerData) {
     ratingAverage: 0,
     reviewCount: 0,
     completedJobCount: 0,
-    baseLocation: null,
+    baseLocation: toGeoPoint(providerData.baseLocation),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   };
@@ -204,7 +217,7 @@ export async function createProvider(providerData) {
       ratingAverage: 0,
       reviewCount: 0,
       completedJobCount: 0,
-      baseLocation: null,
+      baseLocation: toGeoPoint(providerData.baseLocation),
     },
     categoryIds,
     categoryNames: categoryIds,
@@ -251,6 +264,10 @@ export async function updateProviderDetails(providerId, providerData) {
 
   if (providerData.profile) {
     Object.assign(profileUpdates, providerData.profile);
+
+    if (profileUpdates.baseLocation !== undefined) {
+      profileUpdates.baseLocation = toGeoPoint(profileUpdates.baseLocation);
+    }
   }
 
   if (providerData.profileImagePath !== undefined) {
