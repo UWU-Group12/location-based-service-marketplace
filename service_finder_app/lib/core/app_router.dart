@@ -29,6 +29,8 @@ import '../models/service_request_model.dart';
 import '../features/provider/provider_request_details_screen.dart';
 import '../features/provider/create_quotation_screen.dart';
 import '../features/provider/provider_job_details_screen.dart';
+import '../features/provider/provider_reviews_screen.dart';
+import '../features/notifications/notifications_screen.dart';
 
 import '../features/customer/service_categories_screen.dart';
 import '../features/customer/rating_review_screen.dart';
@@ -44,6 +46,20 @@ class AppRouter {
     await Navigator.of(
       context,
     ).push(_buildRoute(ProviderJobDetailsScreen(requestId: requestId)));
+  }
+
+  static Future<void> goToProviderNotifications(BuildContext context) async {
+    await Navigator.of(context).push(_buildRoute(const NotificationsScreen()));
+  }
+
+  static Future<void> goToProviderProfileReviews(BuildContext context) async {
+    await goToProviderReviews(context);
+  }
+
+  static Future<void> goToProviderReviews(BuildContext context) async {
+    await Navigator.of(
+      context,
+    ).push(_buildRoute(const ProviderReviewsScreen()));
   }
 
   static Future<bool> goToProviderRequestDetails(

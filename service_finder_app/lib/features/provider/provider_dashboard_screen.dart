@@ -3,8 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
+import '../../core/app_router.dart';
 import '../../core/widgets/floating_glass_navigation_bar.dart';
-import '../../services/location_service.dart';
+import '../../services/notification_service.dart';
 import '../../widgets/greeting_header.dart';
 
 class ProviderDashboardScreen extends StatefulWidget {
@@ -23,11 +24,12 @@ class ProviderDashboardScreen extends StatefulWidget {
 }
 
 class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
+  final _notificationService = NotificationService();
   DocumentReference<Map<String, dynamic>>? _profile;
   Stream<DocumentSnapshot<Map<String, dynamic>>>? _profileStream;
   Stream<QuerySnapshot<Map<String, dynamic>>>? _jobsStream;
+  Stream<List<ProviderNotificationItem>>? _notificationsStream;
   bool _savingAvailability = false;
-  bool _fetchingLocation = false;
 
   @override
   void initState() {
@@ -43,6 +45,7 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
         .collection('serviceRequests')
         .where('providerId', isEqualTo: uid)
         .snapshots();
+    _notificationsStream = _notificationService.watchProviderNotifications(uid);
   }
 
   void _showError(String message) {
@@ -67,25 +70,6 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
     }
   }
 
-  Future<void> _fetchLocation() async {
-    if (_profile == null || _fetchingLocation) return;
-    setState(() => _fetchingLocation = true);
-    try {
-      final location = await LocationService().getCurrentLocation();
-      if (!mounted) return;
-      await _profile!.update({
-        'baseLocation': location,
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-    } on StateError catch (error) {
-      _showError(error.message.toString());
-    } catch (_) {
-      _showError('Unable to save your location. Please try again.');
-    } finally {
-      if (mounted) setState(() => _fetchingLocation = false);
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,7 +87,6 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                 ? 'Provider'
                 : displayName.split(RegExp(r'\s+')).first;
             final available = profile?['availabilityStatus'] == 'available';
-            final location = profile?['baseLocation'] as GeoPoint?;
             final canEdit = profile != null && !snapshot.hasError;
             final statusColor = available
                 ? Colors.green.shade700
@@ -118,7 +101,14 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
               ),
               children: [
                 const SizedBox(height: 8),
-                GreetingHeader(firstName: firstName),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: GreetingHeader(firstName: firstName)),
+                    const SizedBox(width: 12),
+                    _notificationButton(),
+                  ],
+                ),
                 const SizedBox(height: 24),
                 if (snapshot.connectionState == ConnectionState.waiting)
                   const LinearProgressIndicator(),
@@ -137,7 +127,7 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                     !snapshot.hasError &&
                     profile == null)
                   const Text(
-                    'Complete your provider profile to manage availability and location.',
+                    'Complete your provider profile to manage availability.',
                   ),
                 _card(
                   child: Row(
@@ -206,54 +196,6 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                     ],
                   ),
                 ),
-                const SizedBox(height: 20),
-                _card(
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Your location',
-                              style: TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              location == null
-                                  ? 'Location not fetched'
-                                  : '${location.latitude.toStringAsFixed(5)}, ${location.longitude.toStringAsFixed(5)}',
-                              style: const TextStyle(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton.outlined(
-                        tooltip: 'Fetch current location',
-                        onPressed: canEdit && !_fetchingLocation
-                            ? _fetchLocation
-                            : null,
-                        icon: _fetchingLocation
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.my_location),
-                      ),
-                    ],
-                  ),
-                ),
                 const SizedBox(height: 32),
                 _buildJobCards(),
               ],
@@ -298,6 +240,39 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
+            _card(
+              color: AppColors.providerCard,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _cardTitle(
+                    Icons.account_balance_wallet_outlined,
+                    'Total earnings',
+                  ),
+                  const SizedBox(height: 20),
+                  if (loading)
+                    const LinearProgressIndicator()
+                  else if (unavailable)
+                    const Text('Earnings are currently unavailable.')
+                  else ...[
+                    Text(
+                      'LKR ${earnings.toStringAsFixed(2)}',
+                      style: Theme.of(context).textTheme.headlineMedium
+                          ?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'From ${completedJobs.length} completed jobs',
+                      style: const TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
             _card(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -356,39 +331,6 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-            _card(
-              color: AppColors.providerCard,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _cardTitle(
-                    Icons.account_balance_wallet_outlined,
-                    'Total earnings',
-                  ),
-                  const SizedBox(height: 20),
-                  if (loading)
-                    const LinearProgressIndicator()
-                  else if (unavailable)
-                    const Text('Earnings are currently unavailable.')
-                  else ...[
-                    Text(
-                      'LKR ${earnings.toStringAsFixed(2)}',
-                      style: Theme.of(context).textTheme.headlineMedium
-                          ?.copyWith(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'From ${completedJobs.length} completed jobs',
-                      style: const TextStyle(color: AppColors.textSecondary),
-                    ),
-                  ],
-                ],
-              ),
-            ),
           ],
         );
       },
@@ -408,6 +350,72 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
         ),
       ],
     );
+  }
+
+  Widget _notificationButton() {
+    final stream = _notificationsStream;
+
+    Widget button({int count = 0}) {
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          IconButton(
+            tooltip: 'Notifications',
+            style: IconButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: _openNotifications,
+            icon: const Icon(Icons.notifications_outlined),
+          ),
+          if (count > 0)
+            Positioned(
+              right: -2,
+              top: -4,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.error,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white, width: 1.5),
+                ),
+                child: Text(
+                  count > 99 ? '99+' : '$count',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+
+    if (stream == null) return button();
+    return StreamBuilder<List<ProviderNotificationItem>>(
+      stream: stream,
+      builder: (context, snapshot) {
+        final unreadCount =
+            snapshot.data
+                ?.where((notification) => notification.unread)
+                .length ??
+            0;
+        return button(count: unreadCount);
+      },
+    );
+  }
+
+  Future<void> _openNotifications() async {
+    await AppRouter.goToProviderNotifications(context);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (!mounted || uid == null) return;
+    setState(() {
+      _notificationsStream = _notificationService.watchProviderNotifications(
+        uid,
+      );
+    });
   }
 
   Widget _card({required Widget child, Color color = Colors.white}) {
