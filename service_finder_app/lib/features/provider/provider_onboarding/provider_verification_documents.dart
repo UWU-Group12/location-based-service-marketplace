@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'provider_onboarding_layout.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -182,8 +183,6 @@ class _ProviderVerificationDocumentsState
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -198,37 +197,22 @@ class _ProviderVerificationDocumentsState
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
+      resizeToAvoidBottomInset: true,
+      body: ProviderOnboardingBody(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 18),
-            const Icon(
-              Icons.verified_user_outlined,
-              size: 110,
-              color: AppColors.primary,
+            const ProviderOnboardingHeroText(
+              segments: [
+                ProviderOnboardingHeroSegment('Verify'),
+                ProviderOnboardingHeroSegment('with'),
+                ProviderOnboardingHeroSegment('your', muted: true),
+                ProviderOnboardingHeroSegment('documents'),
+              ],
             ),
-            const SizedBox(height: 25),
-            Text(
-              'Verification documents',
-              textAlign: TextAlign.center,
-              style: textTheme.headlineMedium?.copyWith(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Select clear images of both sides of your National ID. '
-              'They are uploaded securely when you create your profile.',
-              textAlign: TextAlign.center,
-              style: textTheme.bodyLarge?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 35),
+            const SizedBox(height: 34),
             _buildUploadCard(
               title: 'National ID front side',
               imagePath: _frontImagePath,

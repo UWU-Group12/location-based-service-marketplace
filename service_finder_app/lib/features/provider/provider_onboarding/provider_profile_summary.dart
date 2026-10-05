@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'provider_onboarding_layout.dart';
 
 import 'package:provider/provider.dart';
 
@@ -136,7 +137,6 @@ class _ProviderProfileSummaryState extends State<ProviderProfileSummary> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
 
     final provider = Provider.of<ProviderOnboardingProvider>(context);
 
@@ -163,7 +163,8 @@ class _ProviderProfileSummaryState extends State<ProviderProfileSummary> {
         ),
       ),
 
-      body: SingleChildScrollView(
+      resizeToAvoidBottomInset: true,
+      body: ProviderOnboardingBody(
         padding: const EdgeInsets.symmetric(horizontal: 24),
 
         child: Column(
@@ -172,39 +173,16 @@ class _ProviderProfileSummaryState extends State<ProviderProfileSummary> {
           children: [
             const SizedBox(height: 10),
 
-            const Center(
-              child: Icon(
-                Icons.fact_check_outlined,
-                size: 110,
-                color: AppColors.primary,
-              ),
-            ),
-            const SizedBox(height: 25),
-            Text(
-              "Review your profile",
-
-              textAlign: TextAlign.center,
-
-              style: textTheme.headlineMedium?.copyWith(
-                fontSize: 32,
-
-                fontWeight: FontWeight.w800,
-
-                color: AppColors.textPrimary,
-              ),
+            const ProviderOnboardingHeroText(
+              segments: [
+                ProviderOnboardingHeroSegment('Review'),
+                ProviderOnboardingHeroSegment('your'),
+                ProviderOnboardingHeroSegment('provider', muted: true),
+                ProviderOnboardingHeroSegment('profile'),
+              ],
             ),
 
             const SizedBox(height: 12),
-
-            Text(
-              "Please check your information before creating your provider profile.",
-
-              textAlign: TextAlign.center,
-
-              style: textTheme.bodyLarge?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
 
             const SizedBox(height: 35),
 

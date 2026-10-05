@@ -31,6 +31,7 @@ import '../features/provider/create_quotation_screen.dart';
 import '../features/provider/provider_job_details_screen.dart';
 import '../features/provider/provider_reviews_screen.dart';
 import '../features/notifications/notifications_screen.dart';
+import '../features/provider/provider_home_gate.dart';
 
 import '../features/customer/service_categories_screen.dart';
 import '../features/customer/rating_review_screen.dart';
@@ -176,6 +177,13 @@ class AppRouter {
     ).pushAndRemoveUntil(_buildRoute(ProviderShellScreen()), (route) => false);
   }
 
+  static void goToProviderHomeGate(BuildContext context, String providerId) {
+    Navigator.of(context).pushAndRemoveUntil(
+      _buildRoute(ProviderHomeGate(providerId: providerId)),
+      (route) => false,
+    );
+  }
+
   static void goToProviderProfilePersonalDetails(BuildContext context) {
     Navigator.of(
       context,
@@ -303,7 +311,7 @@ class AppRouter {
         return;
       case UserRole.provider:
         if (user.profileCompleted) {
-          goToProviderDashboard(context);
+          goToProviderHomeGate(context, user.id);
         } else {
           goToBuildProfessionalProfile(context);
         }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'provider_onboarding_layout.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/app_colors.dart';
@@ -19,10 +19,13 @@ class ProviderProfileServiceInfo extends StatefulWidget {
 class _ProviderProfileServiceInfoState
     extends State<ProviderProfileServiceInfo> {
   final FirestoreService _firestoreService = FirestoreService();
+  final TextEditingController _searchController = TextEditingController();
 
   late Future<List<ServiceCategory>> _categoriesFuture;
   String? _selectedCategoryId;
   bool _initialized = false;
+
+  String get _query => _searchController.text.trim().toLowerCase();
 
   @override
   void initState() {
@@ -50,6 +53,12 @@ class _ProviderProfileServiceInfoState
     setState(() {
       _categoriesFuture = _firestoreService.getActiveCategories();
     });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   void _continue(List<ServiceCategory> categories) {
@@ -92,6 +101,13 @@ class _ProviderProfileServiceInfoState
       );
     }
 
+    final query = _query;
+    final filteredCategories = query.isEmpty
+        ? categories
+        : categories.where((category) {
+            return category.name.toLowerCase().contains(query) ||
+                category.description.toLowerCase().contains(query);
+          }).toList();
     final canContinue = categories.any(
       (category) => category.id == _selectedCategoryId,
     );
@@ -99,76 +115,33 @@ class _ProviderProfileServiceInfoState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        ...categories.map((category) {
-          final isSelected = _selectedCategoryId == category.id;
-
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 15),
-            child: InkWell(
-              onTap: () {
+        _CategorySearchField(
+          controller: _searchController,
+          onChanged: (_) => setState(() {}),
+        ),
+        const SizedBox(height: 18),
+        if (filteredCategories.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32),
+            child: Text(
+              'No matching categories',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.textSecondary),
+            ),
+          )
+        else
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 320),
+            child: _CategoryPickerList(
+              categories: filteredCategories,
+              selectedCategoryId: _selectedCategoryId,
+              onSelected: (category) {
+                FocusScope.of(context).unfocus();
                 setState(() => _selectedCategoryId = category.id);
               },
-              borderRadius: BorderRadius.circular(25),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 18,
-                ),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? AppColors.providerCard
-                      : AppColors.background,
-                  borderRadius: BorderRadius.circular(25),
-                  border: Border.all(
-                    color: isSelected ? AppColors.primary : AppColors.border,
-                    width: isSelected ? 2 : 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.design_services_outlined,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            category.name,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textPrimary,
-                                ),
-                          ),
-                          if (category.description.isNotEmpty) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              category.description,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: AppColors.textSecondary),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      isSelected
-                          ? Icons.radio_button_checked
-                          : Icons.radio_button_off,
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColors.textSecondary,
-                    ),
-                  ],
-                ),
-              ),
             ),
-          );
-        }),
-        const SizedBox(height: 10),
+          ),
+        const SizedBox(height: 24),
         ElevatedButton(
           onPressed: canContinue ? () => _continue(categories) : null,
           child: const Text('Continue'),
@@ -179,8 +152,6 @@ class _ProviderProfileServiceInfoState
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -195,38 +166,22 @@ class _ProviderProfileServiceInfoState
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
+      resizeToAvoidBottomInset: true,
+      body: ProviderOnboardingBody(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 10),
-            Center(
-              child: SvgPicture.asset(
-                'assets/onboardingsvg/provider_service.svg',
-                width: 220,
-                fit: BoxFit.contain,
-              ),
+            const ProviderOnboardingHeroText(
+              segments: [
+                ProviderOnboardingHeroSegment('Select'),
+                ProviderOnboardingHeroSegment('your'),
+                ProviderOnboardingHeroSegment('service', muted: true),
+                ProviderOnboardingHeroSegment('category'),
+              ],
             ),
-            const SizedBox(height: 25),
-            Text(
-              'Select your service',
-              textAlign: TextAlign.center,
-              style: textTheme.headlineMedium?.copyWith(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Choose the active service category that best matches your work.',
-              textAlign: TextAlign.center,
-              style: textTheme.bodyLarge?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 35),
+            const SizedBox(height: 28),
             FutureBuilder<List<ServiceCategory>>(
               future: _categoriesFuture,
               builder: (context, snapshot) {
@@ -262,6 +217,248 @@ class _ProviderProfileServiceInfoState
             ),
             const SizedBox(height: 30),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CategorySearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  const _CategorySearchField({
+    required this.controller,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      textInputAction: TextInputAction.search,
+      decoration: InputDecoration(
+        hintText: 'Search categories',
+        prefixIcon: const Icon(Icons.search),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.045)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.black.withValues(alpha: 0.045)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: AppColors.focusedBorder),
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryPickerList extends StatelessWidget {
+  final List<ServiceCategory> categories;
+  final String? selectedCategoryId;
+  final ValueChanged<ServiceCategory> onSelected;
+
+  const _CategoryPickerList({
+    required this.categories,
+    required this.selectedCategoryId,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return _CategoryWheelPicker(
+      categories: categories,
+      selectedCategoryId: selectedCategoryId,
+      onSelected: onSelected,
+    );
+  }
+}
+
+class _CategoryWheelPicker extends StatefulWidget {
+  final List<ServiceCategory> categories;
+  final String? selectedCategoryId;
+  final ValueChanged<ServiceCategory> onSelected;
+
+  const _CategoryWheelPicker({
+    required this.categories,
+    required this.selectedCategoryId,
+    required this.onSelected,
+  });
+
+  @override
+  State<_CategoryWheelPicker> createState() => _CategoryWheelPickerState();
+}
+
+class _CategoryWheelPickerState extends State<_CategoryWheelPicker> {
+  static const double _itemExtent = 72;
+  late FixedExtentScrollController _controller;
+
+  int get _selectedIndex {
+    final index = widget.categories.indexWhere(
+      (category) => category.id == widget.selectedCategoryId,
+    );
+    return index < 0 ? 0 : index;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = FixedExtentScrollController(initialItem: _selectedIndex);
+  }
+
+  @override
+  void didUpdateWidget(_CategoryWheelPicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final categoriesChanged =
+        oldWidget.categories.map((c) => c.id).join('|') !=
+        widget.categories.map((c) => c.id).join('|');
+    if (categoriesChanged ||
+        oldWidget.selectedCategoryId != widget.selectedCategoryId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !_controller.hasClients || widget.categories.isEmpty) {
+          return;
+        }
+        _controller.animateToItem(
+          _selectedIndex,
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOutCubic,
+        );
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 330,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(28),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColors.background,
+                    Colors.white.withValues(alpha: 0.92),
+                    AppColors.background,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          IgnorePointer(
+            child: Container(
+              height: _itemExtent,
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.08),
+                    blurRadius: 24,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          ListWheelScrollView.useDelegate(
+            controller: _controller,
+            itemExtent: _itemExtent,
+            perspective: 0.0045,
+            diameterRatio: 1.6,
+            squeeze: 0.92,
+            physics: const FixedExtentScrollPhysics(),
+            overAndUnderCenterOpacity: 0.34,
+            onSelectedItemChanged: (index) {
+              if (index >= 0 && index < widget.categories.length) {
+                widget.onSelected(widget.categories[index]);
+              }
+            },
+            childDelegate: ListWheelChildBuilderDelegate(
+              childCount: widget.categories.length,
+              builder: (context, index) {
+                if (index < 0 || index >= widget.categories.length) return null;
+                final category = widget.categories[index];
+                return _CategoryWheelItem(
+                  category: category,
+                  selected: category.id == widget.selectedCategoryId,
+                  onTap: () {
+                    _controller.animateToItem(
+                      index,
+                      duration: const Duration(milliseconds: 220),
+                      curve: Curves.easeOutCubic,
+                    );
+                    widget.onSelected(category);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryWheelItem extends StatelessWidget {
+  final ServiceCategory category;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _CategoryWheelItem({
+    required this.category,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Center(
+        child: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOutCubic,
+          style: TextStyle(
+            color: selected ? AppColors.textPrimary : AppColors.textSecondary,
+            fontSize: selected ? 25 : 21,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+            letterSpacing: -0.5,
+            height: 1.1,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 26),
+            child: Text(
+              category.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+            ),
+          ),
         ),
       ),
     );

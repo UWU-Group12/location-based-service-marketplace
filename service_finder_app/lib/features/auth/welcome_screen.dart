@@ -239,7 +239,7 @@ class _HeroHeadline extends StatelessWidget {
           const TextSpan(text: 'Request ', style: _black),
           TextSpan(text: 'what you need\n', style: _gray),
           TextSpan(text: 'Arrange ', style: _gray),
-          const TextSpan(text: 'with professionals\n', style: _black),
+          const TextSpan(text: 'with pros\n', style: _black),
           const TextSpan(text: 'Work ', style: _black),
           TextSpan(text: 'together', style: _gray),
         ],

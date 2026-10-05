@@ -8,9 +8,9 @@ import 'features/auth/role_selection_screen.dart';
 import 'features/auth/splash_screen.dart';
 import 'features/auth/welcome_screen.dart';
 import 'features/customer/customer_shell_screen.dart';
+import 'features/provider/provider_home_gate.dart';
 import 'features/provider/provider_onboarding/build_professional_profile.dart';
 import 'features/provider/provider_onboarding_provider.dart';
-import 'features/provider/provider_shell_screen.dart';
 import 'firebase_options.dart';
 import 'models/user_model.dart';
 import 'services/auth_service.dart';
@@ -123,7 +123,7 @@ class _SignedInHome extends StatelessWidget {
             return const CustomerShellScreen();
           case UserRole.provider:
             if (user.profileCompleted) {
-              return const ProviderShellScreen();
+              return ProviderHomeGate(providerId: user.id);
             }
 
             return const BuildProfessionalProfile();

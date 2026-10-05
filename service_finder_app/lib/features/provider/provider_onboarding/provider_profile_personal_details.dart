@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'provider_onboarding_layout.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
@@ -149,8 +149,6 @@ class _ProviderProfilePersonalDetailsState
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -165,38 +163,22 @@ class _ProviderProfilePersonalDetailsState
           onPressed: _isPickingImage ? null : () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
+      resizeToAvoidBottomInset: true,
+      body: ProviderOnboardingBody(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 10),
-            Center(
-              child: SvgPicture.asset(
-                'assets/onboardingsvg/provider_personal_details.svg',
-                width: 230,
-                fit: BoxFit.contain,
-              ),
+            const ProviderOnboardingHeroText(
+              segments: [
+                ProviderOnboardingHeroSegment('Tell'),
+                ProviderOnboardingHeroSegment('customers'),
+                ProviderOnboardingHeroSegment('about', muted: true),
+                ProviderOnboardingHeroSegment('yourself'),
+              ],
             ),
-            const SizedBox(height: 25),
-            Text(
-              'Tell us about yourself',
-              textAlign: TextAlign.center,
-              style: textTheme.headlineMedium?.copyWith(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Add an optional profile photo and your provider details.',
-              textAlign: TextAlign.center,
-              style: textTheme.bodyLarge?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 28),
             _buildProfileImage(),
             TextButton.icon(
               onPressed: _isPickingImage ? null : _selectImage,
