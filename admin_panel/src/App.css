@@ -282,7 +282,7 @@ s
   min-height: 40px;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 6px;
   padding: 9px 15px;
   border: 1px solid transparent;
   border-radius: 9px;
@@ -291,6 +291,23 @@ s
   font-size: 13px;
   font-weight: 700;
   line-height: 1.2;
+  white-space: nowrap;
+}
+
+.button svg,
+.button-icon svg,
+.icon-button svg,
+.summary-icon svg,
+.sidebar-icon svg {
+  display: block;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
+.button-small svg {
+  width: 11px;
+  height: 11px;
 }
 
 .button-primary {
@@ -640,7 +657,8 @@ s
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .card-header-actions {
