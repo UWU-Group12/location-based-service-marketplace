@@ -81,6 +81,29 @@ class AppRouter {
     );
   }
 
+  static PageRouteBuilder<T> _buildSlideRoute<T>(Widget page) {
+    return PageRouteBuilder<T>(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        if (MediaQuery.disableAnimationsOf(context)) return child;
+
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        );
+      },
+    );
+  }
+
   static void goToWelcome(BuildContext context) {
     Navigator.of(context).pushReplacement(_buildRoute(const WelcomeScreen()));
   }
@@ -194,7 +217,7 @@ class AppRouter {
     required String categoryName,
   }) {
     Navigator.of(context).push(
-      _buildRoute(
+      _buildSlideRoute(
         ProviderListingScreen(service: categoryName, categoryId: categoryId),
       ),
     );
@@ -210,7 +233,9 @@ class AppRouter {
   }
 
   static void goToServiceCategoryScreen(BuildContext context) {
-    Navigator.of(context).push(_buildRoute(const ServiceCategoriesScreen()));
+    Navigator.of(
+      context,
+    ).push(_buildSlideRoute(const ServiceCategoriesScreen()));
   }
 
   static void goToProviderListScreen(
@@ -218,13 +243,9 @@ class AppRouter {
     required String categoryId,
     required String categoryName,
   }) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProviderListScreen(
-          categoryId: categoryId,
-          categoryName: categoryName,
-        ),
+    Navigator.of(context).push(
+      _buildSlideRoute(
+        ProviderListScreen(categoryId: categoryId, categoryName: categoryName),
       ),
     );
   }
