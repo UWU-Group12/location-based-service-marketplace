@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../core/app_colors.dart';
 import '../../core/app_router.dart';
@@ -69,172 +70,63 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.fromLTRB(24, 22, 24, 28),
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  minHeight: (constraints.maxHeight - 48).clamp(
+                  minHeight: (constraints.maxHeight - 50).clamp(
                     0.0,
                     double.infinity,
                   ),
                 ),
-                child: IntrinsicHeight(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(16),
-                          child: Image.asset(
-                            'assets/icons/applogo3.png',
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'Raw',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.8,
                       ),
-                      const SizedBox(height: 32),
-                      // Same two-line style as the dashboard GreetingHeader.
-                      Text(
-                        'Welcome to',
-                        style: textTheme.headlineMedium?.copyWith(
-                          color: AppColors.textPrimary.withValues(alpha: 0.6),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Raw',
-                        style: textTheme.headlineMedium?.copyWith(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Find trusted professionals around you in minutes.',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          height: 1.5,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      // R = Request, A = Arrange, W = Work
-                      _card(
-                        child: Column(
-                          children: [
-                            _meaningRow(
-                              Icons.assignment_outlined,
-                              'R',
-                              'equest',
-                              'Describe the job you need done',
-                            ),
-                            const Divider(height: 28),
-                            _meaningRow(
-                              Icons.event_available_outlined,
-                              'A',
-                              'rrange',
-                              'Compare quotes and pick a time',
-                            ),
-                            const Divider(height: 28),
-                            _meaningRow(
-                              Icons.handyman_outlined,
-                              'W',
-                              'ork',
-                              'A trusted pro gets it done',
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Spacer(),
-                      const SizedBox(height: 32),
-                      _buildPrimaryButton(
-                        context: context,
-                        label: 'Create Account',
-                        onPressed: _isLoading
-                            ? null
-                            : () => AppRouter.goToRoleSelection(context),
-                      ),
-                      const SizedBox(height: 14),
-                      _buildOutlinedButton(
-                        context: context,
-                        label: 'Sign In',
-                        onPressed: _isLoading
-                            ? null
-                            : () => AppRouter.goToLogin(context),
-                      ),
-                      const SizedBox(height: 14),
-                      _buildGoogleButton(
-                        context: context,
-                        isLoading: _isLoading,
-                        onPressed: _isLoading ? null : _continueWithGoogle,
-                      ),
-                    ],
-                  ),
+                    ),
+                    SizedBox(height: constraints.maxHeight * 0.22),
+                    const _HeroHeadline(),
+                    const SizedBox(height: 32),
+                    _buildPrimaryButton(
+                      context: context,
+                      label: 'Create Account',
+                      onPressed: _isLoading
+                          ? null
+                          : () => AppRouter.goToRoleSelection(context),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildOutlinedButton(
+                      context: context,
+                      label: 'Sign In',
+                      onPressed: _isLoading
+                          ? null
+                          : () => AppRouter.goToLogin(context),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildGoogleButton(
+                      context: context,
+                      isLoading: _isLoading,
+                      onPressed: _isLoading ? null : _continueWithGoogle,
+                    ),
+                  ],
                 ),
               ),
             );
           },
         ),
       ),
-    );
-  }
-
-  // White bordered card, same as the provider dashboard cards.
-  Widget _card({required Widget child}) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppColors.border),
-      ),
-      child: Padding(padding: const EdgeInsets.all(20), child: child),
-    );
-  }
-
-  // One letter of the name, e.g. "R" + "equest" with a short explanation.
-  Widget _meaningRow(IconData icon, String letter, String rest, String detail) {
-    return Row(
-      children: [
-        Icon(icon, color: AppColors.primary),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: letter,
-                      style: const TextStyle(color: AppColors.primary),
-                    ),
-                    TextSpan(text: rest),
-                  ],
-                ),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                detail,
-                style: const TextStyle(color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 
@@ -310,29 +202,49 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
+                  SvgPicture.asset(
+                    'assets/icons/google.svg',
                     width: 22,
                     height: 22,
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      'G',
-                      style: textStyle?.copyWith(
-                        fontSize: 14,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
                   ),
                   const SizedBox(width: 12),
                   Text('Continue with Google', style: textStyle),
                 ],
               ),
       ),
+    );
+  }
+}
+
+class _HeroHeadline extends StatelessWidget {
+  const _HeroHeadline();
+
+  static const _black = TextStyle(
+    color: AppColors.primary,
+    fontSize: 34,
+    height: 1.08,
+    fontWeight: FontWeight.w800,
+    letterSpacing: -1.2,
+  );
+
+  static final _gray = _black.copyWith(
+    color: AppColors.textPrimary.withValues(alpha: 0.34),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Text.rich(
+      TextSpan(
+        children: [
+          const TextSpan(text: 'Request ', style: _black),
+          TextSpan(text: 'what you need\n', style: _gray),
+          TextSpan(text: 'Arrange ', style: _gray),
+          const TextSpan(text: 'with professionals\n', style: _black),
+          const TextSpan(text: 'Work ', style: _black),
+          TextSpan(text: 'together', style: _gray),
+        ],
+      ),
+      textAlign: TextAlign.left,
     );
   }
 }

@@ -17,67 +17,113 @@ class ProviderCard extends StatelessWidget {
 
     final serviceNames = provider.categoryNames.join(', ');
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(24),
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(18),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          color: AppColors.providerCard,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.025),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
-        child: Row(
-          children: [
-            ProviderProfileImage(provider: provider, radius: 28),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: Material(
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+            side: BorderSide(color: Colors.black.withValues(alpha: 0.045)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          provider.displayName,
+                  ProviderProfileImage(provider: provider, radius: 28),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                provider.displayName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            _RatingBadge(
+                              rating: provider.ratingAverage.toStringAsFixed(1),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          serviceNames,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
+                          style: textTheme.bodyMedium?.copyWith(
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.star, size: 18, color: AppColors.rating),
-                      const SizedBox(width: 4),
-                      Text(
-                        provider.ratingAverage.toStringAsFixed(1),
-                        style: textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    serviceNames,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: AppColors.primary,
-                      fontWeight: FontWeight.w600,
+                        ProviderLocationText(provider: provider),
+                        Text(
+                          '${provider.completedJobCount} Jobs Completed',
+                          style: textTheme.bodySmall,
+                        ),
+                      ],
                     ),
-                  ),
-                  ProviderLocationText(provider: provider),
-                  Text(
-                    '${provider.completedJobCount} Jobs Completed',
-                    style: textTheme.bodySmall,
                   ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _RatingBadge extends StatelessWidget {
+  final String rating;
+
+  const _RatingBadge({required this.rating});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.rating.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(7),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.star, size: 13, color: AppColors.rating),
+          const SizedBox(width: 5),
+          Text(
+            rating,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: AppColors.rating,
+              height: 1.2,
+            ),
+          ),
+        ],
       ),
     );
   }

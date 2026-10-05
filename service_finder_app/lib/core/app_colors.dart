@@ -10,7 +10,7 @@ class AppColors {
   // Backgrounds
   static const Color background = Color.fromARGB(255, 250, 251, 255);
   static const Color providerCard = Color(0xFFF0F0F2);
-  static const Color customerCard = Color(0xFFF3F8FF);
+  static const Color customerCard = Color.fromARGB(255, 255, 255, 255);
   static const Color googleButton = Color(0xFFF1F1F1);
 
   // Soft tints behind category illustrations

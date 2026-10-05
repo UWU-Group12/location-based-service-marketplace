@@ -289,17 +289,27 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
     ),
   );
 
-  // Same bordered card as the provider dashboard
   Widget _card({required Widget child}) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppColors.border),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.025),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: Padding(padding: const EdgeInsets.all(20), child: child),
+      child: Material(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: Colors.black.withValues(alpha: 0.045)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(padding: const EdgeInsets.all(20), child: child),
+      ),
     );
   }
 

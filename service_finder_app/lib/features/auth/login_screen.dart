@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../core/app_router.dart';
 import '../../services/auth_service.dart';
 import '../../core/app_colors.dart';
@@ -354,12 +355,7 @@ class _LoginScreenState extends State<LoginScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.network(
-            'https://img.icons8.com/?size=256&id=17949&format=png',
-            height: 24,
-            errorBuilder: (context, error, stackTrace) =>
-                const Icon(Icons.error),
-          ),
+          SvgPicture.asset('assets/icons/google.svg', width: 24, height: 24),
           const SizedBox(width: 10),
           Text(
             'Continue with Google',

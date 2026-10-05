@@ -81,22 +81,16 @@ class _ReviewsSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
+    return _SoftReviewCard(
       color: AppColors.providerCard,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppColors.border),
-      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Row(
           children: [
             const CircleAvatar(
-              radius: 26,
+              radius: 22,
               backgroundColor: Colors.white,
-              child: Icon(Icons.star, color: AppColors.rating, size: 30),
+              child: Icon(Icons.star, color: AppColors.rating, size: 24),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -107,12 +101,28 @@ class _ReviewsSummaryCard extends StatelessWidget {
                     average.toStringAsFixed(1),
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: AppColors.primary,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$count ${count == 1 ? "review" : "reviews"}',
-                    style: const TextStyle(color: AppColors.textSecondary),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _ReviewBadge(
+                        icon: Icons.star,
+                        label: 'Average rating',
+                        foreground: AppColors.rating,
+                        background: Colors.white,
+                        outlined: true,
+                      ),
+                      _ReviewBadge(
+                        label: '$count ${count == 1 ? "review" : "reviews"}',
+                        foreground: AppColors.textSecondary,
+                        background: Colors.white,
+                        outlined: true,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -132,14 +142,7 @@ class _ReviewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final comment = review.comment?.trim();
-    return Card(
-      margin: EdgeInsets.zero,
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: AppColors.border),
-      ),
+    return _SoftReviewCard(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -147,19 +150,19 @@ class _ReviewCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                const Icon(Icons.star, color: AppColors.rating, size: 20),
-                const SizedBox(width: 6),
-                Text(
-                  review.rating.toStringAsFixed(1),
-                  style: Theme.of(context).textTheme.titleMedium,
+                _ReviewBadge(
+                  icon: Icons.star,
+                  label: review.rating.toStringAsFixed(1),
+                  foreground: AppColors.rating,
+                  background: AppColors.rating.withValues(alpha: 0.08),
                 ),
                 const Spacer(),
-                Text(
-                  _dateLabel(review.createdAt),
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontSize: 12,
-                  ),
+                _ReviewBadge(
+                  icon: Icons.calendar_today_outlined,
+                  label: _dateLabel(review.createdAt),
+                  foreground: AppColors.textSecondary,
+                  background: Colors.white,
+                  outlined: true,
                 ),
               ],
             ),
@@ -185,5 +188,87 @@ class _ReviewCard extends StatelessWidget {
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
     return '$day/$month/${date.year}';
+  }
+}
+
+class _SoftReviewCard extends StatelessWidget {
+  final Widget child;
+  final Color color;
+
+  const _SoftReviewCard({required this.child, this.color = Colors.white});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.025),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: color,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: Colors.black.withValues(alpha: 0.045)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: child,
+      ),
+    );
+  }
+}
+
+class _ReviewBadge extends StatelessWidget {
+  final IconData? icon;
+  final String label;
+  final Color foreground;
+  final Color background;
+  final bool outlined;
+
+  const _ReviewBadge({
+    this.icon,
+    required this.label,
+    required this.foreground,
+    required this.background,
+    this.outlined = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(7),
+        border: outlined
+            ? Border.all(color: Colors.black.withValues(alpha: 0.06))
+            : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: foreground),
+            const SizedBox(width: 5),
+          ],
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: foreground,
+                height: 1.2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -17,7 +17,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   final _service = NotificationService();
   Stream<List<ProviderNotificationItem>>? _notifications;
   String? _providerId;
-  bool _markedCurrentNotificationsRead = false;
   _NotificationTab _selectedFilter = _NotificationTab.all;
 
   @override
@@ -29,19 +28,21 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   void _load() {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     _providerId = uid;
-    _markedCurrentNotificationsRead = false;
     _notifications = uid == null
         ? null
         : _service.watchProviderNotifications(uid);
   }
 
-  Future<void> _markCurrentNotificationsRead(
+  Future<void> _markAllAsRead(
     List<ProviderNotificationItem> notifications,
   ) async {
     final providerId = _providerId;
-    if (_markedCurrentNotificationsRead || providerId == null) return;
-    _markedCurrentNotificationsRead = true;
+    if (providerId == null || notifications.every((item) => !item.unread)) {
+      return;
+    }
     await _service.markProviderNotificationsRead(providerId, notifications);
+    if (!mounted) return;
+    setState(_load);
   }
 
   Future<void> _openNotification(ProviderNotificationItem item) async {
@@ -104,85 +105,54 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<_NotificationTab>(
-                    value: _selectedFilter,
-                    isExpanded: true,
-                    icon: const Icon(Icons.keyboard_arrow_down),
-                    borderRadius: BorderRadius.circular(18),
-                    items: _NotificationTab.values
-                        .map(
-                          (tab) => DropdownMenuItem<_NotificationTab>(
-                            value: tab,
-                            child: Row(
-                              children: [
-                                Icon(tab.emptyIcon, color: AppColors.primary),
-                                const SizedBox(width: 10),
-                                Text(tab.label),
-                              ],
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (tab) {
-                      if (tab == null) return;
-                      setState(() => _selectedFilter = tab);
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: _notifications == null
-                    ? const RequestStateView(
-                        title: 'Sign in to view notifications',
-                        message: 'Please sign in with your provider account.',
-                        icon: Icons.person_outline,
-                      )
-                    : StreamBuilder<List<ProviderNotificationItem>>(
-                        key: ObjectKey(_notifications),
-                        stream: _notifications,
-                        builder: (context, snapshot) {
-                          if (snapshot.hasError) {
-                            return RequestStateView(
-                              title: 'Unable to load notifications',
-                              message: 'Check your connection and try again.',
-                              icon: Icons.error_outline,
-                              onRetry: () => setState(_load),
-                            );
-                          }
-                          if (!snapshot.hasData) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-                          final notifications = snapshot.data!;
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            _markCurrentNotificationsRead(notifications);
-                          });
-                          return _NotificationList(
+          child: _notifications == null
+              ? const RequestStateView(
+                  title: 'Sign in to view notifications',
+                  message: 'Please sign in with your provider account.',
+                  icon: Icons.person_outline,
+                )
+              : StreamBuilder<List<ProviderNotificationItem>>(
+                  key: ObjectKey(_notifications),
+                  stream: _notifications,
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return RequestStateView(
+                        title: 'Unable to load notifications',
+                        message: 'Check your connection and try again.',
+                        icon: Icons.error_outline,
+                        onRetry: () => setState(_load),
+                      );
+                    }
+                    if (!snapshot.hasData) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    final notifications = snapshot.data!;
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _NotificationToolbar(
+                          selectedFilter: _selectedFilter,
+                          onFilterSelected: (tab) =>
+                              setState(() => _selectedFilter = tab),
+                          notifications: notifications,
+                          onMarkAllAsRead: _markAllAsRead,
+                        ),
+                        const SizedBox(height: 20),
+                        Expanded(
+                          child: _NotificationList(
                             notifications: _filter(
                               notifications,
                               _selectedFilter,
                             ),
                             tab: _selectedFilter,
                             onTap: _openNotification,
-                          );
-                        },
-                      ),
-              ),
-            ],
-          ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
         ),
       ),
     );
@@ -254,6 +224,162 @@ enum _NotificationTab {
   );
 }
 
+class _NotificationToolbar extends StatelessWidget {
+  final _NotificationTab selectedFilter;
+  final ValueChanged<_NotificationTab> onFilterSelected;
+  final List<ProviderNotificationItem> notifications;
+  final ValueChanged<List<ProviderNotificationItem>> onMarkAllAsRead;
+
+  const _NotificationToolbar({
+    required this.selectedFilter,
+    required this.onFilterSelected,
+    required this.notifications,
+    required this.onMarkAllAsRead,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final buttonLabel = selectedFilter == _NotificationTab.all
+        ? 'Filters'
+        : selectedFilter.label;
+
+    return Row(
+      children: [
+        Flexible(
+          child: PopupMenuButton<_NotificationTab>(
+            tooltip: 'Filters',
+            position: PopupMenuPosition.under,
+            offset: const Offset(0, 8),
+            elevation: 8,
+            color: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+              side: const BorderSide(color: AppColors.border),
+            ),
+            onSelected: onFilterSelected,
+            itemBuilder: (context) => _NotificationTab.values
+                .map(
+                  (tab) => PopupMenuItem<_NotificationTab>(
+                    value: tab,
+                    child: Row(
+                      children: [
+                        Icon(tab.emptyIcon, color: AppColors.primary, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(child: Text(tab.label)),
+                        if (tab == selectedFilter)
+                          const Icon(Icons.check, size: 18),
+                      ],
+                    ),
+                  ),
+                )
+                .toList(),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+              decoration: BoxDecoration(
+                color: AppColors.providerCard,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const _FilterGlyph(),
+                  const SizedBox(width: 12),
+                  Flexible(
+                    child: Text(
+                      buttonLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        _MarkAllAsReadButton(
+          notifications: notifications,
+          onPressed: onMarkAllAsRead,
+        ),
+      ],
+    );
+  }
+}
+
+class _FilterGlyph extends StatelessWidget {
+  const _FilterGlyph();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 23,
+      height: 18,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: const [
+          _FilterGlyphLine(width: 23),
+          _FilterGlyphLine(width: 16),
+          _FilterGlyphLine(width: 9),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilterGlyphLine extends StatelessWidget {
+  final double width;
+
+  const _FilterGlyphLine({required this.width});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: width,
+      height: 2.4,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(99),
+      ),
+    );
+  }
+}
+
+class _MarkAllAsReadButton extends StatelessWidget {
+  final List<ProviderNotificationItem> notifications;
+  final ValueChanged<List<ProviderNotificationItem>> onPressed;
+
+  const _MarkAllAsReadButton({
+    required this.notifications,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasUnread = notifications.any((item) => item.unread);
+    return TextButton(
+      onPressed: hasUnread ? () => onPressed(notifications) : null,
+      style: TextButton.styleFrom(
+        foregroundColor: AppColors.primary,
+        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+      ),
+      child: const Text('Mark all as read'),
+    );
+  }
+}
+
 class _NotificationList extends StatelessWidget {
   final List<ProviderNotificationItem> notifications;
   final _NotificationTab tab;
@@ -291,74 +417,107 @@ class _NotificationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _color(item.type);
-    return Card(
-      elevation: 0,
-      margin: EdgeInsets.zero,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: item.unread ? AppColors.primary : AppColors.border,
-          width: item.unread ? 1.4 : 1,
-        ),
+    final unread = item.unread;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.025),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(20),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: unread ? const Color(0xFFF6F7F9) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: Colors.black.withValues(alpha: 0.045)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Stack(
             children: [
-              CircleAvatar(
-                radius: 22,
-                backgroundColor: color.withValues(alpha: 0.12),
-                child: Icon(_icon(item.type), color: color),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
+              if (unread)
+                Positioned(
+                  left: 0,
+                  top: 0,
+                  bottom: 0,
+                  width: 4,
+                  child: Container(color: color.withValues(alpha: 0.86)),
+                ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            item.title,
-                            style: Theme.of(context).textTheme.titleMedium,
+                    CircleAvatar(
+                      radius: 18,
+                      backgroundColor: color.withValues(alpha: 0.12),
+                      child: Icon(_icon(item.type), color: color, size: 18),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  item.title,
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(
+                                        fontWeight: unread
+                                            ? FontWeight.w800
+                                            : null,
+                                      ),
+                                ),
+                              ),
+                              if (unread)
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                            ],
                           ),
-                        ),
-                        if (item.unread)
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primary,
-                              shape: BoxShape.circle,
+                          const SizedBox(height: 6),
+                          Text(
+                            item.message,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
                             ),
                           ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      item.message,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      _timeLabel(item.createdAt),
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: AlignmentDirectional.centerEnd,
+                            child: _NotificationBadge(
+                              icon: Icons.schedule_outlined,
+                              label: _timeLabel(item.createdAt),
+                              foreground: AppColors.textSecondary,
+                              background: Colors.white,
+                              outlined: true,
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.textSecondary,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              const Icon(Icons.chevron_right, color: AppColors.textSecondary),
             ],
           ),
         ),
@@ -394,5 +553,55 @@ class _NotificationCard extends StatelessWidget {
     final day = date.day.toString().padLeft(2, '0');
     final month = date.month.toString().padLeft(2, '0');
     return '$day/$month/${date.year}';
+  }
+}
+
+class _NotificationBadge extends StatelessWidget {
+  final IconData? icon;
+  final String label;
+  final Color foreground;
+  final Color background;
+  final bool outlined;
+
+  const _NotificationBadge({
+    this.icon,
+    required this.label,
+    required this.foreground,
+    required this.background,
+    this.outlined = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(7),
+        border: outlined
+            ? Border.all(color: Colors.black.withValues(alpha: 0.06))
+            : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 13, color: foreground),
+            const SizedBox(width: 5),
+          ],
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: foreground,
+                height: 1.2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

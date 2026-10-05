@@ -28,7 +28,7 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -36,45 +36,64 @@ class SplashScreen extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 36),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
+                      SizedBox(height: constraints.maxHeight * 0.18),
                       SizedBox(
-                        height: constraints.maxHeight * 0.56,
+                        height: 132,
                         child: Image.asset(
-                          'assets/images/welcome.png',
+                          'assets/icons/applogo.png',
                           fit: BoxFit.contain,
                         ),
                       ),
-                      const SizedBox(height: 28),
-                      Text(
-                        'Welcome to RAW',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.headlineLarge
-                            ?.copyWith(
-                              color: AppColors.textPrimary,
-                              fontSize: 38,
-                              fontWeight: FontWeight.w900,
+                      SizedBox(height: constraints.maxHeight * 0.14),
+                      Text.rich(
+                        const TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Welcome to\n',
+                              style: TextStyle(
+                                color: Color(0x57000000),
+                                fontSize: 34,
+                                height: 1.08,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -1.2,
+                              ),
                             ),
+                            TextSpan(
+                              text: 'Raw',
+                              style: TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 34,
+                                height: 1.08,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: -1.2,
+                              ),
+                            ),
+                          ],
+                        ),
+                        textAlign: TextAlign.left,
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 64),
                       SizedBox(
                         width: double.infinity,
-                        height: 56,
-                        child: FilledButton(
+                        child: ElevatedButton(
                           onPressed: () => _getStarted(context),
-                          style: FilledButton.styleFrom(
+                          style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 15),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
+                              borderRadius: BorderRadius.circular(30),
                             ),
                           ),
                           child: const Text(
                             'Get Started',
                             style: TextStyle(
-                              fontSize: 17,
+                              fontSize: 18,
                               fontWeight: FontWeight.w800,
                             ),
                           ),

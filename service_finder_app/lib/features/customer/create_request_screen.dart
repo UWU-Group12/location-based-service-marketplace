@@ -32,7 +32,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   bool _isGettingLocation = false;
   bool _isSubmitting = false;
   GeoPoint? _serviceLocation;
-  String? _detectedAddress; // 👈 Added to store and show the detected area
+  String? _detectedAddress;
   String? selectedDate;
   String? selectedTime;
 
@@ -59,7 +59,6 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     }
   }
 
-  // 1. Live GPS Locator
   Future<void> _useCurrentLocation() async {
     if (_isGettingLocation) return;
     setState(() => _isGettingLocation = true);
@@ -75,12 +74,11 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         _detectedAddress = address ?? "Unknown Area";
       });
 
-      // Auto-fill the address box for the customer
       if (address != null) {
         locationController.text = address;
       }
 
-      _showMessage('Current location detected ✅');
+      _showMessage('Current location detected.');
     } on StateError catch (error) {
       if (!mounted) return;
       _showMessage(error.message.toString());
@@ -95,7 +93,6 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     }
   }
 
-  // 2. Map Picker Locator
   Future<void> _openMapPicker() async {
     if (_isGettingLocation) return;
     setState(() => _isGettingLocation = true);
@@ -117,12 +114,11 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           _detectedAddress = address ?? "Unknown Area";
         });
 
-        // Auto-fill the address box for the customer
         if (address != null) {
           locationController.text = address;
         }
 
-        _showMessage('Location selected from map ✅');
+        _showMessage('Location selected from map.');
       }
     } catch (error) {
       debugPrint('Service map error: $error');
@@ -252,7 +248,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: descriptionController,
-                maxLines: 4,
+                maxLines: 3,
                 decoration: const InputDecoration(
                   labelText: 'Problem Description',
                   hintText: 'Explain your issue',
@@ -264,137 +260,127 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                   return null;
                 },
               ),
+              const SizedBox(height: 5),
               Align(
                 alignment: Alignment.centerRight,
-                child: TextButton.icon(
+                child: _AiEnhanceButton(
                   onPressed: isEnhancing || _isSubmitting
                       ? null
                       : _enhanceDescription,
-                  icon: isEnhancing
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.auto_awesome),
-                  label: Text(
-                    isEnhancing ? 'Enhancing...' : 'Enhance Description',
-                  ),
+                  isLoading: isEnhancing,
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
-                'Service Location',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 16),
-
-              // 📍 Visual Display Box for Selected Location
-              if (_detectedAddress != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.only(bottom: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        color: AppColors.primary,
-                        size: 28,
+              _SoftSectionCard(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Service Location',
+                      style: textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                    ),
+                    if (_detectedAddress != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.providerCard,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
                           children: [
-                            const Text(
-                              'Selected Location',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w600,
+                            const Icon(
+                              Icons.location_on,
+                              color: AppColors.primary,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Selected Location',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: AppColors.textSecondary,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _detectedAddress!,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textPrimary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _detectedAddress!,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
+                            const Icon(
+                              Icons.check_circle,
+                              color: AppColors.success,
+                              size: 21,
                             ),
                           ],
                         ),
                       ),
-                      const Icon(
-                        Icons.check_circle,
-                        color: Colors.green,
-                        size: 24,
-                      ),
                     ],
-                  ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _isGettingLocation || _isSubmitting
+                                ? null
+                                : _useCurrentLocation,
+                            icon: _isGettingLocation
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.my_location, size: 18),
+                            label: Text(
+                              _isGettingLocation ? 'Detecting...' : 'Use GPS',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _isGettingLocation || _isSubmitting
+                                ? null
+                                : _openMapPicker,
+                            icon: const Icon(Icons.map_outlined, size: 18),
+                            label: const Text('Pick on Map'),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: locationController,
+                      decoration: const InputDecoration(
+                        labelText: 'Address Description',
+                        hintText: 'Near Badulla Hospital, Badulla',
+                        prefixIcon: Icon(Icons.location_city_outlined),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Enter an address description';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                 ),
-              ],
-
-              // 📍 Button 1: Live GPS
-              OutlinedButton.icon(
-                onPressed: _isGettingLocation || _isSubmitting
-                    ? null
-                    : _useCurrentLocation,
-                icon: _isGettingLocation
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.my_location),
-                label: Text(
-                  _isGettingLocation
-                      ? 'Detecting Location...'
-                      : 'Use Live GPS Location',
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // 📍 Button 2: Map Picker
-              OutlinedButton.icon(
-                onPressed: _isGettingLocation || _isSubmitting
-                    ? null
-                    : _openMapPicker,
-                icon: const Icon(Icons.map, color: Colors.green),
-                label: const Text(
-                  'Select Location on Map 🗺️',
-                  style: TextStyle(color: Colors.green),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.green),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // 📍 Address Text Field (Auto-fills, but customer can edit if needed)
-              TextFormField(
-                controller: locationController,
-                decoration: const InputDecoration(
-                  labelText: 'Address Description',
-                  hintText: 'Near Badulla Hospital, Badulla',
-                  prefixIcon: Icon(Icons.location_city_outlined),
-                ),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Enter an address description';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 16),
               ListTile(
@@ -404,6 +390,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                 onTap: _isSubmitting
                     ? null
                     : () async {
+                        FocusScope.of(context).unfocus();
                         final date = await showDatePicker(
                           context: context,
                           firstDate: DateTime.now(),
@@ -426,6 +413,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                 onTap: _isSubmitting
                     ? null
                     : () async {
+                        FocusScope.of(context).unfocus();
                         final time = await showTimePicker(
                           context: context,
                           initialTime: TimeOfDay.now(),
@@ -455,6 +443,102 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _AiEnhanceButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final bool isLoading;
+
+  const _AiEnhanceButton({required this.onPressed, required this.isLoading});
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: onPressed == null ? 0.55 : 1,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(14),
+          child: Ink(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFFE7DDFF),
+                  Color(0xFFCDE7FF),
+                  Color(0xFFC4F2E3),
+                ],
+                stops: [0, 0.5, 1],
+              ),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.75)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isLoading)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF29233F),
+                    ),
+                  )
+                else
+                  const Icon(
+                    Icons.auto_awesome,
+                    size: 17,
+                    color: Color(0xFF29233F),
+                  ),
+                const SizedBox(width: 8),
+                Text(
+                  isLoading ? 'Enhancing...' : 'Enhance Description',
+                  style: const TextStyle(
+                    color: Color(0xFF29233F),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SoftSectionCard extends StatelessWidget {
+  final Widget child;
+
+  const _SoftSectionCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.025),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: Colors.black.withValues(alpha: 0.045)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(padding: const EdgeInsets.all(18), child: child),
       ),
     );
   }
