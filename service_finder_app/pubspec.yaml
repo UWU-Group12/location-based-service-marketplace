@@ -75,7 +75,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assets/icons/applogo2.png
+    - assets/icons/applogo3.png
     - assets/images/client.png
     - assets/images/provider.png
     - assets/images/provider_name.png
@@ -90,7 +90,7 @@ flutter:
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "assets/icons/applogo2.png"
+  image_path: "assets/icons/applogo3.png"
 
   # To add assets to your application, add an assets section, like this:
   # assets:

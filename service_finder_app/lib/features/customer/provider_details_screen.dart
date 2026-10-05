@@ -4,6 +4,7 @@ import '../../core/app_router.dart';
 import '../../models/provider_model.dart';
 import '../../models/review_model.dart';
 import '../../services/review_service.dart';
+import '../../widgets/profile_settings.dart';
 import '../../widgets/provider_location_text.dart';
 import '../../widgets/provider_profile_image.dart';
 import '../../widgets/review_tile.dart';
@@ -42,7 +43,6 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
     final categoryNames = provider.categoryNames;
     final bio = provider.bio?.trim() ?? '';
 
@@ -50,7 +50,11 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
       backgroundColor: AppColors.background,
 
       appBar: AppBar(
-        title: const Text('Provider Details'),
+        centerTitle: true,
+        title: const Text(
+          'Provider Details',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [_verificationBadge(), const SizedBox(width: 16)],
@@ -58,143 +62,167 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
 
       body: Stack(
         children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                ProviderProfileImage(provider: provider, radius: 45),
+          ListView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            children: [
+              ProfileSettingsGroup(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ProviderProfileImage(provider: provider, radius: 32),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                provider.displayName,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                categoryNames.isEmpty
+                                    ? 'Category not provided'
+                                    : categoryNames.join(', '),
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textPrimary,
+                                  height: 1.5,
+                                ),
+                              ),
+                              ProviderLocationText(provider: provider),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
 
-                const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
-                Text(
-                  provider.displayName,
-                  style: textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
+              _card(
+                child: IntrinsicHeight(
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: StreamBuilder<List<ReviewModel>>(
+                          stream: _reviews,
+                          builder: (context, snapshot) {
+                            final reviews = snapshot.hasError
+                                ? null
+                                : snapshot.data;
+                            return _stat(
+                              Icons.star,
+                              _ratingLabel(reviews),
+                              _reviewCountLabel(reviews),
+                              iconColor: AppColors.rating,
+                            );
+                          },
+                        ),
+                      ),
+                      const VerticalDivider(
+                        width: 24,
+                        thickness: 0.5,
+                        color: AppColors.border,
+                      ),
+                      Expanded(
+                        child: _stat(
+                          Icons.work_outline,
+                          '${provider.completedJobCount} jobs',
+                          'Experience',
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
+              ),
 
-                const SizedBox(height: 6),
+              const SizedBox(height: 24),
+              _heading('About'),
+              ProfileSettingsGroup(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Text(
+                      bio.isEmpty ? 'No description provided.' : bio,
+                      style: TextStyle(
+                        height: 1.5,
+                        color: bio.isEmpty
+                            ? AppColors.textSecondary
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
 
-                Text(
-                  categoryNames.join(', '),
-                  style: textTheme.bodyLarge?.copyWith(color: Colors.grey),
-                ),
-
-                const SizedBox(height: 4),
-
-                Center(child: ProviderLocationText(provider: provider)),
-
-                const SizedBox(height: 20),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              if (categoryNames.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                _heading('Services offered'),
+                ProfileSettingsGroup(
                   children: [
-                    StreamBuilder<List<ReviewModel>>(
+                    for (final name in categoryNames)
+                      ProfileSettingsRow(
+                        icon: Icons.home_repair_service_outlined,
+                        title: name,
+                      ),
+                  ],
+                ),
+              ],
+
+              const SizedBox(height: 24),
+              _heading('Reviews'),
+              ProfileSettingsGroup(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 2),
+                    child: StreamBuilder<List<ReviewModel>>(
                       stream: _reviews,
                       builder: (context, snapshot) {
-                        final reviews = snapshot.hasError
-                            ? null
-                            : snapshot.data;
-                        return _infoCard(
-                          Icons.star,
-                          _ratingLabel(reviews),
-                          _reviewCountLabel(reviews),
-                          iconColor: AppColors.rating,
+                        if (snapshot.hasError) {
+                          return _mutedText('Unable to load reviews.');
+                        }
+
+                        if (!snapshot.hasData) {
+                          return const Padding(
+                            padding: EdgeInsets.only(bottom: 16),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        }
+
+                        final reviews = snapshot.data!;
+
+                        if (reviews.isEmpty) {
+                          return _mutedText('No reviews yet.');
+                        }
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            for (final review in reviews.take(3))
+                              ReviewTile(review: review),
+                            if (reviews.length > 3)
+                              _mutedText('${reviews.length - 3} more reviews'),
+                          ],
                         );
                       },
                     ),
-
-                    _infoCard(
-                      Icons.work_outline,
-                      '${provider.completedJobCount} jobs',
-                      'Experience',
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 30),
-
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('About', style: textTheme.titleLarge),
-                ),
-
-                const SizedBox(height: 10),
-
-                Text(
-                  bio.isEmpty ? 'No description provided.' : bio,
-                  style: textTheme.bodyMedium,
-                ),
-
-                if (categoryNames.isNotEmpty) ...[
-                  const SizedBox(height: 30),
-
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      'Services Offered',
-                      style: textTheme.titleLarge,
-                    ),
                   ),
-
-                  const SizedBox(height: 10),
-
-                  ...categoryNames.map(_serviceChip),
                 ],
+              ),
 
-                const SizedBox(height: 30),
-
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text('Reviews', style: textTheme.titleLarge),
-                ),
-
-                const SizedBox(height: 10),
-
-                StreamBuilder<List<ReviewModel>>(
-                  stream: _reviews,
-                  builder: (context, snapshot) {
-                    if (snapshot.hasError) {
-                      return const Text('Unable to load reviews.');
-                    }
-
-                    if (!snapshot.hasData) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    final reviews = snapshot.data!;
-
-                    if (reviews.isEmpty) {
-                      return Text(
-                        'No reviews yet.',
-                        style: textTheme.bodyMedium?.copyWith(
-                          color: Colors.grey,
-                        ),
-                      );
-                    }
-
-                    return Column(
-                      children: [
-                        for (final review in reviews.take(3))
-                          ReviewTile(review: review),
-                        if (reviews.length > 3)
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              '${reviews.length - 3} more reviews',
-                              style: textTheme.bodySmall?.copyWith(
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ),
-                      ],
-                    );
-                  },
-                ),
-
-                // Space for floating button
-                const SizedBox(height: 100),
-              ],
-            ),
+              // Space for floating button
+              const SizedBox(height: 100),
+            ],
           ),
 
           // Floating button only
@@ -248,29 +276,67 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
     );
   }
 
-  Widget _infoCard(
+  // Same section heading as the profile screen
+  Widget _heading(String title) => Padding(
+    padding: const EdgeInsets.only(left: 6, bottom: 10),
+    child: Text(
+      title,
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: AppColors.textSecondary,
+      ),
+    ),
+  );
+
+  // Same bordered card as the provider dashboard
+  Widget _card({required Widget child}) {
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      child: Padding(padding: const EdgeInsets.all(20), child: child),
+    );
+  }
+
+  Widget _stat(
     IconData icon,
     String value,
     String label, {
-    Color? iconColor,
+    Color iconColor = AppColors.primary,
   }) {
-    return Column(
+    return Row(
       children: [
         Icon(icon, color: iconColor),
-        const SizedBox(height: 6),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-        Text(label),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              Text(
+                label,
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  Widget _serviceChip(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: Chip(label: Text(title)),
-      ),
-    );
-  }
+  Widget _mutedText(String text) => Padding(
+    padding: const EdgeInsets.only(bottom: 16),
+    child: Text(text, style: const TextStyle(color: AppColors.textSecondary)),
+  );
 }

@@ -76,8 +76,8 @@ class _FloatingGlassNavigationBarState
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: dark
-                ? const [Color(0xFF35282C), Color(0xFF201E25)]
-                : const [Color(0xFFFFF0F0), Color(0xFFF5F1FA)],
+                ? const [Color(0xFF2C2C30), Color(0xFF1E1E22)]
+                : const [Color(0xFFF0F0F2), Color(0xFFE8E8EB)],
           ),
           border: Border.all(
             color: Colors.white.withValues(alpha: dark ? 0.15 : 0.9),
@@ -193,7 +193,7 @@ class _FloatingGlassNavigationBarState
                         final selected = index == currentIndex;
                         final color = selected
                             ? (dark
-                                  ? const Color(0xFFFFB4BC)
+                                  ? const Color(0xFFE6E6EA)
                                   : AppColors.primary)
                             : Theme.of(context).colorScheme.onSurfaceVariant;
 
