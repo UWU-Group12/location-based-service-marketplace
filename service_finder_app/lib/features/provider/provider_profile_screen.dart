@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../../core/app_colors.dart';
 import '../../core/app_router.dart';
 import '../../models/provider_model.dart';
+import '../../models/review_model.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
 import '../../services/location_service.dart';
 import '../../services/profile_edit_service.dart';
+import '../../services/review_service.dart';
 import '../../services/storage_service.dart';
 import '../../widgets/profile_settings.dart';
 import '../customer/personal_information_screen.dart';
@@ -16,7 +19,10 @@ import 'provider_service_area_screen.dart';
 import 'provider_status_section.dart';
 
 class ProviderProfileScreen extends StatefulWidget {
-  const ProviderProfileScreen({super.key});
+  final bool focusReviews;
+
+  const ProviderProfileScreen({super.key, this.focusReviews = false});
+
   @override
   State<ProviderProfileScreen> createState() => _ProviderProfileScreenState();
 }
@@ -24,6 +30,8 @@ class ProviderProfileScreen extends StatefulWidget {
 class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
   final _auth = AuthService();
   final _firestore = FirestoreService();
+  final _reviews = ReviewService();
+  final _reviewsKey = GlobalKey();
   late final ProviderProfileStatusController _status;
   UserModel? _user;
   ProviderModel? _profile;
@@ -34,6 +42,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
   bool _failed = false;
   bool _editing = false;
   bool _loggingOut = false;
+  bool _focusedReviews = false;
 
   @override
   void initState() {
@@ -218,6 +227,21 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
     context,
   ).showSnackBar(SnackBar(content: Text(message)));
 
+  void _focusReviewsIfNeeded() {
+    if (!widget.focusReviews || _focusedReviews || _loading || _failed) return;
+    _focusedReviews = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = _reviewsKey.currentContext;
+      if (!mounted || context == null) return;
+      Scrollable.ensureVisible(
+        context,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeInOut,
+        alignment: 0.15,
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {
@@ -235,6 +259,7 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
       );
     }
     final canEdit = _profile != null;
+    _focusReviewsIfNeeded();
     return ProfileSettingsView(
       name:
           _profile?.displayName ??
@@ -276,7 +301,197 @@ class _ProviderProfileScreenState extends State<ProviderProfileScreen> {
           onTap: canEdit ? _editProfessionalProfile : null,
         ),
         ProviderStatusSection(controller: _status),
+        ProviderReviewsSection(
+          key: _reviewsKey,
+          reviews: _profile == null
+              ? null
+              : _reviews.watchProviderReviews(_profile!.providerId),
+          highlight: widget.focusReviews,
+          onTap: () => AppRouter.goToProviderReviews(context),
+        ),
       ],
+    );
+  }
+}
+
+class ProviderReviewsSection extends StatelessWidget {
+  final Stream<List<ReviewModel>>? reviews;
+  final bool highlight;
+  final VoidCallback? onTap;
+
+  const ProviderReviewsSection({
+    super.key,
+    required this.reviews,
+    this.highlight = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (reviews == null) {
+      return _ProviderReviewsContent(
+        average: 0,
+        count: 0,
+        comments: const [],
+        loading: false,
+        error: false,
+        onTap: onTap,
+      );
+    }
+    return StreamBuilder<List<ReviewModel>>(
+      stream: reviews,
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return _ProviderReviewsContent(
+            average: 0,
+            count: 0,
+            comments: const [],
+            loading: false,
+            error: true,
+            highlight: highlight,
+            onTap: onTap,
+          );
+        }
+        if (!snapshot.hasData) {
+          return _ProviderReviewsContent(
+            average: 0,
+            count: 0,
+            comments: const [],
+            loading: true,
+            error: false,
+            highlight: highlight,
+            onTap: onTap,
+          );
+        }
+        final reviewList = snapshot.data!;
+        final count = reviewList.length;
+        final average = count == 0
+            ? 0.0
+            : reviewList.fold<double>(
+                    0,
+                    (total, review) => total + review.rating,
+                  ) /
+                  count;
+        final comments = reviewList
+            .map((review) => review.comment)
+            .whereType<String>()
+            .map((comment) => comment.trim())
+            .where((comment) => comment.isNotEmpty)
+            .take(2)
+            .toList(growable: false);
+        return _ProviderReviewsContent(
+          average: average,
+          count: count,
+          comments: comments,
+          loading: false,
+          error: false,
+          highlight: highlight,
+          onTap: onTap,
+        );
+      },
+    );
+  }
+}
+
+class _ProviderReviewsContent extends StatelessWidget {
+  final double average;
+  final int count;
+  final List<String> comments;
+  final bool loading;
+  final bool error;
+  final bool highlight;
+  final VoidCallback? onTap;
+
+  const _ProviderReviewsContent({
+    required this.average,
+    required this.count,
+    required this.comments,
+    required this.loading,
+    required this.error,
+    this.highlight = false,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        color: highlight ? AppColors.providerCard : Colors.transparent,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Icon(Icons.star_border, color: AppColors.primary, size: 23),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Reviews',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 8),
+                  if (loading)
+                    const LinearProgressIndicator(minHeight: 2)
+                  else if (error)
+                    const Text(
+                      'Could not load reviews.',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    )
+                  else ...[
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.star,
+                          color: AppColors.rating,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          count == 0
+                              ? 'No ratings yet'
+                              : average.toStringAsFixed(1),
+                          style: const TextStyle(fontWeight: FontWeight.w500),
+                        ),
+                        if (count > 0) ...[
+                          const SizedBox(width: 6),
+                          Text(
+                            '($count ${count == 1 ? "review" : "reviews"})',
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    if (comments.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      for (final comment in comments) ...[
+                        Text(
+                          '“$comment”',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        if (comment != comments.last) const SizedBox(height: 6),
+                      ],
+                    ],
+                  ],
+                ],
+              ),
+            ),
+            if (onTap != null) ...[
+              const SizedBox(width: 8),
+              const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
