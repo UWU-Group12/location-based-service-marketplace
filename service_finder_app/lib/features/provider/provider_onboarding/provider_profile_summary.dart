@@ -137,7 +137,6 @@ class _ProviderProfileSummaryState extends State<ProviderProfileSummary> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
 
     final provider = Provider.of<ProviderOnboardingProvider>(context);
 
