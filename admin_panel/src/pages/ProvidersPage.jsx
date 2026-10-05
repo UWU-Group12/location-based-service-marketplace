@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import ConfirmDialog from "../components/ConfirmDialog";
 import EmptyState from "../components/EmptyState";
 import LoadingSpinner from "../components/LoadingSpinner";
+import LocationPickerMap from "../components/LocationPickerMap";
 import MessageBanner from "../components/MessageBanner";
 import StatusBadge from "../components/StatusBadge";
 import UserAvatar from "../components/UserAvatar";
@@ -195,6 +196,7 @@ function ProvidersPage() {
       bio: "",
       accountStatus: "active",
       serviceRadiusKm: 10,
+      baseLocation: null,
       photoPath: "",
       photoPreview: "",
       photoFile: null,
@@ -241,6 +243,7 @@ function ProvidersPage() {
       bio: selectedProvider.profile.bio || "",
       accountStatus: selectedProvider.accountStatus || "active",
       serviceRadiusKm: selectedProvider.profile.serviceRadiusKm || "",
+      baseLocation: selectedProvider.profile.baseLocation || null,
       photoPath: existingPhotoPath,
       photoPreview,
       photoFile: null,
@@ -364,6 +367,7 @@ function ProvidersPage() {
         workingHours: editProviderForm.workingHours.trim(),
         bio: editProviderForm.bio.trim(),
         serviceRadiusKm: Number(editProviderForm.serviceRadiusKm || 0),
+        baseLocation: editProviderForm.baseLocation,
         categoryIds: editProviderForm.categoryIds,
       };
       const categoryNames = getCategoryNames(editProviderForm.categoryIds);
@@ -479,6 +483,11 @@ function ProvidersPage() {
       return;
     }
 
+    if (!createProviderForm.baseLocation) {
+      setErrorMessage("Pick the provider's location on the map.");
+      return;
+    }
+
     setIsProcessing(true);
     setErrorMessage("");
     setSuccessMessage("");
@@ -499,6 +508,7 @@ function ProvidersPage() {
         bio: createProviderForm.bio.trim(),
         accountStatus: createProviderForm.accountStatus,
         serviceRadiusKm: Number(createProviderForm.serviceRadiusKm || 10),
+        baseLocation: createProviderForm.baseLocation,
       });
       const createdProvider = {
         ...newProvider,
@@ -998,6 +1008,16 @@ function ProvidersPage() {
                   />
                 </div>
                 <div className="form-field details-grid-full">
+                  <label>Location</label>
+                  <LocationPickerMap
+                    value={createProviderForm.baseLocation}
+                    onChange={(location) =>
+                      handleCreateProviderChange("baseLocation", location)
+                    }
+                    disabled={isProcessing}
+                  />
+                </div>
+                <div className="form-field details-grid-full">
                   <label htmlFor="provider-create-bio">Bio</label>
                   <textarea
                     id="provider-create-bio"
@@ -1291,6 +1311,16 @@ function ProvidersPage() {
                     />
                   </div>
                   <div className="form-field details-grid-full">
+                    <label>Location</label>
+                    <LocationPickerMap
+                      value={editProviderForm.baseLocation}
+                      onChange={(location) =>
+                        handleEditProviderChange("baseLocation", location)
+                      }
+                      disabled={isProcessing}
+                    />
+                  </div>
+                  <div className="form-field details-grid-full">
                     <label htmlFor="provider-edit-bio">Bio</label>
                     <textarea
                       id="provider-edit-bio"
@@ -1432,6 +1462,23 @@ function ProvidersPage() {
                     {selectedProvider.profile.serviceRadiusKm
                       ? `${selectedProvider.profile.serviceRadiusKm} km radius`
                       : "Not provided"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Location</dt>
+                  <dd>
+                    {selectedProvider.profile.baseLocation ? (
+                      <a
+                        href={`https://www.openstreetmap.org/?mlat=${selectedProvider.profile.baseLocation.latitude}&mlon=${selectedProvider.profile.baseLocation.longitude}#map=15/${selectedProvider.profile.baseLocation.latitude}/${selectedProvider.profile.baseLocation.longitude}`}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        {selectedProvider.profile.baseLocation.latitude.toFixed(5)},{" "}
+                        {selectedProvider.profile.baseLocation.longitude.toFixed(5)}
+                      </a>
+                    ) : (
+                      "Not provided"
+                    )}
                   </dd>
                 </div>
                 <div className="details-grid-full">
