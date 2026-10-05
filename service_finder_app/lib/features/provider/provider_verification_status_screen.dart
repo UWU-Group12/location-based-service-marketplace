@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../core/app_colors.dart';
+import '../../services/auth_service.dart';
+import '../auth/welcome_screen.dart';
 
 class ProviderVerificationStatusScreen extends StatelessWidget {
   final String verificationStatus;
@@ -29,7 +31,7 @@ class ProviderVerificationStatusScreen extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -69,11 +71,39 @@ class ProviderVerificationStatusScreen extends StatelessWidget {
                     height: 1.45,
                   ),
                 ),
+                if (_isRejected) ...[
+                  const SizedBox(height: 28),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => _returnToWelcome(context),
+                      child: const Text('Go Back'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _returnToWelcome(BuildContext context) async {
+    try {
+      await AuthService().signOut();
+      if (!context.mounted) return;
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+        (route) => false,
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not return to welcome screen.')),
+      );
+    }
   }
 }
