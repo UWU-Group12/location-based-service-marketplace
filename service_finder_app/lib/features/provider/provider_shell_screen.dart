@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/directional_indexed_page_switcher.dart';
 import '../../core/widgets/floating_glass_navigation_bar.dart';
 
 import 'provider_dashboard_screen.dart';
@@ -158,7 +159,10 @@ class _ProviderShellScreenState extends State<ProviderShellScreen> {
 
     return Scaffold(
       extendBody: true,
-      body: IndexedStack(index: _currentIndex, children: pages),
+      body: DirectionalIndexedPageSwitcher(
+        index: _currentIndex,
+        children: pages,
+      ),
       bottomNavigationBar: FloatingGlassNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) {

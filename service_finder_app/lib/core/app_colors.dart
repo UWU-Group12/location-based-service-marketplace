@@ -4,12 +4,12 @@ class AppColors {
   AppColors._();
 
   // Primary Brand Colors
-  static const Color primary = Color(0xFF8B0000);
+  static const Color primary = Color(0xFF1C1B1F);
   static const Color secondary = Color(0xFFF3F8FF);
 
   // Backgrounds
   static const Color background = Color.fromARGB(255, 250, 251, 255);
-  static const Color providerCard = Color(0xFFFFF3F3);
+  static const Color providerCard = Color(0xFFF0F0F2);
   static const Color customerCard = Color(0xFFF3F8FF);
   static const Color googleButton = Color(0xFFF1F1F1);
 
@@ -20,9 +20,9 @@ class AppColors {
   static const Color categoryTintAmber = Color(0xFFFFF3E0);
   static const Color categoryTintGreen = Color(0xFFE8F5E9);
 
-  // Dark maroon used for text on the maroon-tinted cards
-  static const Color onTintPrimary = Color(0xFF4A1010);
-  static const Color onTintPrimaryMuted = Color(0x994A1010);
+  // Near-black used for text on the tinted cards
+  static const Color onTintPrimary = Color(0xFF1C1B1F);
+  static const Color onTintPrimaryMuted = Color(0x991C1B1F);
 
   // Text
   static const Color textPrimary = Colors.black;
