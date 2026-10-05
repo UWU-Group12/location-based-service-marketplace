@@ -18,13 +18,7 @@ class ProviderReviewsScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        centerTitle: true,
-        title: const Text(
-          'Ratings & Reviews',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-      ),
+      appBar: AppBar(centerTitle: true, title: const Text('Ratings & Reviews')),
       body: resolvedProviderId == null
           ? const RequestStateView(
               title: 'Sign in to view reviews',
@@ -92,7 +86,7 @@ class _ReviewsSummaryCard extends StatelessWidget {
       elevation: 0,
       color: AppColors.providerCard,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: AppColors.border),
       ),
       child: Padding(
@@ -113,7 +107,6 @@ class _ReviewsSummaryCard extends StatelessWidget {
                     average.toStringAsFixed(1),
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: AppColors.primary,
-                      fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -144,7 +137,7 @@ class _ReviewCard extends StatelessWidget {
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: AppColors.border),
       ),
       child: Padding(
@@ -158,7 +151,7 @@ class _ReviewCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   review.rating.toStringAsFixed(1),
-                  style: const TextStyle(fontWeight: FontWeight.w700),
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const Spacer(),
                 Text(

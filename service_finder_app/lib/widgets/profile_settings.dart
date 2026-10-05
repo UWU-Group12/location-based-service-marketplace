@@ -75,7 +75,7 @@ class ProfileSettingsView extends StatelessWidget {
                   name.isEmpty ? 'Your profile' : name,
                   style: const TextStyle(
                     fontSize: 18,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 subtitle: Padding(
@@ -97,7 +97,7 @@ class ProfileSettingsView extends StatelessWidget {
                                   : serviceCategories!,
                               style: const TextStyle(
                                 fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                                fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
                                 height: 1.5,
                               ),

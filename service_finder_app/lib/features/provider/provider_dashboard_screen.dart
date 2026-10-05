@@ -362,7 +362,7 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
           IconButton(
             tooltip: 'Notifications',
             style: IconButton.styleFrom(
-              backgroundColor: Colors.black,
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
             ),
             onPressed: _openNotifications,
@@ -375,7 +375,7 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: AppColors.error,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.white, width: 1.5),
                 ),
@@ -384,7 +384,7 @@ class _ProviderDashboardScreenState extends State<ProviderDashboardScreen> {
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 10,
-                    fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
