@@ -54,18 +54,7 @@ function LoginPage() {
 
   return (
     
-    <div
-      className="login-page"
-      style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        minHeight: "100vh",
-        padding: "0 170px",
-        gap: "1px",
-        backgroundColor: "#ffffff",
-      }}
-    >
+    <div className="login-page">
       
       <div
         className="logo-section"
@@ -74,8 +63,8 @@ function LoginPage() {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          Width: "fit-content",
-          gap: "10px",
+          transform: "translateY(-52px)",
+          gap: "2px",
         }}
       >
         <img
@@ -87,10 +76,10 @@ function LoginPage() {
           style={{
             fontSize: "50px",
             fontWeight: "bold",
-            color: "#8B0000",
+            color: "#050505",
             letterSpacing: "4px",
             textAlign: "center",
-            marginTop: "-5px",
+            marginTop: "-35px",
           }}
         >
           RAW
@@ -98,7 +87,7 @@ function LoginPage() {
       </div>
 
       
-      <div className="login-panel" style={{ width: "350px", flexShrink: 0, transform: "translateY(-40px)",margin: "0", }}>
+      <div className="login-panel" style={{ width: "350px", flexShrink: 0, transform: "translateY(-40px)" }}>
         <MessageBanner message={formError || accessError} type="error" />
 
         <form className="form-stack" onSubmit={handleSubmit} noValidate>
@@ -145,11 +134,11 @@ function LoginPage() {
     height: "50px",
      minHeight: "0",
     fontSize: "16px",
-    padding: "0 10px",
+    padding: "0 50px",
     border: "none",
   }}
 >
-  {isSubmitting ? "Signing in..." : "Sign in to admin panel"}
+  {isSubmitting ? "Signing in..." : "Sign in "}
 </button>
         </form>
       </div>
