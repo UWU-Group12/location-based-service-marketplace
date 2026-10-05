@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'provider_onboarding_layout.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/app_colors.dart';
@@ -104,7 +105,7 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
         });
         _loadLocationName(picked);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Location selected from map ✅')),
+          const SnackBar(content: Text('Location selected from map.')),
         );
       }
     } catch (error) {
@@ -151,55 +152,32 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DropdownButtonFormField<double>(
-          initialValue: _selectedRadiusKm,
-          decoration: const InputDecoration(
-            labelText: 'Service radius',
-            prefixIcon: Icon(Icons.radar_outlined),
-          ),
-          items: _radiusOptions
-              .map(
-                (radius) => DropdownMenuItem(
-                  value: radius,
-                  child: Text('${radius.toInt()} km'),
-                ),
-              )
-              .toList(),
-          onChanged: _isGettingLocation
-              ? null
-              : (value) => setState(() => _selectedRadiusKm = value),
-        ),
-        const SizedBox(height: 24),
-
-        // 📍 Button 1: Live GPS
-        OutlinedButton.icon(
-          onPressed: _isGettingLocation ? null : _useCurrentLocation,
-          icon: _isGettingLocation
-              ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Icon(Icons.my_location),
-          label: Text(
-            _isGettingLocation
-                ? 'Getting Location...'
-                : 'Use Live GPS Location',
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // 📍 Button 2: Map Picker
-        OutlinedButton.icon(
-          onPressed: _isGettingLocation ? null : _openMapPicker,
-          icon: const Icon(Icons.map, color: Colors.green),
-          label: const Text(
-            'Select Location on Map 🗺️',
-            style: TextStyle(color: Colors.green),
-          ),
-          style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: Colors.green),
-          ),
+        Align(alignment: Alignment.centerLeft, child: _buildRadiusSelector()),
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _isGettingLocation ? null : _useCurrentLocation,
+                icon: _isGettingLocation
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.my_location, size: 18),
+                label: Text(_isGettingLocation ? 'Detecting...' : 'Use GPS'),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _isGettingLocation ? null : _openMapPicker,
+                icon: const Icon(Icons.map_outlined, size: 18),
+                label: const Text('Pick on Map'),
+              ),
+            ),
+          ],
         ),
 
         if (_currentLocation != null) ...[
@@ -211,7 +189,7 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
               const SizedBox(width: 8),
               Flexible(
                 child: Text(
-                  _locationName ?? 'Location successfully saved! ✅',
+                  _locationName ?? 'Location successfully saved.',
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -227,10 +205,98 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
     );
   }
 
+  Widget _buildRadiusSelector() {
+    const selectorWidth = 220.0;
+    final label = _selectedRadiusKm == null
+        ? 'Service radius'
+        : '${_selectedRadiusKm!.toInt()} km radius';
+
+    return PopupMenuButton<double>(
+      tooltip: 'Service radius',
+      enabled: !_isGettingLocation,
+      position: PopupMenuPosition.under,
+      offset: const Offset(0, 8),
+      elevation: 8,
+      color: Colors.white,
+      constraints: const BoxConstraints(
+        minWidth: selectorWidth,
+        maxWidth: selectorWidth,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: AppColors.border),
+      ),
+      onSelected: (value) => setState(() => _selectedRadiusKm = value),
+      itemBuilder: (context) => _radiusOptions
+          .map(
+            (radius) => PopupMenuItem<double>(
+              value: radius,
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.radar_outlined,
+                    color: AppColors.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text('${radius.toInt()} km')),
+                  if (_selectedRadiusKm == radius)
+                    const Icon(Icons.check, size: 18),
+                ],
+              ),
+            ),
+          )
+          .toList(),
+      child: Opacity(
+        opacity: _isGettingLocation ? 0.55 : 1,
+        child: Container(
+          width: selectorWidth,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+          decoration: BoxDecoration(
+            color: AppColors.providerCard,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.radar_outlined,
+                color: AppColors.primary,
+                size: 22,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: AppColors.textSecondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -245,39 +311,23 @@ class _ProviderWorkingAreaState extends State<ProviderWorkingArea> {
           onPressed: _isGettingLocation ? null : () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
+      resizeToAvoidBottomInset: true,
+      body: ProviderOnboardingBody(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 10),
-            const Center(
-              child: Icon(
-                Icons.location_on_outlined,
-                size: 110,
-                color: AppColors.primary,
-              ),
+            const ProviderOnboardingHeroText(
+              segments: [
+                ProviderOnboardingHeroSegment('Set'),
+                ProviderOnboardingHeroSegment('your'),
+                ProviderOnboardingHeroSegment('working', muted: true),
+                ProviderOnboardingHeroSegment('area'),
+              ],
             ),
-            const SizedBox(height: 25),
-            Text(
-              'Set your working area',
-              textAlign: TextAlign.center,
-              style: textTheme.headlineMedium?.copyWith(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'Choose how far you travel and capture your current location.',
-              textAlign: TextAlign.center,
-              style: textTheme.bodyLarge?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 35),
-            _buildLocationForm(), // 👈 Directly calling the form with no FutureBuilder
+            const SizedBox(height: 34),
+            _buildLocationForm(),
             const SizedBox(height: 30),
           ],
         ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'provider_onboarding_layout.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/app_colors.dart';
@@ -85,8 +85,6 @@ class _ProviderProfilePasswordState extends State<ProviderProfilePassword> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -101,28 +99,20 @@ class _ProviderProfilePasswordState extends State<ProviderProfilePassword> {
           onPressed: _isLoading ? null : () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
+      resizeToAvoidBottomInset: true,
+      body: ProviderOnboardingBody(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 20),
-            Center(
-              child: SvgPicture.asset(
-                'assets/onboardingsvg/provider_password.svg',
-                width: 200,
-                height: 200,
-                fit: BoxFit.contain,
-              ),
-            ),
-            const SizedBox(height: 35),
-            Text(
-              'Create your password',
-              textAlign: TextAlign.center,
-              style: textTheme.headlineMedium?.copyWith(
-                fontSize: 40,
-                color: AppColors.textPrimary,
-              ),
+            const ProviderOnboardingHeroText(
+              segments: [
+                ProviderOnboardingHeroSegment('Create'),
+                ProviderOnboardingHeroSegment('your'),
+                ProviderOnboardingHeroSegment('account', muted: true),
+                ProviderOnboardingHeroSegment('password'),
+              ],
             ),
             const SizedBox(height: 35),
             TextField(

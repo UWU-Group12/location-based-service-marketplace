@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'provider_onboarding_layout.dart';
 
 import '../../../core/app_colors.dart';
 import '../../../core/app_router.dart';
@@ -8,8 +8,6 @@ import '../../../services/auth_service.dart';
 class BuildProfessionalProfile extends StatelessWidget {
   const BuildProfessionalProfile({super.key});
 
-  // This screen is the only route after the account is created, so popping it
-  // would leave an empty (black) navigator. Leave setup via Welcome instead.
   Future<void> _goBack(BuildContext context) async {
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
@@ -46,8 +44,6 @@ class BuildProfessionalProfile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return PopScope(
       canPop: Navigator.of(context).canPop(),
       onPopInvokedWithResult: (didPop, _) {
@@ -67,28 +63,20 @@ class BuildProfessionalProfile extends StatelessWidget {
             onPressed: () => _goBack(context),
           ),
         ),
-        body: SingleChildScrollView(
+        resizeToAvoidBottomInset: true,
+        body: ProviderOnboardingBody(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               const SizedBox(height: 10),
-              Center(
-                child: SvgPicture.asset(
-                  'assets/onboardingsvg/provider_profile1.svg',
-                  width: 240,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Build Your Professional Profile',
-                textAlign: TextAlign.center,
-                style: textTheme.headlineMedium?.copyWith(
-                  fontSize: 32,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
+              const ProviderOnboardingHeroText(
+                segments: [
+                  ProviderOnboardingHeroSegment('Build'),
+                  ProviderOnboardingHeroSegment('your'),
+                  ProviderOnboardingHeroSegment('professional', muted: true),
+                  ProviderOnboardingHeroSegment('profile'),
+                ],
               ),
               const SizedBox(height: 12),
               // Text(

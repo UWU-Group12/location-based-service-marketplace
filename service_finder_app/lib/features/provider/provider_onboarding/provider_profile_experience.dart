@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'provider_onboarding_layout.dart';
 
 import 'package:provider/provider.dart';
 import '../provider_onboarding_provider.dart';
@@ -19,18 +20,14 @@ class _ProviderProfileExperienceState extends State<ProviderProfileExperience> {
 
   final List<String> days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-  final List<String> hours = ["Morning", "Afternoon", "Evening", "Full Day"];
-
   final List<String> selectedDays = [];
-  String? selectedHours;
 
   int? get experienceYears => int.tryParse(_experienceController.text.trim());
 
   bool get canContinue =>
       experienceYears != null &&
       experienceYears! >= 0 &&
-      selectedDays.isNotEmpty &&
-      selectedHours != null;
+      selectedDays.isNotEmpty;
 
   @override
   void initState() {
@@ -57,7 +54,7 @@ class _ProviderProfileExperienceState extends State<ProviderProfileExperience> {
     ).setWorkingInformation(
       experienceYears: experienceYears!,
       workingDays: selectedDays,
-      workingHours: selectedHours!,
+      workingHours: 'Flexible',
     );
 
     AppRouter.goToProviderWorkingArea(context);
@@ -65,8 +62,6 @@ class _ProviderProfileExperienceState extends State<ProviderProfileExperience> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -81,38 +76,23 @@ class _ProviderProfileExperienceState extends State<ProviderProfileExperience> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SingleChildScrollView(
+      resizeToAvoidBottomInset: true,
+      body: ProviderOnboardingBody(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const SizedBox(height: 10),
-            const Center(
-              child: Icon(
-                Icons.work_history_outlined,
-                size: 110,
-                color: AppColors.primary,
-              ),
+            const ProviderOnboardingHeroText(
+              segments: [
+                ProviderOnboardingHeroSegment('Tell'),
+                ProviderOnboardingHeroSegment('us'),
+                ProviderOnboardingHeroSegment('about', muted: true),
+                ProviderOnboardingHeroSegment('your'),
+                ProviderOnboardingHeroSegment('experience', muted: true),
+              ],
             ),
-            const SizedBox(height: 25),
-            Text(
-              "Tell us about your experience",
-              textAlign: TextAlign.center,
-              style: textTheme.headlineMedium?.copyWith(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              "Help customers understand your professional experience.",
-              textAlign: TextAlign.center,
-              style: textTheme.bodyLarge?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 35),
+            const SizedBox(height: 34),
             TextField(
               controller: _experienceController,
               keyboardType: TextInputType.number,
@@ -127,9 +107,9 @@ class _ProviderProfileExperienceState extends State<ProviderProfileExperience> {
             const SizedBox(height: 30),
             Text(
               "Working Days",
-              style: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 15),
             Wrap(
@@ -164,7 +144,7 @@ class _ProviderProfileExperienceState extends State<ProviderProfileExperience> {
                     ),
                     child: Text(
                       day,
-                      style: textTheme.bodyMedium?.copyWith(
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: selected ? Colors.white : AppColors.textPrimary,
                         fontWeight: FontWeight.w600,
                       ),
@@ -173,56 +153,7 @@ class _ProviderProfileExperienceState extends State<ProviderProfileExperience> {
                 );
               }).toList(),
             ),
-            const SizedBox(height: 30),
-            Text(
-              "Working Hours",
-              style: textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 15),
-            ...hours.map((hour) {
-              final selected = selectedHours == hour;
-
-              return GestureDetector(
-                onTap: () {
-                  setState(() {
-                    selectedHours = hour;
-                  });
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? AppColors.providerCard
-                        : AppColors.background,
-                    borderRadius: BorderRadius.circular(22),
-                    border: Border.all(
-                      color: selected ? AppColors.primary : AppColors.border,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        hour,
-                        style: textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Icon(
-                        selected
-                            ? Icons.radio_button_checked
-                            : Icons.radio_button_off,
-                        color: AppColors.primary,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-            const SizedBox(height: 25),
+            const SizedBox(height: 34),
             ElevatedButton(
               onPressed: canContinue ? _continue : null,
               child: const Text("Continue"),

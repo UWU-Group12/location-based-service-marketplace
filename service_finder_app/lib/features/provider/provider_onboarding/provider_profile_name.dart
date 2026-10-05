@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'provider_onboarding_layout.dart';
 import '../provider_onboarding_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -80,7 +80,8 @@ class _ProviderProfileNameState extends State<ProviderProfileName> {
         ),
       ),
 
-      body: SingleChildScrollView(
+      resizeToAvoidBottomInset: true,
+      body: ProviderOnboardingBody(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
 
@@ -90,29 +91,13 @@ class _ProviderProfileNameState extends State<ProviderProfileName> {
             children: [
               const SizedBox(height: 20),
 
-              // Big Profile Icon Card
-              // SVG Illustration
-              Center(
-                child: SvgPicture.asset(
-                  'assets/onboardingsvg/provider_name.svg',
-                  width: 200,
-                  height: 200,
-                  fit: BoxFit.contain,
-                ),
-              ),
-
-              const SizedBox(height: 35),
-
-              Text(
-                "Create your provider profile",
-
-                textAlign: TextAlign.center,
-
-                style: textTheme.headlineMedium?.copyWith(
-                  fontSize: 40,
-
-                  color: AppColors.textPrimary,
-                ),
+              const ProviderOnboardingHeroText(
+                segments: [
+                  ProviderOnboardingHeroSegment('Create'),
+                  ProviderOnboardingHeroSegment('your'),
+                  ProviderOnboardingHeroSegment('provider', muted: true),
+                  ProviderOnboardingHeroSegment('profile'),
+                ],
               ),
 
               const SizedBox(height: 12),
