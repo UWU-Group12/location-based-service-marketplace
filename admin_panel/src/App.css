@@ -1102,10 +1102,10 @@ s
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 80px;
+  gap: 24px;
   min-height: 100vh;
-  padding: 40px 80px;
-  background: #f3f3f3;
+  padding: 40px 24px;
+  background: #fff;
 }
 
 .logo-section {
@@ -1113,7 +1113,7 @@ s
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-width: 330px;
+  min-width: 0;
   transform: translateY(-8px);
 }
 
@@ -1147,7 +1147,8 @@ s
 
 .login-panel {
   width: min(100%, 360px);
-  margin-top: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .login-field {
