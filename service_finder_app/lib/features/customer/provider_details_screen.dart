@@ -138,7 +138,7 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
                         child: _stat(
                           Icons.work_outline,
                           '${provider.completedJobCount} jobs',
-                          'Experience',
+                          'Completed',
                         ),
                       ),
                     ],
@@ -161,6 +161,27 @@ class _ProviderDetailsScreenState extends State<ProviderDetailsScreen> {
                             : AppColors.textPrimary,
                       ),
                     ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+              _heading('Work details'),
+              ProfileSettingsGroup(
+                children: [
+                  ProfileSettingsRow(
+                    icon: Icons.workspace_premium_outlined,
+                    title: 'Experience',
+                    value: provider.experienceYears == 1
+                        ? '1 year'
+                        : '${provider.experienceYears} years',
+                  ),
+                  ProfileSettingsRow(
+                    icon: Icons.calendar_today_outlined,
+                    title: 'Working days',
+                    value: provider.workingDays.isEmpty
+                        ? 'Not provided'
+                        : provider.workingDays.join(', '),
                   ),
                 ],
               ),

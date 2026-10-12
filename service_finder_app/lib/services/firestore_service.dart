@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../models/provider_model.dart';
 import '../models/quotation_model.dart';
@@ -97,22 +98,43 @@ class FirestoreService {
     return List.unmodifiable(categories);
   }
 
-  Stream<List<ProviderModel>> watchTopRatedAvailableProviders({int limit = 4}) {
+  // No geohash yet, so distance is filtered on device: keep providers whose
+  // service radius covers the customer, nearest first.
+  Stream<List<ProviderModel>> watchNearbyAvailableProviders(
+    GeoPoint customerLocation, {
+    int limit = 4,
+  }) {
     return _firestore
         .collection('providerProfiles')
         .where('verificationStatus', isEqualTo: 'verified')
         .where('availabilityStatus', isEqualTo: 'available')
-        .orderBy('ratingAverage', descending: true)
-        .limit(limit)
         .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map(
-                (document) =>
-                    ProviderModel.fromFirestore(document.id, document.data()),
-              )
-              .toList(growable: false),
-        );
+        .map((snapshot) {
+          final distances = <ProviderModel, double>{};
+          for (final document in snapshot.docs) {
+            final provider = ProviderModel.fromFirestore(
+              document.id,
+              document.data(),
+            );
+            final base = provider.baseLocation;
+            final radiusKm = provider.serviceRadiusKm;
+            if (base == null || radiusKm == null) continue;
+
+            final distanceKm =
+                Geolocator.distanceBetween(
+                  customerLocation.latitude,
+                  customerLocation.longitude,
+                  base.latitude,
+                  base.longitude,
+                ) /
+                1000;
+            if (distanceKm <= radiusKm) distances[provider] = distanceKm;
+          }
+
+          final nearby = distances.keys.toList()
+            ..sort((a, b) => distances[a]!.compareTo(distances[b]!));
+          return nearby.take(limit).toList(growable: false);
+        });
   }
 
   Future<List<ProviderModel>> getVerifiedAvailableProvidersByCategory(

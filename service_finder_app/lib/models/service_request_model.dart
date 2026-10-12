@@ -15,6 +15,7 @@ class ServiceRequestModel {
   final String quotationStatus;
   final String? acceptedQuotationId;
   final double? finalAmount;
+  final String? providerPhone; // set by a Cloud Function once accepted
   final DateTime createdAt;
   final DateTime updatedAt;
   final DateTime? preferredDate;
@@ -50,6 +51,7 @@ class ServiceRequestModel {
     required this.quotationStatus,
     this.acceptedQuotationId,
     this.finalAmount,
+    this.providerPhone,
     required this.createdAt,
     required this.updatedAt,
     this.preferredDate,
@@ -79,6 +81,7 @@ class ServiceRequestModel {
       quotationStatus: data['quotationStatus'] as String? ?? 'pending',
       acceptedQuotationId: data['acceptedQuotationId'] as String?,
       finalAmount: (data['finalAmount'] as num?)?.toDouble(),
+      providerPhone: data['providerPhone'] as String?,
       createdAt:
           (data['createdAt'] as Timestamp?)?.toDate() ??
           DateTime.fromMillisecondsSinceEpoch(0),

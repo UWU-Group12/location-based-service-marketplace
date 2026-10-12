@@ -62,6 +62,63 @@ exports.recomputeRatingOnReviewUpdated = onDocumentUpdated(
     await recomputeProviderRating(providerId);
   },
 );
+
+// completedJobCount is server-owned (rules block client writes), so keep it
+// in sync whenever a request moves into or out of 'completed'.
+exports.recomputeJobCountOnRequestUpdated = onDocumentUpdated(
+  "serviceRequests/{requestId}",
+  async (event) => {
+    const before = event.data.before.data();
+    const after = event.data.after.data();
+
+    if (before.requestStatus === after.requestStatus) {
+      return;
+    }
+
+    if (before.requestStatus !== "completed" && after.requestStatus !== "completed") {
+      return;
+    }
+
+    const providerId = after.providerId || before.providerId;
+    if (!providerId) {
+      return;
+    }
+
+    const completedSnapshot = await db
+      .collection("serviceRequests")
+      .where("providerId", "==", providerId)
+      .where("requestStatus", "==", "completed")
+      .count()
+      .get();
+
+    await db.collection("providerProfiles").doc(providerId).update({
+      completedJobCount: completedSnapshot.data().count,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  },
+);
+
+// Provider phone numbers are private (users/{uid}), so share it with the
+// customer only once they accept the quotation. Rules block client writes.
+exports.shareProviderPhoneOnQuotationAccepted = onDocumentUpdated(
+  "serviceRequests/{requestId}",
+  async (event) => {
+    const before = event.data.before.data();
+    const after = event.data.after.data();
+
+    if (before.requestStatus === "confirmed" || after.requestStatus !== "confirmed") {
+      return;
+    }
+
+    const providerSnapshot = await db.collection("users").doc(after.providerId).get();
+    const providerPhone = providerSnapshot.exists ? providerSnapshot.data().phoneNumber : null;
+    if (!providerPhone) {
+      return;
+    }
+
+    await event.data.after.ref.update({ providerPhone });
+  },
+);
 // Admin panel: set a new sign-in password for a customer or provider.
 // Changing another user's password needs the Admin SDK, so it runs here.
 exports.setUserPassword = onCall(async (request) => {
