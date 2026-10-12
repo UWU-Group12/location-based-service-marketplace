@@ -1,0 +1,80 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(providerId) {
+      return signedIn() && request.auth.uid == providerId;
+    }
+
+    function isAdmin() {
+      return signedIn() && request.auth.token.admin == true;
+    }
+
+    function verificationCanBeUploaded(providerId) {
+      return !firestore.exists(
+          /databases/(default)/documents/providerVerifications/$(providerId)
+        )
+        || firestore.get(
+          /databases/(default)/documents/providerVerifications/$(providerId)
+        ).data.status == 'pending';
+    }
+
+    match /providers/{providerId}/{fileName} {
+      allow read: if signedIn();
+
+      allow create, update: if
+        (isOwner(providerId) || isAdmin())
+        && request.resource.size > 0
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      allow delete: if isOwner(providerId) || isAdmin();
+    }
+
+    match /users/{userId}/{fileName} {
+      allow read: if signedIn();
+
+      allow create, update: if
+        isOwner(userId)
+        && request.resource.size > 0
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    match /verification/{providerId}/{filePath=**} {
+      allow read: if isOwner(providerId) || isAdmin();
+
+      allow create, update: if
+        isOwner(providerId)
+        && verificationCanBeUploaded(providerId)
+        && request.resource.size > 0
+        && request.resource.size < 10 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('image/.*')
+          || request.resource.contentType == 'application/pdf'
+        );
+
+      allow delete: if
+        (
+          isOwner(providerId)
+          && verificationCanBeUploaded(providerId)
+        )
+        || isAdmin();
+    }
+
+    match /categories/{fileName} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

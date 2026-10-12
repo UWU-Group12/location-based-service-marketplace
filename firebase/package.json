@@ -1,0 +1,13 @@
+{
+  "name": "service-finder-rules-tests",
+  "description": "Firestore rules unit tests for the Service Finder platform",
+  "private": true,
+  "scripts": {
+    "test": "mocha --reporter spec --timeout 30000 \"tests/**/*.test.js\"",
+    "test:emulator": "firebase emulators:exec --only firestore \"npm test\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "mocha": "^10.7.3"
+  }
+}

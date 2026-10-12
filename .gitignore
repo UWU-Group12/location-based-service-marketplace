@@ -17,17 +17,29 @@ Thumbs.db
 *.pem
 serviceAccountKey.json
 
-# Flutter / Dart
+# Flutter / Dart generated artifacts
 **/.dart_tool/
 **/build/
 **/.flutter-plugins
 **/.flutter-plugins-dependencies
 **/.packages
+**/.pub-cache/
+**/.pub/
 **/coverage/
+**/doc/api/
+**/ios/Flutter/.last_build_id
 
-# Flutter generated plugin registrant files
-**/generated_plugin_registrant.*
-**/generated_plugins.cmake
+# Flutter platform-generated artifacts
+**/linux/flutter/ephemeral/
+**/windows/flutter/ephemeral/
+**/macos/Flutter/ephemeral/
+**/ios/Flutter/ephemeral/
+**/ios/Pods/
+**/macos/Pods/
+**/ios/.symlinks/
+**/macos/.symlinks/
+**/DerivedData/
+**/xcuserdata/
 
 # Android local / signing files
 **/android/local.properties

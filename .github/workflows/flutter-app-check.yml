@@ -19,11 +19,14 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: '17'
+          cache: 'gradle' 
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
+          cache: true         
+          pub-cache: true      
 
       - name: Install dependencies
         run: |
@@ -34,3 +37,26 @@ jobs:
         run: |
           cd service_finder_app
           flutter analyze
+
+      - name: Create google-services.json
+        if: github.event_name == 'push'
+        run: |
+          echo "${{ secrets.FIREBASE_GOOGLE_SERVICES_JSON }}" | base64 --decode > service_finder_app/android/app/google-services.json
+
+      - name: Check Firebase file exists
+        if: github.event_name == 'push'
+        run: |
+          ls -la service_finder_app/android/app/google-services.json
+
+      - name: Build APK
+        if: github.event_name == 'push'
+        run: |
+          cd service_finder_app
+          flutter build apk --release
+
+      - name: Upload APK
+        if: github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: flutter-app-apk
+          path: service_finder_app/build/app/outputs/flutter-apk/app-release.apk

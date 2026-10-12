@@ -1,0 +1,321 @@
+import 'package:flutter/material.dart';
+
+import '../features/auth/customer_register_screen.dart';
+import '../features/auth/dev_bypass_screen.dart';
+import '../features/auth/login_screen.dart';
+import '../features/provider/provider_onboarding/provider_profile_name.dart';
+import '../features/auth/role_selection_screen.dart';
+import '../features/auth/welcome_screen.dart';
+import '../features/customer/customer_shell_screen.dart';
+import '../features/customer/customer_request_details_screen.dart';
+import '../features/provider/provider_dashboard_screen.dart';
+import '../features/provider/provider_onboarding/provider_profile_contact.dart';
+import '../features/provider/provider_onboarding/provider_profile_password.dart';
+import '../features/provider/provider_onboarding/build_professional_profile.dart';
+import '../features/provider/provider_onboarding/provider_profile_personal_details.dart';
+import '../features/provider/provider_onboarding/provider_profile_service_info.dart';
+import '../features/provider/provider_onboarding/provider_profile_experience.dart';
+import '../features/provider/provider_onboarding/provider_working_area.dart';
+import '../features/provider/provider_onboarding/provider_verification_documents.dart';
+import '../features/provider/provider_onboarding/provider_profile_summary.dart';
+import '../features/customer/provider_list_screen.dart';
+import '../features/customer/create_request_screen.dart';
+import '../features/customer/ai_category_screen.dart';
+import '../features/customer/provider_listing_screen.dart';
+import '../features/customer/provider_details_screen.dart';
+import '../models/user_model.dart';
+import '../models/provider_model.dart';
+import '../models/service_request_model.dart';
+import '../features/provider/provider_request_details_screen.dart';
+import '../features/provider/create_quotation_screen.dart';
+import '../features/provider/provider_job_details_screen.dart';
+import '../features/provider/provider_reviews_screen.dart';
+import '../features/notifications/notifications_screen.dart';
+import '../features/provider/provider_home_gate.dart';
+
+import '../features/customer/service_categories_screen.dart';
+import '../features/customer/rating_review_screen.dart';
+import '../features/provider/provider_shell_screen.dart';
+
+class AppRouter {
+  AppRouter._();
+
+  static Future<void> goToProviderJobDetails(
+    BuildContext context,
+    String requestId,
+  ) async {
+    await Navigator.of(
+      context,
+    ).push(_buildRoute(ProviderJobDetailsScreen(requestId: requestId)));
+  }
+
+  static Future<void> goToProviderNotifications(BuildContext context) async {
+    await Navigator.of(context).push(_buildRoute(const NotificationsScreen()));
+  }
+
+  static Future<void> goToProviderProfileReviews(BuildContext context) async {
+    await goToProviderReviews(context);
+  }
+
+  static Future<void> goToProviderReviews(BuildContext context) async {
+    await Navigator.of(
+      context,
+    ).push(_buildRoute(const ProviderReviewsScreen()));
+  }
+
+  static Future<bool> goToProviderRequestDetails(
+    BuildContext context, {
+    required String requestId,
+    String? quotationId,
+  }) async {
+    final result = await Navigator.of(context).push(
+      _buildRoute(
+        ProviderRequestDetailsScreen(
+          requestId: requestId,
+          quotationId: quotationId,
+        ),
+      ),
+    );
+    return result == true;
+  }
+
+  static Future<bool> goToCreateQuotation(
+    BuildContext context,
+    ServiceRequestModel request,
+  ) async {
+    final result = await Navigator.of(
+      context,
+    ).push(_buildRoute(CreateQuotationScreen(request: request)));
+    return result == true;
+  }
+
+  static PageRouteBuilder<T> _buildRoute<T>(Widget page) {
+    return PageRouteBuilder<T>(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+    );
+  }
+
+  static PageRouteBuilder<T> _buildSlideRoute<T>(Widget page) {
+    return PageRouteBuilder<T>(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        if (MediaQuery.disableAnimationsOf(context)) return child;
+
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(curved),
+          child: child,
+        );
+      },
+    );
+  }
+
+  static void goToWelcome(BuildContext context) {
+    Navigator.of(context).pushReplacement(_buildRoute(const WelcomeScreen()));
+  }
+
+  static void goToLogin(BuildContext context) {
+    Navigator.of(context).push(_buildRoute(const LoginScreen()));
+  }
+
+  static void goToRoleSelection(BuildContext context) {
+    Navigator.of(context).push(_buildRoute(const RoleSelectionScreen()));
+  }
+
+  static void goToCustomerRegister(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(_buildRoute(const CustomerRegisterScreen(role: 'Customer')));
+  }
+
+  static void goToProviderProfileName(BuildContext context) {
+    Navigator.of(context).push(_buildRoute(const ProviderProfileName()));
+  }
+
+  static void goToProviderProfileContact(BuildContext context) {
+    Navigator.of(context).push(_buildRoute(const ProviderProfileContact()));
+  }
+
+  static void goToProviderProfilePassword(BuildContext context) {
+    Navigator.of(context).push(_buildRoute(const ProviderProfilePassword()));
+  }
+
+  static void goToBuildProfessionalProfile(BuildContext context) {
+    Navigator.of(context).pushAndRemoveUntil(
+      _buildRoute(const BuildProfessionalProfile()),
+      (route) => false,
+    );
+  }
+
+  static void goToCustomerDashboard(
+    BuildContext context, {
+    String? debugUserName,
+  }) {
+    Navigator.of(context).pushAndRemoveUntil(
+      _buildRoute(CustomerShellScreen(debugUserName: debugUserName)),
+      (route) => false,
+    );
+  }
+
+  static void goToProviderDashboard(
+    BuildContext context, {
+    String? debugUserName,
+  }) {
+    Navigator.of(
+      context,
+    ).pushAndRemoveUntil(_buildRoute(ProviderShellScreen()), (route) => false);
+  }
+
+  static void goToProviderHomeGate(BuildContext context, String providerId) {
+    Navigator.of(context).pushAndRemoveUntil(
+      _buildRoute(ProviderHomeGate(providerId: providerId)),
+      (route) => false,
+    );
+  }
+
+  static void goToProviderProfilePersonalDetails(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(_buildRoute(const ProviderProfilePersonalDetails()));
+  }
+
+  static void goToProviderProfileServiceInfo(BuildContext context) {
+    Navigator.of(context).push(_buildRoute(const ProviderProfileServiceInfo()));
+  }
+
+  static void goToProviderProfileExperience(BuildContext context) {
+    Navigator.of(context).push(_buildRoute(const ProviderProfileExperience()));
+  }
+
+  static void goToProviderWorkingArea(BuildContext context) {
+    Navigator.of(context).push(_buildRoute(const ProviderWorkingArea()));
+  }
+
+  static void goToVerificationDocuments(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(_buildRoute(const ProviderVerificationDocuments()));
+  }
+
+  static void goToProviderProfileSummary(BuildContext context) {
+    Navigator.of(context).push(_buildRoute(const ProviderProfileSummary()));
+  }
+
+  static void goToProviderDashboardScreen(BuildContext context) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: (_) => const ProviderDashboardScreen(userName: "Provider"),
+      ),
+      (route) => false,
+    );
+  }
+
+  static void goToDevBypass(BuildContext context) {
+    Navigator.of(context).push(_buildRoute(const DevBypassScreen()));
+  }
+
+  static void goToCreateRequest(BuildContext context, ProviderModel provider) {
+    Navigator.of(
+      context,
+    ).push(_buildRoute(CreateRequestScreen(provider: provider)));
+  }
+
+  static void goToAiCategory(BuildContext context) {
+    Navigator.of(context).push(_buildRoute(const AiCategoryScreen()));
+  }
+
+  static void goToProviderListing(
+    BuildContext context, {
+    required String categoryId,
+    required String categoryName,
+  }) {
+    Navigator.of(context).push(
+      _buildSlideRoute(
+        ProviderListingScreen(service: categoryName, categoryId: categoryId),
+      ),
+    );
+  }
+
+  static void goToProviderDetails(
+    BuildContext context,
+    ProviderModel provider,
+  ) {
+    Navigator.of(
+      context,
+    ).push(_buildRoute(ProviderDetailsScreen(provider: provider)));
+  }
+
+  static void goToServiceCategoryScreen(BuildContext context) {
+    Navigator.of(
+      context,
+    ).push(_buildSlideRoute(const ServiceCategoriesScreen()));
+  }
+
+  static void goToProviderListScreen(
+    BuildContext context, {
+    required String categoryId,
+    required String categoryName,
+  }) {
+    Navigator.of(context).push(
+      _buildSlideRoute(
+        ProviderListScreen(categoryId: categoryId, categoryName: categoryName),
+      ),
+    );
+  }
+
+  static Future<bool?> goToRatingReview(
+    BuildContext context,
+    String requestId,
+  ) {
+    return Navigator.of(context).push<bool>(
+      PageRouteBuilder<bool>(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            RatingReviewScreen(requestId: requestId),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+  }
+
+  static Future<bool?> goToCustomerRequestDetails(
+    BuildContext context,
+    String requestId,
+  ) {
+    return Navigator.of(context).push<bool>(
+      _buildRoute(CustomerRequestDetailsScreen(requestId: requestId)),
+    );
+  }
+
+  static void goToWelcomeAfterLogout(BuildContext context) {
+    Navigator.of(
+      context,
+    ).pushAndRemoveUntil(_buildRoute(const WelcomeScreen()), (route) => false);
+  }
+
+  static void goToSignedInHome(BuildContext context, UserModel user) {
+    switch (user.role) {
+      case UserRole.customer:
+        goToCustomerDashboard(context);
+        return;
+      case UserRole.provider:
+        if (user.profileCompleted) {
+          goToProviderHomeGate(context, user.id);
+        } else {
+          goToBuildProfessionalProfile(context);
+        }
+        return;
+    }
+  }
+}

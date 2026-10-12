@@ -1,0 +1,177 @@
+import 'package:flutter/material.dart';
+import 'provider_onboarding_layout.dart';
+
+import '../../../core/app_colors.dart';
+import '../../../core/app_router.dart';
+import '../../../services/auth_service.dart';
+
+class BuildProfessionalProfile extends StatelessWidget {
+  const BuildProfessionalProfile({super.key});
+
+  Future<void> _goBack(BuildContext context) async {
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.pop();
+      return;
+    }
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Leave profile setup?'),
+        content: const Text(
+          'Your account is saved. Sign in again any time to finish your profile.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Stay'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Leave'),
+          ),
+        ],
+      ),
+    );
+    if (leave != true || !context.mounted) return;
+    try {
+      await AuthService().signOut();
+    } catch (error) {
+      debugPrint('Sign out while leaving setup failed: $error');
+    }
+    if (context.mounted) AppRouter.goToWelcomeAfterLogout(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PopScope(
+      canPop: Navigator.of(context).canPop(),
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _goBack(context);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: AppColors.background,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: AppColors.primary,
+              size: 20,
+            ),
+            onPressed: () => _goBack(context),
+          ),
+        ),
+        resizeToAvoidBottomInset: true,
+        body: ProviderOnboardingBody(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 10),
+              const ProviderOnboardingHeroText(
+                segments: [
+                  ProviderOnboardingHeroSegment('Build'),
+                  ProviderOnboardingHeroSegment('your'),
+                  ProviderOnboardingHeroSegment('professional', muted: true),
+                  ProviderOnboardingHeroSegment('profile'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              // Text(
+              //   'Complete your profile to start receiving service requests from nearby customers.',
+              //   textAlign: TextAlign.center,
+              //   style: textTheme.bodyLarge?.copyWith(
+              //     color: AppColors.textSecondary,
+              //     height: 1.5,
+              //   ),
+              // ),
+              const SizedBox(height: 36),
+              _buildStepCard(
+                context,
+                number: '1',
+                title: 'Personal Details',
+                icon: Icons.person_outline,
+              ),
+              const SizedBox(height: 14),
+              _buildStepCard(
+                context,
+                number: '2',
+                title: 'Service Information',
+                icon: Icons.design_services_outlined,
+              ),
+              const SizedBox(height: 14),
+              _buildStepCard(
+                context,
+                number: '3',
+                title: 'Working Area',
+                icon: Icons.location_on_outlined,
+              ),
+              const SizedBox(height: 14),
+              _buildStepCard(
+                context,
+                number: '4',
+                title: 'Verification Documents',
+                icon: Icons.verified_user_outlined,
+              ),
+              const SizedBox(height: 40),
+              ElevatedButton(
+                onPressed: () {
+                  AppRouter.goToProviderProfilePersonalDetails(context);
+                },
+                child: const Text('Get Started'),
+              ),
+              const SizedBox(height: 30),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepCard(
+    BuildContext context, {
+    required String number,
+    required String title,
+    required IconData icon,
+  }) {
+    final textTheme = Theme.of(context).textTheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: AppColors.primary.withValues(alpha: .12),
+            child: Text(
+              number,
+              style: textTheme.titleMedium?.copyWith(
+                color: AppColors.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 18),
+          Icon(icon, color: AppColors.primary, size: 26),
+          const SizedBox(width: 18),
+          Expanded(
+            child: Text(
+              title,
+              style: textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
