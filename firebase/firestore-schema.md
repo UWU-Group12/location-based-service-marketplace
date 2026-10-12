@@ -383,6 +383,7 @@ Stores customer service requests sent to selected providers.
 | `quotationStatus` | String | Yes | Current quotation state |
 | `acceptedQuotationId` | String | No | Accepted quotation ID |
 | `finalAmount` | Number | No | Final confirmed job amount |
+| `providerPhone` | String | No | Provider contact number, set by a Cloud Function when the quotation is accepted |
 | `createdAt` | Timestamp | Yes | Request creation time |
 | `updatedAt` | Timestamp | Yes | Last update time |
 

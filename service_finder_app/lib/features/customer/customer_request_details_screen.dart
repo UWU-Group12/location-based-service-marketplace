@@ -218,6 +218,12 @@ class _CustomerRequestDetailsScreenState
               title: 'Agreed amount',
               value: 'Rs. ${request.finalAmount!.toStringAsFixed(2)}',
             ),
+          if (request.providerPhone != null)
+            ProfileSettingsRow(
+              icon: Icons.phone_outlined,
+              title: 'Provider mobile',
+              value: request.providerPhone!,
+            ),
         ]),
         RequestSection('Location', [
           ProfileSettingsRow(
